@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
   --bg: #f6f1e7;
@@ -15,7 +15,7 @@
   --paper: #ffffff80;
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   --bg: #15191b;
   --bg-soft: #1d2225;
   --ink: #ede6d6;
@@ -31,7 +31,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  [data-theme="system"] {
+  [data-theme='system'] {
     --bg: #15191b;
     --bg-soft: #1d2225;
     --ink: #ede6d6;
@@ -72,6 +72,27 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: none;
+}
+
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled),
+  a[href] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [role='button']:disabled {
+    cursor: not-allowed;
+  }
+}
+
 html {
   background: var(--bg);
   color: var(--ink);
@@ -81,7 +102,7 @@ body {
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   background: var(--bg);
   color: var(--ink);
-  font-feature-settings: "ss01", "cv11";
+  font-feature-settings: 'ss01', 'cv11';
   -webkit-font-smoothing: antialiased;
 }
 
@@ -98,7 +119,9 @@ body {
 .font-display {
   font-family: var(--font-fraunces), ui-serif, Georgia, serif;
   font-optical-sizing: auto;
-  font-variation-settings: "SOFT" 50, "WONK" 0;
+  font-variation-settings:
+    'SOFT' 50,
+    'WONK' 0;
 }
 
 .font-mono {
@@ -106,11 +129,33 @@ body {
 }
 
 .dotted-line {
-  background-image: radial-gradient(
-    circle,
-    var(--ink-faint) 1px,
-    transparent 1px
-  );
+  background-image: radial-gradient(circle, var(--ink-faint) 1px, transparent 1px);
   background-size: 1px 6px;
   background-repeat: repeat-y;
+}
+
+@property --fade-top {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.fade-scroll {
+  --fade-top: 0px;
+  mask-image: linear-gradient(to bottom, transparent 0, black var(--fade-top), black calc(100% - 24px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, black var(--fade-top), black calc(100% - 24px), transparent 100%);
+}
+
+@supports (animation-timeline: scroll()) {
+  .fade-scroll {
+    animation: fade-scroll-top linear both;
+    animation-timeline: scroll(self block);
+    animation-range: 0 32px;
+  }
+}
+
+@keyframes fade-scroll-top {
+  to {
+    --fade-top: 20px;
+  }
 }

@@ -9,6 +9,7 @@ Aviões is a tiny PWA: a two-person airplane-counting game shared on a single mo
 The full picture is in [`README.md`](./README.md) and [`docs/project.md`](./docs/project.md).
 
 <!-- BEGIN:nextjs-agent-rules -->
+
 ## This is NOT the Next.js you know
 
 The repo runs on **Next.js 16.2.4** with **React 19** and **Tailwind v4**. Several APIs have breaking changes from training data:
@@ -26,13 +27,13 @@ Before writing non-trivial code, skim the relevant doc inside `node_modules/next
 
 ## Where to look before coding
 
-| You want to…                                          | Read                                  |
-| ----------------------------------------------------- | ------------------------------------- |
-| Understand the product and its boundaries             | [`docs/project.md`](./docs/project.md) |
-| Trace data flow, routes, server actions, cookies      | [`docs/architecture.md`](./docs/architecture.md) |
-| Match the conventions of the codebase                 | [`docs/code-style.md`](./docs/code-style.md) |
-| Touch anything visual (palette, fonts, layout, motion)| [`docs/ui-ux.md`](./docs/ui-ux.md) |
-| See what's been decided recently and why              | [`docs/context.md`](./docs/context.md) |
+| You want to…                                           | Read                                             |
+| ------------------------------------------------------ | ------------------------------------------------ |
+| Understand the product and its boundaries              | [`docs/project.md`](./docs/project.md)           |
+| Trace data flow, routes, server actions, cookies       | [`docs/architecture.md`](./docs/architecture.md) |
+| Match the conventions of the codebase                  | [`docs/code-style.md`](./docs/code-style.md)     |
+| Touch anything visual (palette, fonts, layout, motion) | [`docs/ui-ux.md`](./docs/ui-ux.md)               |
+| See what's been decided recently and why               | [`docs/context.md`](./docs/context.md)           |
 
 ## Hard rules
 
@@ -48,7 +49,7 @@ Before writing non-trivial code, skim the relevant doc inside `node_modules/next
 1. Before changing code, read [`docs/context.md`](./docs/context.md). It tells you what's currently in flight or freshly decided.
 2. After landing a non-trivial change, update [`docs/context.md`](./docs/context.md): add an entry for what's new, remove stale entries that your change made obsolete. The whole file should still fit on one screen.
 3. If a fact has been true for more than a few weeks and is now stable, promote it from `context.md` into the matching `docs/*.md` and delete it from `context.md`.
-4. Commits follow Conventional Commits (`feat`, `fix`, `refactor`, `docs`, `chore`, …). Subject ≤50 chars when possible. Body only when *why* is non-obvious. No AI attribution in commit messages.
+4. Commits follow Conventional Commits (`feat`, `fix`, `refactor`, `docs`, `chore`, …). Subject ≤50 chars when possible. Body only when _why_ is non-obvious. No AI attribution in commit messages.
 
 ## Verification before declaring done
 

@@ -29,12 +29,12 @@ Open <http://localhost:3000>. The first visit shows the onboarding screen.
 
 ## Scripts
 
-| Command         | What it does                                  |
-| --------------- | --------------------------------------------- |
-| `npm run dev`   | Dev server with Turbopack                     |
-| `npm run build` | Production build                              |
-| `npm run start` | Run the production build locally              |
-| `npm run lint`  | ESLint (flat config, `eslint-config-next`)    |
+| Command         | What it does                               |
+| --------------- | ------------------------------------------ |
+| `npm run dev`   | Dev server with Turbopack                  |
+| `npm run build` | Production build                           |
+| `npm run start` | Run the production build locally           |
+| `npm run lint`  | ESLint (flat config, `eslint-config-next`) |
 
 The service worker only registers in production builds. Run `npm run build && npm run start` to test the PWA install flow.
 

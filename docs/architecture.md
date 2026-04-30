@@ -21,17 +21,17 @@
 └────────────────────────────────────────────────────────────┘
 ```
 
-There is no database, no API layer, no third-party storage. The cookie *is* the database.
+There is no database, no API layer, no third-party storage. The cookie _is_ the database.
 
 ## Data model
 
 Three cookies, all `sameSite=lax`, `path=/`, `maxAge=1y`:
 
-| Cookie       | Shape                              | Read by               | Written by      |
-| ------------ | ---------------------------------- | --------------------- | --------------- |
-| `av_id`      | `"henrique"` \| `"pietra"`         | every Server Component | `setIdentity`, `clearIdentity` |
-| `av_events`  | compact CSV `h:<ts>,p:<ts>,...`    | counter, diary, scoreboard | `addAirplane`, `undoLast` |
-| `av_theme`   | `"light"` \| `"dark"` \| `"system"` | root layout           | `setTheme`      |
+| Cookie      | Shape                               | Read by                    | Written by                     |
+| ----------- | ----------------------------------- | -------------------------- | ------------------------------ |
+| `av_id`     | `"henrique"` \| `"pietra"`          | every Server Component     | `setIdentity`, `clearIdentity` |
+| `av_events` | compact CSV `h:<ts>,p:<ts>,...`     | counter, diary, scoreboard | `addAirplane`, `undoLast`      |
+| `av_theme`  | `"light"` \| `"dark"` \| `"system"` | root layout                | `setTheme`                     |
 
 The compact CSV format keeps ~500 events under the 4KB cookie limit. The events array is hard-capped at 1000 in `lib/cookies.ts`.
 

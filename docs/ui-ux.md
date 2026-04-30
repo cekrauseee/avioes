@@ -2,7 +2,7 @@
 
 ## Direction
 
-The app should feel like a small paper journal carried in a pocket — warm, hand-pressed, slightly imperfect. It is *not* a SaaS dashboard. It is *not* a slick fintech app. The two people using it are the audience; nobody else is.
+The app should feel like a small paper journal carried in a pocket — warm, hand-pressed, slightly imperfect. It is _not_ a SaaS dashboard. It is _not_ a slick fintech app. The two people using it are the audience; nobody else is.
 
 Three words to keep in mind: **simple**, **organic**, **calm**.
 
@@ -17,18 +17,18 @@ Three words to keep in mind: **simple**, **organic**, **calm**.
 
 Defined as CSS variables in `app/globals.css`. Light is the default; dark applies via `[data-theme="dark"]` or `prefers-color-scheme: dark` when the cookie is `system`.
 
-| Token        | Light       | Dark        | Use                                  |
-| ------------ | ----------- | ----------- | ------------------------------------ |
-| `--bg`       | `#F6F1E7`   | `#15191B`   | Page background (warm paper / night) |
-| `--bg-soft`  | `#EFE8D8`   | `#1D2225`   | Bottom nav, subtle surfaces          |
-| `--ink`      | `#1F2A24`   | `#EDE6D6`   | Primary text                         |
-| `--ink-soft` | `#4A5A52`   | `#B8B0A0`   | Secondary text                       |
-| `--ink-faint`| `#8A9890`   | `#6E6A60`   | Labels, timestamps                   |
-| `--sage`     | `#7C9A82`   | `#9CB6A1`   | Henrique's accent                    |
-| `--clay`     | `#C97B5C`   | `#E59A7E`   | Pietra's accent                      |
-| `--sky`      | `#A8C3D4`   | `#6E8FA3`   | Subtle accents, dividers             |
-| `--line`     | `#1F2A2418` | `#EDE6D622` | Hairlines and borders                |
-| `--paper`    | `#FFFFFF80` | `#1D222540` | Card surfaces                        |
+| Token         | Light       | Dark        | Use                                  |
+| ------------- | ----------- | ----------- | ------------------------------------ |
+| `--bg`        | `#F6F1E7`   | `#15191B`   | Page background (warm paper / night) |
+| `--bg-soft`   | `#EFE8D8`   | `#1D2225`   | Bottom nav, subtle surfaces          |
+| `--ink`       | `#1F2A24`   | `#EDE6D6`   | Primary text                         |
+| `--ink-soft`  | `#4A5A52`   | `#B8B0A0`   | Secondary text                       |
+| `--ink-faint` | `#8A9890`   | `#6E6A60`   | Labels, timestamps                   |
+| `--sage`      | `#7C9A82`   | `#9CB6A1`   | Henrique's accent                    |
+| `--clay`      | `#C97B5C`   | `#E59A7E`   | Pietra's accent                      |
+| `--sky`       | `#A8C3D4`   | `#6E8FA3`   | Subtle accents, dividers             |
+| `--line`      | `#1F2A2418` | `#EDE6D622` | Hairlines and borders                |
+| `--paper`     | `#FFFFFF80` | `#1D222540` | Card surfaces                        |
 
 Per-identity classes (e.g. `bg-sage`, `text-clay`) come from the `IDENTITIES` map in `app/lib/types.ts`. Never build them by string concatenation — Tailwind won't pick them up.
 

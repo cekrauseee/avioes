@@ -30,7 +30,7 @@
 ## Comments
 
 - Default to no comments. Names should carry the meaning.
-- Add a one-line comment only when the *why* is non-obvious — a workaround, a hidden constraint, a non-trivial invariant. Never explain *what* the code is doing.
+- Add a one-line comment only when the _why_ is non-obvious — a workaround, a hidden constraint, a non-trivial invariant. Never explain _what_ the code is doing.
 - No JSDoc blocks. No "Added for X" or "Used by Y" comments.
 
 ## Imports
@@ -56,5 +56,5 @@ Don't add a testing framework speculatively — wait until there is something br
 
 - Conventional Commits: `feat`, `fix`, `refactor`, `perf`, `docs`, `chore`, `build`, `ci`, `style`.
 - Subject ≤50 chars when possible, hard cap 72.
-- Body only when the *why* is not in the diff. Wrap at 72.
+- Body only when the _why_ is not in the diff. Wrap at 72.
 - No emoji, no AI attribution, no "this commit does X".
