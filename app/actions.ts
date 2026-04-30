@@ -30,8 +30,8 @@ export async function addAirplane() {
   events.push({ who, ts: Date.now() });
   await writeEvents(events);
   revalidatePath("/");
-  revalidatePath("/diario");
-  revalidatePath("/placar");
+  revalidatePath("/diary");
+  revalidatePath("/scoreboard");
 }
 
 export async function undoLast() {
@@ -39,8 +39,8 @@ export async function undoLast() {
   events.pop();
   await writeEvents(events);
   revalidatePath("/");
-  revalidatePath("/diario");
-  revalidatePath("/placar");
+  revalidatePath("/diary");
+  revalidatePath("/scoreboard");
 }
 
 export async function setTheme(theme: Theme) {

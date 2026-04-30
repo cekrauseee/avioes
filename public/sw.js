@@ -1,5 +1,5 @@
-const CACHE = "avioes-v1";
-const SHELL = ["/", "/diario", "/placar", "/manifest.webmanifest"];
+const CACHE = "avioes-v2";
+const SHELL = ["/", "/diary", "/scoreboard", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
