@@ -1,0 +1,28 @@
+name: airplanes
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: airplanes_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: airplanes
+      POSTGRES_PASSWORD: airplanes
+      POSTGRES_DB: airplanes_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - data:/var/lib/postgresql/data
+    networks:
+      - network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U airplanes -d airplanes']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  data:
+
+networks:
+  network:

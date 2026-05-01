@@ -2,14 +2,16 @@ import { redirect } from 'next/navigation'
 import { AppShell } from '../../components/app-shell'
 import { Placeholder } from '../../components/placeholder'
 import { ThemeToggle } from '../../components/theme-toggle'
-import { readEvents, readIdentity, readTheme } from '../../lib/cookies'
+import { readIdentity } from '../../lib/cookies'
+import { readEvents, readTheme } from '../../lib/store'
 import { computeStreaks, totals } from '../../lib/streaks'
 import { IDENTITIES, type Identity } from '../../lib/types'
 
 export default async function PlacarPage() {
-  const [who, events, theme] = await Promise.all([readIdentity(), readEvents(), readTheme()])
-
+  const who = await readIdentity()
   if (!who) redirect('/')
+
+  const [events, theme] = await Promise.all([readEvents(), readTheme(who)])
 
   const t = totals(events)
   const streaks = computeStreaks(events)

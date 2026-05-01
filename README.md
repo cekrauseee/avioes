@@ -1,12 +1,12 @@
-# Aviões
+# Airplanes
 
-A two-person airplane-spotting counter, built as a private game between Henrique and Pietra. Tap once for every airplane you see in the sky together — the app keeps a shared running tally, a diary of streaks, and a scoreboard.
+A two-person airplane-spotting counter, built as a private game between Henrique and Pietra. Tap once for every airplane you see in the sky together — the app keeps a shared running tally, a diary of streaks, and a scoreboard. The UI is in Brazilian Portuguese (the visible PWA name is "Aviões"); the codebase, project name, and infrastructure are in English.
 
 ## What this is
 
-- A small, installable PWA shared on a single device.
-- No login. Identity ("Henrique" or "Pietra") is picked once during onboarding and stored in a cookie.
-- All data (identity, events, theme) lives in browser cookies. There is no backend.
+- A small, installable PWA. Two hardcoded users: Henrique and Pietra.
+- No login. Identity is picked once per device during onboarding and stored in a cookie (`ap_id`).
+- Airplane events and per-user theme live in Postgres so they follow the user across devices. Drizzle ORM with `node-postgres` in dev and `@neondatabase/serverless` in production.
 - UI is in Brazilian Portuguese; the codebase, docs, and identifiers are in English.
 
 The aesthetic is intentionally small, organic and journal-like — see [`docs/ui-ux.md`](./docs/ui-ux.md).
@@ -17,11 +17,15 @@ The aesthetic is intentionally small, organic and journal-like — see [`docs/ui
 - React 19 (Server Components + `useOptimistic`)
 - Tailwind CSS v4 (`@import "tailwindcss"`, `@theme inline`)
 - Motion (framer-motion v12) for the counter spring + plane arc
+- Postgres + Drizzle ORM (`node-postgres` locally, `@neondatabase/serverless` on Vercel)
 
 ## Getting started
 
 ```bash
 npm install
+npm run db:up               # docker compose up -d → Postgres on :5432
+cp .env.example .env.local
+npm run db:push             # apply Drizzle schema
 npm run dev
 ```
 
@@ -29,30 +33,44 @@ Open <http://localhost:3000>. The first visit shows the onboarding screen.
 
 ## Scripts
 
-| Command         | What it does                               |
-| --------------- | ------------------------------------------ |
-| `npm run dev`   | Dev server with Turbopack                  |
-| `npm run build` | Production build                           |
-| `npm run start` | Run the production build locally           |
-| `npm run lint`  | ESLint (flat config, `eslint-config-next`) |
+| Command            | What it does                                |
+| ------------------ | ------------------------------------------- |
+| `npm run dev`      | Dev server with Turbopack                   |
+| `npm run build`    | Production build                            |
+| `npm run start`    | Run the production build locally            |
+| `npm run lint`     | ESLint (flat config, `eslint-config-next`)  |
+| `npm run db:up`    | Start the local Postgres container          |
+| `npm run db:down`  | Stop and remove the container + volume      |
+| `npm run db:push`  | Sync `src/lib/db/schema.ts` to the database |
+| `npm run db:studio`| Browse rows in Drizzle Studio               |
 
 The service worker only registers in production builds. Run `npm run build && npm run start` to test the PWA install flow.
 
 ## Project layout
 
 ```
-app/
-  page.tsx              identity gate → onboarding | counter
-  diary/page.tsx        streak timeline
-  scoreboard/page.tsx   totals + recent streaks
-  actions.ts            server actions (cookie writes)
-  lib/                  cookies, streak derivation, types
-  components/           UI components
-  manifest.ts           PWA manifest (metadata route)
+src/
+  app/
+    page.tsx              identity gate → onboarding | counter
+    diary/page.tsx        streak timeline
+    scoreboard/page.tsx   totals + recent streaks
+    manifest.ts           PWA manifest (metadata route)
+  actions.ts              server actions (cookie + DB writes)
+  components/             UI components
+  lib/
+    cookies.ts            identity cookie helpers
+    store.ts              DB-backed events + theme reads/writes
+    streaks.ts            event → streak derivation
+    types.ts              shared types + IDENTITIES map
+    db/
+      index.ts            driver switch (pg ↔ neon-serverless)
+      schema.ts           Drizzle schema
 public/
-  sw.js                 minimal service worker
-  icons/                placeholder SVG icons
-docs/                   project documentation (start here)
+  sw.js                   minimal service worker
+  icons/                  placeholder SVG icons
+docker-compose.yaml       local Postgres
+drizzle.config.ts         drizzle-kit config
+docs/                     project documentation (start here)
 ```
 
 ## Documentation

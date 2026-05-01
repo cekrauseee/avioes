@@ -11,7 +11,10 @@ const eslintConfig = defineConfig([
     '.next/**',
     'out/**',
     'build/**',
-    'next-env.d.ts'
+    'next-env.d.ts',
+    // Nested build artifacts from agent worktrees / nested checkouts.
+    '**/.next/**',
+    '.claude/**'
   ])
 ])
 

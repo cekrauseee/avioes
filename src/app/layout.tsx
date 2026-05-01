@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from 'next'
 import { Fraunces, Geist, Geist_Mono } from 'next/font/google'
-import { cookies } from 'next/headers'
 import { NavBar } from '../components/nav-bar'
 import { Noise } from '../components/noise'
 import { PwaRegister } from '../components/pwa-register'
 import { readIdentity } from '../lib/cookies'
+import { readTheme } from '../lib/store'
 import './globals.css'
 
 const geistSans = Geist({
@@ -51,9 +51,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const store = await cookies()
-  const theme = store.get('av_theme')?.value ?? 'system'
   const who = await readIdentity()
+  const theme = await readTheme(who)
 
   return (
     <html

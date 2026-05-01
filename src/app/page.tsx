@@ -1,16 +1,16 @@
 import { AppShell } from '../components/app-shell'
 import { Counter } from '../components/counter'
 import { Onboarding } from '../components/onboarding'
-import { readEvents, readIdentity, readTheme } from '../lib/cookies'
-import { totals } from '../lib/streaks'
+import { readIdentity } from '../lib/cookies'
+import { counts, readTheme } from '../lib/store'
 
 export default async function Page() {
-  const [who, events, theme] = await Promise.all([readIdentity(), readEvents(), readTheme()])
-
+  const who = await readIdentity()
   if (!who) return <Onboarding />
 
-  const t = totals(events)
+  const [t, theme] = await Promise.all([counts(), readTheme(who)])
   const partner = who === 'henrique' ? 'pietra' : 'henrique'
+  const total = t.henrique + t.pietra
 
   return (
     <AppShell>
@@ -18,8 +18,8 @@ export default async function Page() {
         who={who}
         myCount={t[who]}
         partnerCount={t[partner]}
-        total={events.length}
-        canUndo={events.length > 0}
+        total={total}
+        canUndo={t[who] > 0}
         theme={theme}
       />
     </AppShell>

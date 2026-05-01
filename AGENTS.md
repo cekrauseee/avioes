@@ -4,7 +4,9 @@ Read this first if you are an AI agent (or a human dropped in cold) about to mak
 
 ## What this project is
 
-Aviões is a tiny PWA: a two-person airplane-counting game shared on a single mobile device. Identity is picked once via onboarding (cookie). Taps add airplane events. Three views: counter, diary, scoreboard. No backend — cookies are the database.
+Airplanes is a tiny PWA: a two-person airplane-counting game. Identity is picked once per device via onboarding (cookie). Taps add airplane events. Three views: counter, diary, scoreboard. State for the two hardcoded users (`henrique`, `pietra`) lives in Postgres so it follows the user across devices; only the identity selector is per-device.
+
+The codebase, project name, and infra are English. The UI is Brazilian Portuguese — the visible PWA name is "Aviões" and on-screen copy stays in PT.
 
 The full picture is in [`README.md`](./README.md) and [`docs/project.md`](./docs/project.md).
 
@@ -38,10 +40,12 @@ Before writing non-trivial code, skim the relevant doc inside `node_modules/next
 ## Hard rules
 
 - **Source code is English. UI strings are Brazilian Portuguese.** Routes follow the source code (`/diary`, `/scoreboard`). Visible nav labels are Portuguese. Don't mix.
-- **No backend.** Don't add a database, an API route for mutations, or a third-party storage SDK. Cookies are the entire data layer.
+- **Two hardcoded users.** Don't add auth, signup, or arbitrary user creation. The identity union stays `'henrique' | 'pietra'`.
+- **Persistence is Postgres via Drizzle.** Schema lives in `src/lib/db/schema.ts`. Reads/writes go through `src/lib/store.ts`. `src/lib/db/index.ts` switches between `node-postgres` (dev) and `@neondatabase/serverless` (prod, when `VERCEL=1`). Schema changes are applied with `npm run db:push` — no migration files are generated.
+- **Identity is the only cookie.** `ap_id` (`'henrique' | 'pietra'`) selects who is using the device. Events and per-user theme live in Postgres, keyed by `who`.
 - **Don't break Tailwind class detection.** No string-concatenated class names. Use the `IDENTITIES` map for per-person colors.
 - **No `useEffect` to mirror props into state.** Use `useOptimistic` or render directly from props. The lint rule `react-hooks/set-state-in-effect` is a tripwire for this mistake.
-- **Mutations go through Server Actions** in `app/actions.ts`. Server Components don't write cookies.
+- **Mutations go through Server Actions** in `src/actions.ts`. Server Components don't write cookies and don't write to the DB directly outside of `store.ts`.
 - **No tests speculatively, no comments speculatively, no abstractions speculatively.** Default to fewer files, fewer indirections.
 
 ## Workflow expectations
@@ -51,10 +55,20 @@ Before writing non-trivial code, skim the relevant doc inside `node_modules/next
 3. If a fact has been true for more than a few weeks and is now stable, promote it from `context.md` into the matching `docs/*.md` and delete it from `context.md`.
 4. Commits follow Conventional Commits (`feat`, `fix`, `refactor`, `docs`, `chore`, …). Subject ≤50 chars when possible. Body only when _why_ is non-obvious. No AI attribution in commit messages.
 
+## Local dev setup
+
+1. `npm run db:up` — `docker compose up -d`, starts Postgres on `localhost:5432` (matches `.env.example`).
+2. `cp .env.example .env.local` if you don't have one.
+3. `npm run db:push` — applies the Drizzle schema. Re-run whenever `src/lib/db/schema.ts` changes.
+4. `npm run dev`.
+
+`npm run db:studio` opens Drizzle Studio if you need to peek at rows.
+
 ## Verification before declaring done
 
 - `npm run build` passes.
 - `npm run lint` passes.
+- Local Postgres is running and `npm run db:push` is clean (no pending schema diff).
 - For UI changes: open `npm run dev` and exercise the actual flow on a mobile-width viewport. Tests don't exist yet, so visual verification is the only check.
 - For PWA changes: bump the `CACHE` version in `public/sw.js`, then test with a production build (`npm run build && npm run start`).
 

@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { deleteIdentity, readEvents, readIdentity, writeEvents, writeIdentity, writeTheme } from './lib/cookies'
+import { deleteIdentity, readIdentity, writeIdentity } from './lib/cookies'
+import { addEvent, deleteLastEvent, writeTheme } from './lib/store'
 import type { Identity, Theme } from './lib/types'
 
 export async function setIdentity(who: Identity) {
@@ -19,18 +20,16 @@ export async function clearIdentity() {
 export async function addAirplane() {
   const who = await readIdentity()
   if (!who) return
-  const events = await readEvents()
-  events.push({ who, ts: Date.now() })
-  await writeEvents(events)
+  await addEvent(who)
   revalidatePath('/')
   revalidatePath('/diary')
   revalidatePath('/scoreboard')
 }
 
 export async function undoLast() {
-  const events = await readEvents()
-  events.pop()
-  await writeEvents(events)
+  const who = await readIdentity()
+  if (!who) return
+  await deleteLastEvent(who)
   revalidatePath('/')
   revalidatePath('/diary')
   revalidatePath('/scoreboard')
@@ -38,6 +37,8 @@ export async function undoLast() {
 
 export async function setTheme(theme: Theme) {
   if (theme !== 'light' && theme !== 'dark' && theme !== 'system') return
-  await writeTheme(theme)
+  const who = await readIdentity()
+  if (!who) return
+  await writeTheme(who, theme)
   revalidatePath('/', 'layout')
 }

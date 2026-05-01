@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation'
 import { AppShell } from '../../components/app-shell'
 import { ThemeToggle } from '../../components/theme-toggle'
-import { readEvents, readIdentity, readTheme } from '../../lib/cookies'
+import { readIdentity } from '../../lib/cookies'
+import { readEvents, readTheme } from '../../lib/store'
 import { computeStreaks } from '../../lib/streaks'
 import { IDENTITIES } from '../../lib/types'
 
@@ -15,9 +16,10 @@ const timeFmt = new Intl.DateTimeFormat('pt-BR', {
 })
 
 export default async function DiarioPage() {
-  const [who, events, theme] = await Promise.all([readIdentity(), readEvents(), readTheme()])
-
+  const who = await readIdentity()
   if (!who) redirect('/')
+
+  const [events, theme] = await Promise.all([readEvents(), readTheme(who)])
 
   const streaks = computeStreaks(events).reverse()
 

@@ -1,4 +1,4 @@
-const CACHE = 'avioes-v3'
+const CACHE = 'airplanes-v4'
 const SHELL = ['/', '/diary', '/scoreboard', '/manifest.webmanifest']
 
 self.addEventListener('install', (event) => {

@@ -20,6 +20,14 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-01 — Project name normalized to "airplanes"
+
+Internal naming converged on `airplanes`: package name, docker compose service/container/db (`airplanes_postgres`, db `airplanes_db`, user/pass `airplanes/airplanes`), env example, identity cookie (`av_id` → `ap_id`), SW cache (`avioes-v3` → `airplanes-v4`), README/AGENTS/docs prose. UI strings (PWA `name`/`short_name`, page `title`, on-screen copy like "aviões") stay in Brazilian Portuguese — the visible name on a phone home screen is still "Aviões". Existing dev devices need to clear/re-pick identity because of the cookie rename.
+
+### 2026-04-30 — Postgres persistence via Drizzle
+
+Events and per-user theme moved out of cookies into Postgres so state follows the user across devices. Identity (`ap_id`) stays in a cookie — it's still a per-device selector for one of the two hardcoded users (`henrique`, `pietra`). Schema in `src/lib/db/schema.ts` (`events`, `preferences`, both keyed by an `identity` enum). Driver switch in `src/lib/db/index.ts`: `node-postgres` locally, `@neondatabase/serverless` when `VERCEL=1` (override with `DRIZZLE_DRIVER=neon`). Reads/writes go through `src/lib/store.ts`; `src/lib/cookies.ts` is now identity-only. `undoLast` is per-user (deletes the current user's most recent event, not the global last). `setTheme` is a no-op until an identity exists; theme is `'system'` during onboarding. Schema is applied with `npm run db:push` (no migration files generated, dev and prod). Local dev uses `docker-compose.yaml` (Postgres 17). The 1000-event cookie cap is gone with the cookie.
+
 ### 2026-04-30 — Mobile UX pass: tab bar, fewer borders, transitions
 
 Bottom nav rewritten as 3 full-width tabs with a sliding `layoutId` underline (sage/clay per identity); tap targets ≥64px. The Nav is rendered by `app/layout.tsx` as a sibling of `{children}` (reading identity once), so it stays mounted across navigations and is unaffected by the page transition. `<ThemeToggle/>` is a 40×40 glyph button (`◐`/`☀`/`☾`) in each page header. Undo button is a 44px-tall pill with `↶` glyph. Decorative borders removed from streak cards, scoreboard list box, person cards, and the bottom-bar separator; the `border-x` container frame is gone (mobile + desktop). `app/template.tsx` does a 180ms fade-up between routes. Per-route `loading.tsx` skeletons render body only — Nav from layout stays put. `<Skel/>` primitive in `app/components/skeleton.tsx`. Service worker bumped to `avioes-v3`. `AppShell` is now just a scroll wrapper (no Nav, no props except `scroll`).
@@ -35,10 +43,6 @@ The whole app is wrapped in a 420px-wide centered column. Desktop renders as a p
 ### 2026-04-30 — Labels: simple, not modernist
 
 Replaced `uppercase tracking-[0.2em]` mono labels with plain `text-xs text-ink-faint` (or `text-[11px]` for timestamps). Mono is reserved for actual numerals. See `docs/ui-ux.md` ("Typography").
-
-### 2026-04-30 — Cookie storage with cap
-
-Events stored in cookie `av_events` using compact CSV (`h:<ts>,p:<ts>`). Hard-capped at 1000 events in `app/lib/cookies.ts`. If this cap becomes a real concern, migrate to `localStorage` — don't try to compress further.
 
 ### 2026-04-30 — Optimistic counter via `useOptimistic`
 
