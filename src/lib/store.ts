@@ -2,7 +2,7 @@ import 'server-only'
 
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { db, events, preferences } from './db'
-import type { AirplaneEvent, Identity, Theme } from './types'
+import type { AirplaneEvent, Identity, QueueOp, Theme } from './types'
 
 export async function readEvents(): Promise<AirplaneEvent[]> {
   return db.select({ who: events.who, ts: events.ts }).from(events).orderBy(events.ts)
@@ -34,6 +34,24 @@ export async function writeTheme(who: Identity, theme: Theme): Promise<void> {
     .insert(preferences)
     .values({ who, theme })
     .onConflictDoUpdate({ target: preferences.who, set: { theme } })
+}
+
+export async function applyEvents(who: Identity, ops: QueueOp[]): Promise<string[]> {
+  const acked: string[] = []
+  for (const op of ops) {
+    if (op.who !== who) continue
+    try {
+      if (op.op === 'add') {
+        await db.insert(events).values({ who: op.who, ts: op.ts })
+      } else {
+        await deleteLastEvent(op.who)
+      }
+      acked.push(op.id)
+    } catch {
+      break
+    }
+  }
+  return acked
 }
 
 export async function counts(): Promise<Record<Identity, number>> {

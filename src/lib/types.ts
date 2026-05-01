@@ -14,6 +14,10 @@ export type Streak = {
 
 export type Theme = 'light' | 'dark' | 'system'
 
+export type QueueOp =
+  | { id: string; op: 'add'; who: Identity; ts: number }
+  | { id: string; op: 'undo'; who: Identity }
+
 export const IDENTITIES: Record<
   Identity,
   {

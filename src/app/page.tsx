@@ -19,7 +19,6 @@ export default async function Page() {
         myCount={t[who]}
         partnerCount={t[partner]}
         total={total}
-        canUndo={t[who] > 0}
         theme={theme}
       />
     </AppShell>

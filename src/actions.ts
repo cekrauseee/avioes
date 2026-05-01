@@ -3,8 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { deleteIdentity, readIdentity, writeIdentity } from './lib/cookies'
-import { addEvent, deleteLastEvent, writeTheme } from './lib/store'
-import type { Identity, Theme } from './lib/types'
+import { applyEvents, counts, writeTheme } from './lib/store'
+import type { Identity, QueueOp, Theme } from './lib/types'
 
 export async function setIdentity(who: Identity) {
   if (who !== 'henrique' && who !== 'pietra') return
@@ -17,22 +17,21 @@ export async function clearIdentity() {
   redirect('/')
 }
 
-export async function addAirplane() {
+export async function syncEvents(ops: QueueOp[]): Promise<{ acked: string[]; my: number; total: number }> {
   const who = await readIdentity()
-  if (!who) return
-  await addEvent(who)
-  revalidatePath('/')
-  revalidatePath('/diary')
-  revalidatePath('/scoreboard')
-}
-
-export async function undoLast() {
-  const who = await readIdentity()
-  if (!who) return
-  await deleteLastEvent(who)
-  revalidatePath('/')
-  revalidatePath('/diary')
-  revalidatePath('/scoreboard')
+  if (!who) return { acked: [], my: 0, total: 0 }
+  if (!Array.isArray(ops) || ops.length === 0) {
+    const c = await counts()
+    return { acked: [], my: c[who], total: c.henrique + c.pietra }
+  }
+  const acked = await applyEvents(who, ops)
+  if (acked.length > 0) {
+    revalidatePath('/')
+    revalidatePath('/diary')
+    revalidatePath('/scoreboard')
+  }
+  const c = await counts()
+  return { acked, my: c[who], total: c.henrique + c.pietra }
 }
 
 export async function setTheme(theme: Theme) {

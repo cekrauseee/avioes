@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { AppShell } from '../../components/app-shell'
 import { Placeholder } from '../../components/placeholder'
+import { SyncStatus } from '../../components/sync-status'
 import { ThemeToggle } from '../../components/theme-toggle'
 import { readIdentity } from '../../lib/cookies'
 import { readEvents, readTheme } from '../../lib/store'
@@ -34,6 +35,7 @@ export default async function PlacarPage() {
           <div className='flex items-center justify-between'>
             <h1 className='font-display text-3xl tracking-tight'>Placar</h1>
             <div className='flex items-center gap-2'>
+              <SyncStatus />
               <span className='text-ink-faint text-xs'>{events.length} no total</span>
               <ThemeToggle theme={theme} />
             </div>

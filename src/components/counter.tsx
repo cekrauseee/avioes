@@ -1,10 +1,13 @@
 'use client'
 
-import { motion, useSpring, useTransform } from 'motion/react'
-import { startTransition, useEffect, useOptimistic, useState } from 'react'
-import { addAirplane, clearIdentity, undoLast } from '../actions'
+import { AnimatePresence, motion, useReducedMotion, useSpring, useTransform } from 'motion/react'
+import { startTransition, useCallback, useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
+import { clearIdentity, syncEvents } from '../actions'
+import { deltaFor, dropOps, enqueueAdd, enqueueUndo, readQueue, totalDelta, useOnline, useQueue } from '../lib/offline-queue'
 import { IDENTITIES, type Identity, type Theme } from '../lib/types'
 import { PlaneArc, type ArcKey } from './plane-arc'
+import { SyncStatus } from './sync-status'
 import { ThemeToggle } from './theme-toggle'
 
 type Props = {
@@ -12,41 +15,89 @@ type Props = {
   myCount: number
   partnerCount: number
   total: number
-  canUndo: boolean
   theme: Theme
 }
 
-export function Counter({ who, myCount, partnerCount, total, canUndo, theme }: Props) {
+export function Counter({ who, myCount, partnerCount, total, theme }: Props) {
   const me = IDENTITIES[who]
   const partner = who === 'henrique' ? 'pietra' : 'henrique'
   const partnerName = IDENTITIES[partner].label
   const myName = me.label
 
-  const [optimistic, applyDelta] = useOptimistic(myCount, (state: number, delta: number) => Math.max(0, state + delta))
-  const [optTotal, applyTotalDelta] = useOptimistic(total, (state: number, delta: number) => Math.max(0, state + delta))
-  const [flights, setFlights] = useState<ArcKey[]>([])
+  const queue = useQueue()
+  const online = useOnline()
+  const myDelta = deltaFor(queue, who)
+  const syncVisible = !online
+  const reducedMotion = useReducedMotion()
+  const tokenInitial = reducedMotion ? { opacity: 0 } : { opacity: 0, y: 2 }
+  const tokenEnter = reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }
+  const tokenExit = reducedMotion ? { opacity: 0 } : { opacity: 0, y: -2 }
+  const tokenTransition = { duration: 0.15, ease: [0.22, 1, 0.36, 1] as const }
 
-  const spring = useSpring(optimistic, { stiffness: 220, damping: 22 })
+  const [override, setOverride] = useState<{ my: number; total: number } | null>(null)
+  if (override !== null && myCount === override.my && total === override.total) {
+    setOverride(null)
+  }
+  const baseMy = override?.my ?? myCount
+  const baseTotal = override?.total ?? total
+
+  const display = Math.max(0, baseMy + myDelta)
+  const totalDisplay = Math.max(0, baseTotal + totalDelta(queue))
+  const canUndo = display > 0
+
+  const [flights, setFlights] = useState<ArcKey[]>([])
+  const spring = useSpring(display, { stiffness: 220, damping: 22 })
   useEffect(() => {
-    spring.set(optimistic)
-  }, [optimistic, spring])
-  const display = useTransform(spring, (v) => Math.round(v).toString())
+    spring.set(display)
+  }, [display, spring])
+  const displayed = useTransform(spring, (v) => Math.round(v).toString())
+
+  const syncing = useRef(false)
+  const sync = useCallback(async () => {
+    if (syncing.current) return
+    const snapshot = readQueue()
+    if (snapshot.length === 0) return
+    syncing.current = true
+    try {
+      const result = await syncEvents([...snapshot])
+      if (result.acked.length > 0) {
+        flushSync(() => {
+          setOverride({ my: result.my, total: result.total })
+        })
+        dropOps(result.acked)
+      }
+    } catch {
+      // network or server failed — keep queue, retry later
+    } finally {
+      syncing.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    void sync()
+  }, [sync, queue])
+
+  useEffect(() => {
+    const onOnline = () => void sync()
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void sync()
+    }
+    window.addEventListener('online', onOnline)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      window.removeEventListener('online', onOnline)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [sync])
 
   const tap = () => {
     setFlights((f) => [...f.slice(-2), { id: Date.now(), from: Math.random() > 0.5 ? 'left' : 'right' }])
-    startTransition(async () => {
-      applyDelta(1)
-      applyTotalDelta(1)
-      await addAirplane()
-    })
+    enqueueAdd(who)
   }
 
   const undo = () => {
-    startTransition(async () => {
-      applyDelta(-1)
-      applyTotalDelta(-1)
-      await undoLast()
-    })
+    if (!canUndo) return
+    enqueueUndo(who)
   }
 
   return (
@@ -67,7 +118,33 @@ export function Counter({ who, myCount, partnerCount, total, canUndo, theme }: P
           <span className='text-ink-faint group-hover:text-ink-soft group-focus-visible:text-ink-soft text-xs transition-colors'>trocar</span>
         </button>
         <div className='flex items-center gap-2'>
-          <span className='text-ink-faint text-xs'>{optTotal} no total</span>
+          <SyncStatus />
+          {syncVisible && (
+            <span
+              aria-hidden
+              className='text-ink-faint text-xs'
+            >
+              ·
+            </span>
+          )}
+          <span className='text-ink-faint inline-flex items-baseline gap-[0.25em] text-xs whitespace-nowrap'>
+            <AnimatePresence
+              mode='wait'
+              initial={false}
+            >
+              <motion.span
+                key={totalDisplay}
+                initial={tokenInitial}
+                animate={tokenEnter}
+                exit={tokenExit}
+                transition={tokenTransition}
+                className='inline-block'
+              >
+                {totalDisplay}
+              </motion.span>
+            </AnimatePresence>
+            <span>no total</span>
+          </span>
           <ThemeToggle theme={theme} />
         </div>
       </header>
@@ -79,9 +156,9 @@ export function Counter({ who, myCount, partnerCount, total, canUndo, theme }: P
         aria-label='Vi um avião'
       >
         <span className='text-ink-faint text-xs'>toque · vi um avião</span>
-        <motion.span className='font-display text-[clamp(96px,32vw,150px)] leading-[0.85] tracking-tight'>{display}</motion.span>
+        <motion.span className='font-display text-[clamp(96px,32vw,150px)] leading-[0.85] tracking-tight'>{displayed}</motion.span>
         <span className='font-display text-ink-soft -mt-1 text-base italic'>
-          {optimistic === 1 ? 'avião' : 'aviões'} {myName.toLowerCase()}
+          {display === 1 ? 'avião' : 'aviões'} {myName.toLowerCase()}
         </span>
       </button>
 

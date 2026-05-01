@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { AppShell } from '../../components/app-shell'
+import { SyncStatus } from '../../components/sync-status'
 import { ThemeToggle } from '../../components/theme-toggle'
 import { readIdentity } from '../../lib/cookies'
 import { readEvents, readTheme } from '../../lib/store'
@@ -30,6 +31,7 @@ export default async function DiarioPage() {
           <div className='flex items-center justify-between'>
             <h1 className='font-display text-3xl tracking-tight'>Diário</h1>
             <div className='flex items-center gap-2'>
+              <SyncStatus />
               <span className='text-ink-faint text-xs'>{events.length} aviões</span>
               <ThemeToggle theme={theme} />
             </div>

@@ -79,15 +79,14 @@ All mutations go through `src/actions.ts`:
 
 - `setIdentity(who)` — write `ap_id`, `redirect("/")`.
 - `clearIdentity()` — delete `ap_id`, `redirect("/")`.
-- `addAirplane()` — read `ap_id`, `addEvent(who)`, `revalidatePath` for `/`, `/diary`, `/scoreboard`.
-- `undoLast()` — read `ap_id`, `deleteLastEvent(who)` (per-user). Same revalidation.
+- `syncEvents(ops)` — read `ap_id`, `applyEvents(who, ops)` (per-user; ignores ops with a different `who`), `revalidatePath` for `/`, `/diary`, `/scoreboard` if anything was acked. Returns `{ acked: string[] }` so the client can drop only the ops that landed. Used for both online taps and draining the offline queue.
 - `setTheme(theme)` — read `ap_id`; bail if missing. `writeTheme(who, theme)`. `revalidatePath("/", "layout")` so the root layout re-renders with the new `data-theme`.
 
 Server Components never call `cookies().set` directly and never write to the DB — only Server Actions do.
 
 ## Client interactivity
 
-- The counter uses `useOptimistic` for the per-person count and the global total. Taps update optimistically inside `startTransition`, then `addAirplane()` runs and the server response replaces the optimistic value. `canUndo` is `myCount > 0` (per-user) — you cannot undo someone else's tap.
+- The counter is offline-tolerant. Taps and undos go to a localStorage write-ahead queue (`src/lib/offline-queue.ts`) first; the displayed count is `serverCount + deltaFor(queue, who)`. A debounced `sync()` calls `syncEvents(queue)` and drops the acked ids — triggered on mount, on queue mutation, on the `online` event, and on `visibilitychange→visible`. Per-user undo: cancels the most recent pending `add` for the user locally; otherwise enqueues an `undo` op that replays as `deleteLastEvent`. `canUndo` is `display > 0` (so the user can undo their own pending taps even before they sync, but cannot undo their partner's events).
 - The big counter number animates with `useSpring` from Motion.
 - The plane arc is a `motion.div` containing `✈`, mounted into a small array in client state and trimmed back after the animation finishes.
 - The theme toggle is a small client component that calls `setTheme` and lets the root layout re-render. The theme is applied on the server via `<html data-theme={theme}>`, so there is no FOUC. While there is no identity yet (onboarding), theme is `'system'`.
@@ -95,7 +94,7 @@ Server Components never call `cookies().set` directly and never write to the DB 
 ## PWA
 
 - `app/manifest.ts` is a Next.js metadata route emitting `/manifest.webmanifest`.
-- `public/sw.js` is a minimal service worker: precaches the shell on install, network-first for same-origin GETs, falls back to `/` on offline. Bump the `CACHE` constant when shell URLs change.
+- `public/sw.js` is a minimal service worker: precaches the shell on install, network-first for same-origin GETs, falls back to `/` on offline. Bump the `CACHE` constant when shell URLs change. Offline _writes_ are not handled by the SW — the counter's localStorage queue covers that, replaying on reconnect via the `online` event and visibility hook (no Background Sync API).
 - `app/components/pwa-register.tsx` registers the SW on mount, only in production.
 - Icons are placeholder SVGs in `public/icons/`. PNGs should replace them before public release.
 
