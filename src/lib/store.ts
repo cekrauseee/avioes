@@ -1,3 +1,5 @@
+import 'server-only'
+
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { db, events, preferences } from './db'
 import type { AirplaneEvent, Identity, Theme } from './types'

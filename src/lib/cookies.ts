@@ -1,3 +1,5 @@
+import 'server-only'
+
 import { cookies } from 'next/headers'
 import type { Identity } from './types'
 
@@ -13,6 +15,8 @@ export async function writeIdentity(who: Identity) {
   ;(await cookies()).set(ID_COOKIE, who, {
     maxAge: ONE_YEAR,
     sameSite: 'lax',
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
     path: '/'
   })
 }
