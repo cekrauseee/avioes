@@ -28,6 +28,7 @@ export async function applyOps(ops: PendingOp[], who: Identity): Promise<string[
   for (const op of ops) {
     try {
       await db.transaction(async (tx) => {
+        // Shape-valid ops settle once to avoid replay loops; mutations remain scoped by the cookie identity.
         const inserted = await tx.insert(processedOps).values({ id: op.id }).onConflictDoNothing().returning({ id: processedOps.id })
         if (inserted.length === 0) return
         if (op.kind === 'add-event') {

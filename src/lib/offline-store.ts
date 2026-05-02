@@ -24,6 +24,8 @@ export type OfflineStoreState = OfflineSnapshot & {
   syncInFlight: boolean
 }
 
+type BroadcastState = Pick<OfflineStoreState, 'identity' | 'baseEvents' | 'baseTheme' | 'lastSyncOk'>
+
 const EMPTY_EVENTS: AirplaneEvent[] = []
 const EMPTY_OPS: PendingOp[] = []
 const SYNC_BATCH_SIZE = 250
@@ -98,7 +100,7 @@ export function useOfflineSync(): void {
   useEffect(() => {
     if (!snapshot.hydrated || !snapshot.storageReady) return
     if (snapshot.pendingOps.length === 0 && snapshot.lastSyncOk === true) return
-    const id = window.setInterval(sync, snapshot.pendingOps.length > 0 ? 2000 : 8000)
+    const id = window.setInterval(sync, snapshot.pendingOps.length > 0 ? 5000 : 8000)
     return () => window.clearInterval(id)
   }, [snapshot.hydrated, snapshot.storageReady, snapshot.pendingOps.length, snapshot.lastSyncOk, sync])
 }
@@ -240,7 +242,7 @@ function initOfflineStore(): void {
   if (typeof BroadcastChannel !== 'undefined') {
     bc = new BroadcastChannel('airplanes-offline')
     bc.addEventListener('message', (event) => {
-      const incoming = event.data as Partial<OfflineStoreState> | undefined
+      const incoming = readBroadcastState(event.data)
       if (!incoming) return
       updateState(incoming, false)
     })
@@ -277,10 +279,52 @@ function commit(patch: Partial<OfflineStoreState>): void {
 function updateState(patch: Partial<OfflineStoreState>, broadcast = true): void {
   state = { ...state, ...patch }
   listeners.forEach((listener) => listener())
-  if (broadcast) bc?.postMessage(state)
+  if (broadcast) bc?.postMessage(toBroadcastState(state))
 }
 
 function readOnline(): boolean {
   if (typeof navigator === 'undefined') return true
   return navigator.onLine
+}
+
+function toBroadcastState(snapshot: OfflineStoreState): BroadcastState {
+  return {
+    identity: snapshot.identity,
+    baseEvents: snapshot.baseEvents,
+    baseTheme: snapshot.baseTheme,
+    lastSyncOk: snapshot.lastSyncOk
+  }
+}
+
+function readBroadcastState(value: unknown): BroadcastState | null {
+  if (typeof value !== 'object' || value === null) return null
+  const item = value as Partial<BroadcastState>
+  if (!isIdentityOrNull(item.identity)) return null
+  if (!isTheme(item.baseTheme)) return null
+  if (item.lastSyncOk !== true && item.lastSyncOk !== false && item.lastSyncOk !== null) return null
+  if (!Array.isArray(item.baseEvents) || !item.baseEvents.every(isEvent)) return null
+  return {
+    identity: item.identity,
+    baseEvents: item.baseEvents,
+    baseTheme: item.baseTheme,
+    lastSyncOk: item.lastSyncOk
+  }
+}
+
+function isIdentity(value: unknown): value is Identity {
+  return value === 'henrique' || value === 'pietra'
+}
+
+function isIdentityOrNull(value: unknown): value is Identity | null {
+  return value === null || isIdentity(value)
+}
+
+function isTheme(value: unknown): value is Theme {
+  return value === 'light' || value === 'dark' || value === 'system'
+}
+
+function isEvent(value: unknown): value is AirplaneEvent {
+  if (typeof value !== 'object' || value === null) return false
+  const item = value as Partial<AirplaneEvent>
+  return typeof item.id === 'string' && isIdentity(item.who) && typeof item.ts === 'number' && Number.isFinite(item.ts) && item.ts > 0
 }

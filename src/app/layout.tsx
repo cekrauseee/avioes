@@ -52,6 +52,7 @@ export default async function RootLayout({
     <html
       lang='pt-BR'
       data-theme='system'
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className='bg-bg text-ink flex min-h-full flex-col overflow-hidden'>

@@ -7,6 +7,7 @@ import type { Identity, PendingOp } from './lib/types'
 
 const MAX_SYNC_OPS = 250
 const MAX_FUTURE_TS_MS = 5 * 60 * 1000
+const MAX_PAST_TS_MS = 7 * 24 * 60 * 60 * 1000
 
 export async function setIdentity(who: Identity): Promise<SyncSnapshot> {
   if (who !== 'henrique' && who !== 'pietra') return emptySnapshot(null, [])
@@ -32,6 +33,7 @@ function isPendingOp(op: unknown): op is PendingOp {
   if (typeof item.id !== 'string') return false
   if (item.kind === 'add-event') {
     const event = item.event as { id?: unknown; who?: unknown; ts?: unknown } | null
+    const now = Date.now()
     return (
       typeof event === 'object' &&
       event !== null &&
@@ -39,8 +41,8 @@ function isPendingOp(op: unknown): op is PendingOp {
       isIdentity(event.who) &&
       typeof event.ts === 'number' &&
       Number.isFinite(event.ts) &&
-      event.ts > 0 &&
-      event.ts <= Date.now() + MAX_FUTURE_TS_MS
+      event.ts >= now - MAX_PAST_TS_MS &&
+      event.ts <= now + MAX_FUTURE_TS_MS
     )
   }
   if (item.kind === 'delete-event') return typeof item.eventId === 'string'

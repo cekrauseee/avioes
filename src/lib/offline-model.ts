@@ -77,5 +77,5 @@ export function settleSnapshot(snapshot: OfflineSnapshot, sync: SyncSnapshot): O
 
 function compareEvents(a: AirplaneEvent, b: AirplaneEvent): number {
   if (a.ts !== b.ts) return a.ts - b.ts
-  return a.id.localeCompare(b.id)
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
 }

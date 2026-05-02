@@ -22,7 +22,7 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ### 2026-05-02 — Offline-first architecture reset
 
-Offline state now has one source of truth in the browser: IndexedDB stores a canonical server snapshot plus ordered pending ops, while localStorage only stores `ap_boot` (last-known identity/theme display hint). RSC pages are static shells; Server Actions only write identity, bootstrap snapshots, and sync ops. Pending airplane/theme ops are untrusted until server validation under the current `ap_id` cookie; future real auth should keep bearer/session tokens in httpOnly cookies, not client storage. Sync drains in 250-op batches without settling overflow, and old `ap_queue` localStorage queues are migrated into the new op model when possible. See `docs/architecture.md`.
+Offline state now has one source of truth in the browser: IndexedDB stores a canonical server snapshot plus ordered pending ops, while localStorage only stores `ap_boot` (last-known identity/theme display hint). BroadcastChannel shares canonical snapshot hints only; pending op queues remain tab-local. RSC pages are static shells; Server Actions only write identity, bootstrap snapshots, and sync ops. Pending airplane/theme ops are untrusted until server validation under the current `ap_id` cookie; future real auth should keep bearer/session tokens in httpOnly cookies, not client storage. Sync drains in 250-op batches without settling overflow, and old `ap_queue` localStorage queues are migrated into the new op model when possible. See `docs/architecture.md`.
 
 ### 2026-05-01 — Service worker versioned by build id
 
