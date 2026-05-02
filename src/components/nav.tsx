@@ -2,8 +2,7 @@
 
 import { motion, useReducedMotion } from 'motion/react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { startTransition, useOptimistic } from 'react'
+import { usePathname } from 'next/navigation'
 import { IDENTITIES, type Identity } from '../lib/types'
 
 const links = [
@@ -14,30 +13,17 @@ const links = [
 
 export function Nav({ who }: { who: Identity }) {
   const pathname = usePathname()
-  const router = useRouter()
   const reduceMotion = useReducedMotion()
   const accent = IDENTITIES[who]
-
-  const [activeHref, setActiveHref] = useOptimistic(pathname, (_state, next: string) => next)
-
-  const onTap = (href: string) => (e: React.MouseEvent) => {
-    if (href === activeHref) return
-    e.preventDefault()
-    startTransition(() => {
-      setActiveHref(href)
-      router.push(href)
-    })
-  }
 
   return (
     <nav className='flex items-stretch'>
       {links.map((l) => {
-        const active = activeHref === l.href
+        const active = pathname === l.href
         return (
           <Link
             key={l.href}
             href={l.href}
-            onClick={onTap(l.href)}
             aria-current={active ? 'page' : undefined}
             className='group relative flex min-h-[64px] flex-1 flex-col items-center justify-center gap-1.5 py-2 select-none'
           >

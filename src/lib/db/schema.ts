@@ -1,4 +1,4 @@
-import { bigint, pgEnum, pgTable, serial } from 'drizzle-orm/pg-core'
+import { bigint, pgEnum, pgTable, serial, text } from 'drizzle-orm/pg-core'
 
 export const identityEnum = pgEnum('identity', ['henrique', 'pietra'])
 export const themeEnum = pgEnum('theme', ['light', 'dark', 'system'])
@@ -12,4 +12,8 @@ export const events = pgTable('events', {
 export const preferences = pgTable('preferences', {
   who: identityEnum('who').primaryKey(),
   theme: themeEnum('theme').notNull().default('system')
+})
+
+export const processedOps = pgTable('processed_ops', {
+  id: text('id').primaryKey()
 })

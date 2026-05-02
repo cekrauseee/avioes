@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Fraunces, Geist, Geist_Mono } from 'next/font/google'
 import { NavBar } from '../components/nav-bar'
 import { Noise } from '../components/noise'
+import { OfflineSync } from '../components/offline-sync'
 import { PwaRegister } from '../components/pwa-register'
 import { readIdentity } from '../lib/cookies'
 import { readTheme } from '../lib/store'
@@ -64,6 +65,7 @@ export default async function RootLayout({
         <Noise />
         <div className='mx-auto flex w-full max-w-[420px] flex-1 flex-col overflow-hidden'>{children}</div>
         {who && <NavBar who={who} />}
+        {who && <OfflineSync key={who} />}
         <PwaRegister />
       </body>
     </html>

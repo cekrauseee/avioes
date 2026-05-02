@@ -21,7 +21,7 @@ The identity ("Henrique" or "Pietra") is picked once per device during onboardin
 - **Storage**: identity is the only cookie (`ap_id`, picks which of the two hardcoded users this device is). Airplane events and per-user theme live in Postgres via Drizzle, keyed by the user. Local dev uses `node-postgres` against the `docker-compose.yaml` container; production uses `@neondatabase/serverless`.
 - **Language**: UI is in Brazilian Portuguese. Code, identifiers, file paths, and documentation are in English. URL slugs follow code (so `/diary` and `/scoreboard`, not `/diario` / `/placar`), even though the visible nav labels are Portuguese.
 - **Routing**: routes are read-then-write. Server Components read cookies + DB; Server Actions are the only place that mutates either. `cookies()` is async in Next.js 16.
-- **Offline**: a minimal service worker caches the app shell so the PWA opens offline. Mutations require the page to be live (Server Actions need a request) and now also require the database to be reachable.
+- **Offline**: a minimal service worker caches the app shell so the PWA opens offline. Taps and undos queue in localStorage while the network/DB is unavailable, then replay through Server Actions on reconnect.
 
 ## Roadmap (not promises)
 

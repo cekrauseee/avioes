@@ -1,26 +1,11 @@
 import 'server-only'
 
 import { and, desc, eq, sql } from 'drizzle-orm'
-import { db, events, preferences } from './db'
+import { db, events, preferences, processedOps } from './db'
 import type { AirplaneEvent, Identity, QueueOp, Theme } from './types'
 
 export async function readEvents(): Promise<AirplaneEvent[]> {
   return db.select({ who: events.who, ts: events.ts }).from(events).orderBy(events.ts)
-}
-
-export async function addEvent(who: Identity): Promise<void> {
-  await db.insert(events).values({ who, ts: Date.now() })
-}
-
-export async function deleteLastEvent(who: Identity): Promise<void> {
-  const last = await db
-    .select({ id: events.id })
-    .from(events)
-    .where(eq(events.who, who))
-    .orderBy(desc(events.ts), desc(events.id))
-    .limit(1)
-  if (last.length === 0) return
-  await db.delete(events).where(and(eq(events.id, last[0].id), eq(events.who, who)))
 }
 
 export async function readTheme(who: Identity | null): Promise<Theme> {
@@ -30,22 +15,23 @@ export async function readTheme(who: Identity | null): Promise<Theme> {
 }
 
 export async function writeTheme(who: Identity, theme: Theme): Promise<void> {
-  await db
-    .insert(preferences)
-    .values({ who, theme })
-    .onConflictDoUpdate({ target: preferences.who, set: { theme } })
+  await db.insert(preferences).values({ who, theme }).onConflictDoUpdate({ target: preferences.who, set: { theme } })
 }
 
-export async function applyEvents(who: Identity, ops: QueueOp[]): Promise<string[]> {
+export async function applyEvents(ops: QueueOp[]): Promise<string[]> {
   const acked: string[] = []
   for (const op of ops) {
-    if (op.who !== who) continue
     try {
-      if (op.op === 'add') {
-        await db.insert(events).values({ who: op.who, ts: op.ts })
-      } else {
-        await deleteLastEvent(op.who)
-      }
+      await db.transaction(async (tx) => {
+        const inserted = await tx.insert(processedOps).values({ id: op.id }).onConflictDoNothing().returning({ id: processedOps.id })
+        if (inserted.length === 0) return
+        if (op.op === 'add') {
+          await tx.insert(events).values({ who: op.who, ts: op.ts })
+        } else {
+          const last = await tx.select({ id: events.id }).from(events).where(eq(events.who, op.who)).orderBy(desc(events.ts), desc(events.id)).limit(1)
+          if (last.length > 0) await tx.delete(events).where(and(eq(events.id, last[0].id), eq(events.who, op.who)))
+        }
+      })
       acked.push(op.id)
     } catch {
       break

@@ -43,6 +43,7 @@ Schema in `src/lib/db/schema.ts`:
 ```ts
 events       (id serial pk, who identity, ts bigint)
 preferences  (who identity pk, theme theme default 'system')
+processed_ops (id text pk)
 ```
 
 `identity` and `theme` are Postgres enums. `ts` is epoch milliseconds (matches the `AirplaneEvent` shape used by `lib/streaks.ts`).
@@ -51,8 +52,7 @@ All DB access goes through `src/lib/store.ts`:
 
 - `readEvents()` — every event, ordered by `ts`. Used by diary and scoreboard.
 - `counts()` — `{ henrique, pietra }` totals via `SELECT count(*) GROUP BY who`. Used by the counter (avoids loading every row just to count).
-- `addEvent(who)` — `INSERT` one row.
-- `deleteLastEvent(who)` — deletes the most recent event for `who`. Per-user, not global, so undoing only removes your own taps.
+- `applyEvents(ops)` — transactionally applies validated queue ops and records `processed_ops.id` so retries are idempotent.
 - `readTheme(who | null)` — returns `'system'` when `who` is null (no identity yet).
 - `writeTheme(who, theme)` — upsert on `preferences.who`.
 
@@ -79,14 +79,14 @@ All mutations go through `src/actions.ts`:
 
 - `setIdentity(who)` — write `ap_id`, `redirect("/")`.
 - `clearIdentity()` — delete `ap_id`, `redirect("/")`.
-- `syncEvents(ops)` — read `ap_id`, `applyEvents(who, ops)` (per-user; ignores ops with a different `who`), `revalidatePath` for `/`, `/diary`, `/scoreboard` if anything was acked. Returns `{ acked: string[] }` so the client can drop only the ops that landed. Used for both online taps and draining the offline queue.
+- `syncEvents(ops)` — read `ap_id`, validate queue op shape, `applyEvents(ops)`, `revalidatePath` + `refresh()` when anything lands. Returns `{ acked, my, total }` so the client can drop only landed/rejected ops and pin the counter during refresh. Used for both online taps and draining the offline queue.
 - `setTheme(theme)` — read `ap_id`; bail if missing. `writeTheme(who, theme)`. `revalidatePath("/", "layout")` so the root layout re-renders with the new `data-theme`.
 
 Server Components never call `cookies().set` directly and never write to the DB — only Server Actions do.
 
 ## Client interactivity
 
-- The counter is offline-tolerant. Taps and undos go to a localStorage write-ahead queue (`src/lib/offline-queue.ts`) first; the displayed count is `serverCount + deltaFor(queue, who)`. A debounced `sync()` calls `syncEvents(queue)` and drops the acked ids — triggered on mount, on queue mutation, on the `online` event, and on `visibilitychange→visible`. Per-user undo: cancels the most recent pending `add` for the user locally; otherwise enqueues an `undo` op that replays as `deleteLastEvent`. `canUndo` is `display > 0` (so the user can undo their own pending taps even before they sync, but cannot undo their partner's events).
+- The counter is offline-tolerant. Taps and undos go to a localStorage write-ahead queue (`src/lib/offline-queue.ts`) first; the displayed count is `serverCount + deltaFor(queue, who)`. A shared sync loop calls `syncEvents(queue)` and drops acked ids — triggered on mount, queue mutation, `online`, `visibilitychange→visible`, and a short retry interval while offline/unconfirmed. Per-user undo cancels the most recent pending `add` for the user locally; otherwise it enqueues an `undo` op that replays as "delete that user's latest event". `canUndo` is `display > 0`.
 - The big counter number animates with `useSpring` from Motion.
 - The plane arc is a `motion.div` containing `✈`, mounted into a small array in client state and trimmed back after the animation finishes.
 - The theme toggle is a small client component that calls `setTheme` and lets the root layout re-render. The theme is applied on the server via `<html data-theme={theme}>`, so there is no FOUC. While there is no identity yet (onboarding), theme is `'system'`.
@@ -94,9 +94,9 @@ Server Components never call `cookies().set` directly and never write to the DB 
 ## PWA
 
 - `app/manifest.ts` is a Next.js metadata route emitting `/manifest.webmanifest`.
-- `public/sw.js` is a minimal service worker: precaches the shell on install, network-first for same-origin GETs, falls back to `/` on offline. Bump the `CACHE` constant when shell URLs change. Offline _writes_ are not handled by the SW — the counter's localStorage queue covers that, replaying on reconnect via the `online` event and visibility hook (no Background Sync API).
+- The service worker is served by a route handler at `src/app/sw.js/route.ts` (URL `/sw.js`). The handler templates the SW JS with a `CACHE` constant tied to Next's build id (`.next/BUILD_ID`, with a `dev-${Date.now()}` fallback for local dev). Each deploy therefore gets a unique `CACHE` value, the install/activate handlers wipe caches that don't match, and clients update automatically — no manual version bump per deploy. The SW precaches only public metadata on install, then caches identity-gated HTML/RSC routes after real navigation or successful sync. Offline _writes_ are not handled by the SW — the counter's localStorage queue covers that (no Background Sync API). Do **not** add a `public/sw.js`; a static file at the same path would override the route handler and break the per-deploy versioning.
 - `app/components/pwa-register.tsx` registers the SW on mount, only in production.
-- Icons are placeholder SVGs in `public/icons/`. PNGs should replace them before public release.
+- Icons are PNGs in `public/icons/` and referenced by `app/manifest.ts`.
 
 ## Why this shape
 

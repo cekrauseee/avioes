@@ -1,21 +1,27 @@
 'use client'
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { useOnline, useQueue } from '../lib/offline-queue'
+import { useOffline, useQueue } from '../lib/offline-queue'
 
 const EASE = [0.22, 1, 0.36, 1] as const
 
 export function SyncStatus() {
   const queue = useQueue()
-  const online = useOnline()
+  const offline = useOffline()
   const reducedMotion = useReducedMotion()
   const pending = queue.length
-  const visible = !online
 
-  const prefix = 'offline'
-  const showCount = !online && pending > 0
+  const visible = offline
+  const showCount = offline && pending > 0
+
+  const label = offline ? 'offline' : null
   const countNumber = showCount ? pending : null
-  const countWord = showCount ? (pending === 1 ? 'pendente' : 'pendentes') : null
+  const countWord =
+    showCount ?
+      pending === 1 ?
+        'pendente'
+      : 'pendentes'
+    : null
 
   const tokenEnter = reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }
   const tokenExit = reducedMotion ? { opacity: 0 } : { opacity: 0, y: -2 }
@@ -39,16 +45,16 @@ export function SyncStatus() {
           mode='wait'
           initial={false}
         >
-          {visible && (
+          {label && (
             <motion.span
-              key={prefix}
+              key={label}
               initial={tokenInitial}
               animate={tokenEnter}
               exit={tokenExit}
               transition={tokenTransition}
               className='inline-block'
             >
-              {prefix}
+              {label}
             </motion.span>
           )}
         </AnimatePresence>
