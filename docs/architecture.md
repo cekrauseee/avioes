@@ -2,106 +2,108 @@
 
 ## High-level shape
 
+Airplanes is offline-first in the browser. React Server Components provide static route shells; critical app state is read from a client-side store. The server is the canonical persistence and auth boundary, but network access is a sync layer, not a route-render dependency.
+
 ```
-┌────────────────────────────────────────────────────────────┐
-│  Browser                                                    │
-│                                                             │
-│  ┌────────────────┐    Server Action (POST)                 │
-│  │ Client         │ ─────────────────────────► ┌──────────┐ │
-│  │ Components     │                            │ Server   │ │
-│  │ (Counter,      │ ◄───────────────────────── │ Actions  │ │
-│  │  Onboarding,   │    revalidatePath          │          │ │
-│  │  Nav, etc.)    │                            └─────┬────┘ │
-│  └────────────────┘                                  │      │
-│         ▲                                            ▼      │
-│         │                                ┌──────────────┐   │
-│         │  Server Components render with │ cookies()    │   │
-│         │  identity (cookie) + DB reads  │   +          │   │
-│         │                                │ Postgres     │   │
-│         └────────────────────────────────┴──────────────┘   │
-└────────────────────────────────────────────────────────────┘
+Browser local store (IndexedDB + tiny boot cache)
+  ├─ canonical server snapshot: events + theme
+  ├─ pending ordered ops: add, delete, set-theme
+  └─ selectors: counter, diary, scoreboard
+
+Server Actions
+  ├─ read/write ap_id cookie
+  ├─ bootstrap canonical snapshot
+  └─ sync pending ops into Postgres
 ```
 
-There are two hardcoded users (`henrique`, `pietra`). There is no auth and no signup. Identity is just a per-device cookie that says which of the two is currently using this device.
-
-State that should survive across devices (airplane events, theme preference) lives in Postgres, keyed by `who`.
+There are still only two hardcoded users (`henrique`, `pietra`). Future real auth/multitenancy must keep the same security boundary: local data can display a last-known actor, but server-side session context decides the real user/workspace during sync.
 
 ## Data layer
 
-### Cookie
+### Auth / identity boundary
 
-| Cookie  | Shape                      | Read by                | Written by                     |
-| ------- | -------------------------- | ---------------------- | ------------------------------ |
-| `ap_id` | `"henrique"` \| `"pietra"` | every Server Component | `setIdentity`, `clearIdentity` |
+| Storage            | Shape                      | Trust level                           |
+| ------------------ | -------------------------- | ------------------------------------- |
+| `ap_id` cookie     | `"henrique"` \| `"pietra"` | Server authority for current app      |
+| local boot cache   | `{ identity, theme }`      | UI hint only; never authorization     |
+| IndexedDB snapshot | events, theme, pending ops | Offline cache/queue; server validates |
 
-`ap_id` is `sameSite=lax`, `path=/`, `maxAge=1y`. It's the only cookie the app uses.
+`ap_id` is `sameSite=lax`, `path=/`, `maxAge=1y`, `httpOnly`, and `secure` in production. Client JS cannot read it. On startup, the client calls `bootstrapState()` when online; the server reads `ap_id` and returns the canonical snapshot.
+
+Do not store bearer tokens in localStorage or IndexedDB. If this app later gets real users and workspaces, use a server-issued `HttpOnly Secure SameSite` session/JWT cookie. Queued offline ops must be attached to the authenticated server session on reconnect, not trusted client `userId` or `workspaceId` fields.
 
 ### Postgres (Drizzle)
 
 Schema in `src/lib/db/schema.ts`:
 
 ```ts
-events       (id serial pk, who identity, ts bigint)
-preferences  (who identity pk, theme theme default 'system')
+events        (id serial pk, client_id text unique nullable, who identity, ts bigint)
+preferences   (who identity pk, theme theme default 'system')
 processed_ops (id text pk)
 ```
 
-`identity` and `theme` are Postgres enums. `ts` is epoch milliseconds (matches the `AirplaneEvent` shape used by `lib/streaks.ts`).
+`events.client_id` stores the offline event id for new client-created events. Legacy rows without `client_id` are exposed to the client as `server:${id}` so exact delete replay can target them.
 
 All DB access goes through `src/lib/store.ts`:
 
-- `readEvents()` — every event, ordered by `ts`. Used by diary and scoreboard.
-- `counts()` — `{ henrique, pietra }` totals via `SELECT count(*) GROUP BY who`. Used by the counter (avoids loading every row just to count).
-- `applyEvents(ops)` — transactionally applies validated queue ops and records `processed_ops.id` so retries are idempotent.
-- `readTheme(who | null)` — returns `'system'` when `who` is null (no identity yet).
-- `writeTheme(who, theme)` — upsert on `preferences.who`.
+- `readEvents()` returns all events ordered by timestamp/id.
+- `readTheme(who)` returns that user's theme, defaulting to `system`.
+- `applyOps(ops, who)` transactionally applies ordered pending ops and records `processed_ops.id` for idempotency.
 
-`src/lib/db/index.ts` is the driver switch. It picks `drizzle-orm/neon-serverless` when `process.env.VERCEL === '1'` (or `DRIZZLE_DRIVER=neon`) and `drizzle-orm/node-postgres` otherwise. Both read `DATABASE_URL`.
+### Client persistence
 
-### Derived data
+`src/lib/offline-db.ts` owns persistence:
 
-- **Streaks** — `computeStreaks(events)` in `lib/streaks.ts` collapses consecutive same-`who` events into `{ who, count, startTs, endTs }`. Used by `/diary` and `/scoreboard`.
-- **Totals** — for the counter, prefer `counts()` from `store.ts` (cheap aggregate). For pages that already need the full event list (`/diary`, `/scoreboard`), `totals(events)` from `streaks.ts` re-derives them client-side without a second query.
+- IndexedDB stores the durable offline snapshot and pending ops.
+- localStorage key `ap_boot` stores only last-known identity/theme for fast boot and pre-paint theme selection.
+- Persisted snapshots are validated before hydration. Invalid local data is ignored instead of becoming app state.
+- The old localStorage `ap_queue` format is migrated into the IndexedDB op model when possible; undo ops that cannot target a visible event stay in the old queue until a later bootstrap can resolve them.
 
-## Routing
+`src/lib/offline-model.ts` is pure deterministic logic:
 
-App Router, all routes are dynamic (cookie + DB reads opt out of static rendering):
+- project pending ops over the canonical snapshot
+- derive totals/streak inputs
+- make add/delete/theme ops
+- settle synced ops and replay remaining ops
 
-- `/` — gate. Reads `ap_id`. Missing → renders `<Onboarding/>`. Present → fetches `counts()` + theme and renders `<Counter/>` inside `<AppShell/>`.
-- `/diary` — reads `ap_id` (redirect to `/` if missing), `readEvents()`, `readTheme(who)`. Computes streaks, renders timeline.
-- `/scoreboard` — same pattern. Totals + recent streaks.
+`src/lib/offline-store.ts` wires the model to React with `useSyncExternalStore`, BroadcastChannel, IndexedDB persistence, and the sync loop.
 
-There is no route group. `<AppShell/>` is a regular component used by counter, diary, and scoreboard. Onboarding is rendered without the shell (no nav).
+## Routing and UI
+
+Routes are static App Router shells:
+
+- `/` renders `<Counter/>`
+- `/diary` renders `<DiaryView/>`
+- `/scoreboard` renders `<ScoreboardView/>`
+
+Each route reads the local store. If no identity is available:
+
+- online: show onboarding picker and call `setIdentity()`
+- offline: show the blocking offline identity gate
+
+The bottom nav is client-rendered from local identity and stays mounted across route transitions. Identity switching is blocked while offline or while pending ops exist. Theme changes apply locally immediately and queue a `set-theme` op.
 
 ## Server Actions
 
-All mutations go through `src/actions.ts`:
+All mutations still go through `src/actions.ts`:
 
-- `setIdentity(who)` — write `ap_id`, `redirect("/")`.
-- `clearIdentity()` — delete `ap_id`, `redirect("/")`.
-- `syncEvents(ops)` — read `ap_id`, validate queue op shape, `applyEvents(ops)`, `revalidatePath` + `refresh()` when anything lands. Returns `{ acked, my, total }` so the client can drop only landed/rejected ops and pin the counter during refresh. Used for both online taps and draining the offline queue.
-- `setTheme(theme)` — read `ap_id`; bail if missing. `writeTheme(who, theme)`. `revalidatePath("/", "layout")` so the root layout re-renders with the new `data-theme`.
+- `setIdentity(who)` writes `ap_id` and returns a canonical snapshot.
+- `clearIdentity()` deletes `ap_id`; local state is cleared by the caller.
+- `bootstrapState()` reads `ap_id` and returns `{ identity, events, theme, settled: [] }`.
+- `syncOps(ops)` validates shape, batch size, timestamps, and current cookie identity; applies ops in order; returns settled ids and the canonical snapshot.
+- The client sends sync batches of up to 250 ops. Overflow stays pending locally and drains in later sync rounds; the server never settles ops it did not inspect.
 
-Server Components never call `cookies().set` directly and never write to the DB — only Server Actions do.
-
-## Client interactivity
-
-- The counter is offline-tolerant. Taps and undos go to a localStorage write-ahead queue (`src/lib/offline-queue.ts`) first; the displayed count is `serverCount + deltaFor(queue, who)`. A shared sync loop calls `syncEvents(queue)` and drops acked ids — triggered on mount, queue mutation, `online`, `visibilitychange→visible`, and a short retry interval while offline/unconfirmed. Per-user undo cancels the most recent pending `add` for the user locally; otherwise it enqueues an `undo` op that replays as "delete that user's latest event". `canUndo` is `display > 0`.
-- The big counter number animates with `useSpring` from Motion.
-- The plane arc is a `motion.div` containing `✈`, mounted into a small array in client state and trimmed back after the animation finishes.
-- The theme toggle is a small client component that calls `setTheme` and lets the root layout re-render. The theme is applied on the server via `<html data-theme={theme}>`, so there is no FOUC. While there is no identity yet (onboarding), theme is `'system'`.
+The server ignores client authority claims. Add ops whose `event.who` does not match the current server identity are settled without inserting an event. Delete ops only delete rows owned by the current server identity.
 
 ## PWA
 
-- `app/manifest.ts` is a Next.js metadata route emitting `/manifest.webmanifest`.
-- The service worker is served by a route handler at `src/app/sw.js/route.ts` (URL `/sw.js`). The handler templates the SW JS with a `CACHE` constant tied to Next's build id (`.next/BUILD_ID`, with a `dev-${Date.now()}` fallback for local dev). Each deploy therefore gets a unique `CACHE` value, the install/activate handlers wipe caches that don't match, and clients update automatically — no manual version bump per deploy. The SW precaches only public metadata on install, then caches identity-gated HTML/RSC routes after real navigation or successful sync. Offline _writes_ are not handled by the SW — the counter's localStorage queue covers that (no Background Sync API). Do **not** add a `public/sw.js`; a static file at the same path would override the route handler and break the per-deploy versioning.
-- `app/components/pwa-register.tsx` registers the SW on mount, only in production.
-- Icons are PNGs in `public/icons/` and referenced by `app/manifest.ts`.
+- `app/manifest.ts` emits `/manifest.webmanifest`.
+- `src/app/sw.js/route.ts` serves `/sw.js` with a cache name tied to Next's build id.
+- The service worker caches public metadata/offline art, `/_next/static/*`, and static shell/RSC responses for the three app routes.
+- The service worker does not cache canonical data snapshots and does not own writes. Offline writes are the IndexedDB pending op queue.
 
-## Why this shape
+## Verification
 
-- Two hardcoded users → no auth surface, no account flows. The cookie is just a per-device "which of us is this".
-- Postgres for shared state → events and theme follow the user across devices. Switching from cookie storage also lifted the prior 1000-event cap.
-- Drizzle + `db:push` → schema is the source of truth, no migration files to manage. Fine for two users; revisit if the model gets non-trivial.
-- Server Actions for writes → no API endpoints to design, mutations stay colocated with the action.
-- Async `cookies()` (Next 16) → all cookie helpers are `async`. Don't try to read cookies synchronously.
+- Run `npm run db:push` after schema changes.
+- Run `npm run lint`, `npm run typecheck`, `npm run test`, and `npm run build`.
+- For PWA/offline changes, verify with `npm run build && npm run start` on a mobile-width viewport.

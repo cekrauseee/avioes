@@ -1,11 +1,16 @@
 import 'server-only'
 
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { db, events, preferences, processedOps } from './db'
-import type { AirplaneEvent, Identity, QueueOp, Theme } from './types'
+import type { AirplaneEvent, Identity, PendingOp, Theme } from './types'
 
 export async function readEvents(): Promise<AirplaneEvent[]> {
-  return db.select({ who: events.who, ts: events.ts }).from(events).orderBy(events.ts)
+  const rows = await db.select({ id: events.id, clientId: events.clientId, who: events.who, ts: events.ts }).from(events).orderBy(events.ts, events.id)
+  return rows.map((row) => ({
+    id: row.clientId ?? `server:${row.id}`,
+    who: row.who,
+    ts: row.ts
+  }))
 }
 
 export async function readTheme(who: Identity | null): Promise<Theme> {
@@ -18,26 +23,36 @@ export async function writeTheme(who: Identity, theme: Theme): Promise<void> {
   await db.insert(preferences).values({ who, theme }).onConflictDoUpdate({ target: preferences.who, set: { theme } })
 }
 
-export async function applyEvents(ops: QueueOp[]): Promise<string[]> {
-  const acked: string[] = []
+export async function applyOps(ops: PendingOp[], who: Identity): Promise<string[]> {
+  const settled: string[] = []
   for (const op of ops) {
     try {
       await db.transaction(async (tx) => {
         const inserted = await tx.insert(processedOps).values({ id: op.id }).onConflictDoNothing().returning({ id: processedOps.id })
         if (inserted.length === 0) return
-        if (op.op === 'add') {
-          await tx.insert(events).values({ who: op.who, ts: op.ts })
+        if (op.kind === 'add-event') {
+          if (op.event.who !== who) return
+          await tx.insert(events).values({ clientId: op.event.id, who, ts: op.event.ts }).onConflictDoNothing()
+        } else if (op.kind === 'delete-event') {
+          const serverId = parseServerEventId(op.eventId)
+          if (serverId !== null) {
+            await tx.delete(events).where(and(eq(events.id, serverId), eq(events.who, who)))
+          } else {
+            await tx.delete(events).where(and(eq(events.clientId, op.eventId), eq(events.who, who)))
+          }
         } else {
-          const last = await tx.select({ id: events.id }).from(events).where(eq(events.who, op.who)).orderBy(desc(events.ts), desc(events.id)).limit(1)
-          if (last.length > 0) await tx.delete(events).where(and(eq(events.id, last[0].id), eq(events.who, op.who)))
+          await tx
+            .insert(preferences)
+            .values({ who, theme: op.theme })
+            .onConflictDoUpdate({ target: preferences.who, set: { theme: op.theme } })
         }
       })
-      acked.push(op.id)
+      settled.push(op.id)
     } catch {
       break
     }
   }
-  return acked
+  return settled
 }
 
 export async function counts(): Promise<Record<Identity, number>> {
@@ -48,4 +63,10 @@ export async function counts(): Promise<Record<Identity, number>> {
   const out: Record<Identity, number> = { henrique: 0, pietra: 0 }
   for (const r of rows) out[r.who] = r.n
   return out
+}
+
+function parseServerEventId(id: string): number | null {
+  if (!id.startsWith('server:')) return null
+  const n = Number(id.slice('server:'.length))
+  return Number.isInteger(n) && n > 0 ? n : null
 }

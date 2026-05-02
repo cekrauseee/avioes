@@ -1,7 +1,6 @@
 'use client'
 
-import { useTransition } from 'react'
-import { setTheme } from '../actions'
+import { queueTheme, selectTheme, useOfflineState } from '../lib/offline-store'
 import type { Theme } from '../lib/types'
 
 const order: Theme[] = ['system', 'light', 'dark']
@@ -16,16 +15,16 @@ const glyphs: Record<Theme, string> = {
   dark: '☾'
 }
 
-export function ThemeToggle({ theme }: { theme: Theme }) {
-  const [pending, start] = useTransition()
+export function ThemeToggle() {
+  const state = useOfflineState()
+  const theme = selectTheme(state)
   const next = order[(order.indexOf(theme) + 1) % order.length]
   return (
     <button
       type='button'
-      onClick={() => start(() => setTheme(next))}
-      disabled={pending}
+      onClick={() => queueTheme(next)}
       aria-label={`Tema: ${labels[theme]}, tocar para mudar`}
-      className='group text-ink-soft hover:bg-line/50 hover:text-ink focus-visible:bg-line/50 focus-visible:text-ink -mr-2 inline-flex h-10 w-10 items-center justify-center rounded-full text-lg leading-none transition-colors active:scale-90 disabled:opacity-50'
+      className='group text-ink-soft hover:bg-line/50 hover:text-ink focus-visible:bg-line/50 focus-visible:text-ink -mr-2 inline-flex h-10 w-10 items-center justify-center rounded-full text-lg leading-none transition-colors active:scale-90'
     >
       <span
         aria-hidden

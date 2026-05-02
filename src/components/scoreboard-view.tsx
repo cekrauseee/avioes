@@ -1,8 +1,10 @@
 'use client'
 
-import { mergeQueueIntoEvents, useQueue } from '../lib/offline-queue'
+import { selectEvents, useOfflineState } from '../lib/offline-store'
 import { computeStreaks, totals } from '../lib/streaks'
-import { type AirplaneEvent, IDENTITIES, type Identity, type Theme } from '../lib/types'
+import { IDENTITIES, type Identity } from '../lib/types'
+import { AppShell } from './app-shell'
+import { Onboarding } from './onboarding'
 import { Placeholder } from './placeholder'
 import { SyncStatus } from './sync-status'
 import { ThemeToggle } from './theme-toggle'
@@ -14,9 +16,11 @@ const timeFmt = new Intl.DateTimeFormat('pt-BR', {
   minute: '2-digit'
 })
 
-export function ScoreboardView({ events, theme }: { events: AirplaneEvent[]; theme: Theme }) {
-  const queue = useQueue()
-  const merged = mergeQueueIntoEvents(events, queue)
+export function ScoreboardView() {
+  const state = useOfflineState()
+  if (!state.identity) return <Onboarding />
+
+  const merged = selectEvents(state)
   const t = totals(merged)
   const streaks = computeStreaks(merged)
   const longest = streaks.reduce<{ henrique: number; pietra: number }>(
@@ -32,61 +36,63 @@ export function ScoreboardView({ events, theme }: { events: AirplaneEvent[]; the
     : 'pietra'
 
   return (
-    <div className='flex h-full flex-col'>
-      <header className='px-5 pt-[max(env(safe-area-inset-top),1.25rem)] pb-2'>
-        <div className='flex items-center justify-between'>
-          <h1 className='font-display text-3xl tracking-tight'>Placar</h1>
-          <div className='flex items-center gap-2'>
-            <SyncStatus />
-            <span className='text-ink-faint text-xs'>{merged.length} no total</span>
-            <ThemeToggle theme={theme} />
+    <AppShell>
+      <div className='flex h-full flex-col'>
+        <header className='px-5 pt-[max(env(safe-area-inset-top),1.25rem)] pb-2'>
+          <div className='flex items-center justify-between'>
+            <h1 className='font-display text-3xl tracking-tight'>Placar</h1>
+            <div className='flex items-center gap-2'>
+              <SyncStatus />
+              <span className='text-ink-faint text-xs'>{merged.length} no total</span>
+              <ThemeToggle />
+            </div>
           </div>
+          <p className='font-display text-ink-soft mt-1 text-sm italic'>
+            {leader ? `${IDENTITIES[leader].label} está na frente.` : 'Empate técnico no céu.'}
+          </p>
+
+          <section className='relative mt-7 grid grid-cols-[1fr_auto_1fr] items-center gap-2'>
+            <Score
+              id='henrique'
+              count={t.henrique}
+              longest={longest.henrique}
+              highlight={leader === 'henrique'}
+              align='left'
+            />
+            <span className='font-display text-ink-faint rotate-[-8deg] text-2xl italic'>vs</span>
+            <Score
+              id='pietra'
+              count={t.pietra}
+              longest={longest.pietra}
+              highlight={leader === 'pietra'}
+              align='right'
+            />
+          </section>
+
+          <h2 className='text-ink-faint mt-8 text-xs'>últimas sequências</h2>
+        </header>
+
+        <div className='scroll-area fade-scroll flex-1 overflow-y-auto px-5 pb-8'>
+          <ul className='divide-line divide-y'>
+            {streaks.length === 0 && <li className='font-display text-ink-soft py-3 text-sm'>Nada por aqui ainda.</li>}
+            {streaks
+              .slice(-8)
+              .reverse()
+              .map((s, i) => (
+                <li
+                  key={`${s.who}-${s.startTs}-${i}`}
+                  className='flex items-baseline justify-between py-2.5'
+                >
+                  <span className='font-display text-sm'>
+                    <span className={IDENTITIES[s.who].text}>{IDENTITIES[s.who].label}</span> · {s.count}
+                  </span>
+                  <span className='text-ink-faint font-mono text-[11px]'>{timeFmt.format(new Date(s.endTs))}</span>
+                </li>
+              ))}
+          </ul>
         </div>
-        <p className='font-display text-ink-soft mt-1 text-sm italic'>
-          {leader ? `${IDENTITIES[leader].label} está na frente.` : 'Empate técnico no céu.'}
-        </p>
-
-        <section className='relative mt-7 grid grid-cols-[1fr_auto_1fr] items-center gap-2'>
-          <Score
-            id='henrique'
-            count={t.henrique}
-            longest={longest.henrique}
-            highlight={leader === 'henrique'}
-            align='left'
-          />
-          <span className='font-display text-ink-faint rotate-[-8deg] text-2xl italic'>vs</span>
-          <Score
-            id='pietra'
-            count={t.pietra}
-            longest={longest.pietra}
-            highlight={leader === 'pietra'}
-            align='right'
-          />
-        </section>
-
-        <h2 className='text-ink-faint mt-8 text-xs'>últimas sequências</h2>
-      </header>
-
-      <div className='scroll-area fade-scroll flex-1 overflow-y-auto px-5 pb-8'>
-        <ul className='divide-line divide-y'>
-          {streaks.length === 0 && <li className='font-display text-ink-soft py-3 text-sm'>Nada por aqui ainda.</li>}
-          {streaks
-            .slice(-8)
-            .reverse()
-            .map((s, i) => (
-              <li
-                key={i}
-                className='flex items-baseline justify-between py-2.5'
-              >
-                <span className='font-display text-sm'>
-                  <span className={IDENTITIES[s.who].text}>{IDENTITIES[s.who].label}</span> · {s.count}
-                </span>
-                <span className='text-ink-faint font-mono text-[11px]'>{timeFmt.format(new Date(s.endTs))}</span>
-              </li>
-            ))}
-        </ul>
       </div>
-    </div>
+    </AppShell>
   )
 }
 

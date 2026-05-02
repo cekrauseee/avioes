@@ -3,7 +3,9 @@
 import { motion } from 'motion/react'
 import { useState, useTransition } from 'react'
 import { setIdentity } from '../actions'
+import { applyServerSnapshot } from '../lib/offline-store'
 import type { Identity } from '../lib/types'
+import { OfflineGate } from './offline-gate'
 import { Placeholder } from './placeholder'
 
 export function Onboarding() {
@@ -12,9 +14,34 @@ export function Onboarding() {
 
   const pick = (who: Identity) => {
     setPicked(who)
-    window.setTimeout(() => start(() => setIdentity(who)), 320)
+    window.setTimeout(() => {
+      start(async () => {
+        try {
+          applyServerSnapshot(await setIdentity(who))
+        } catch {
+          setPicked(null)
+        }
+      })
+    }, 320)
   }
 
+  return (
+    <>
+      <div className='online-only'>
+        <Picker
+          picked={picked}
+          pending={pending}
+          onPick={pick}
+        />
+      </div>
+      <div className='offline-only'>
+        <OfflineGate />
+      </div>
+    </>
+  )
+}
+
+function Picker({ picked, pending, onPick }: { picked: Identity | null; pending: boolean; onPick: (w: Identity) => void }) {
   return (
     <motion.main
       animate={picked ? { opacity: 0, y: -16, filter: 'blur(4px)' } : { opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -56,7 +83,7 @@ export function Onboarding() {
           label='Henrique'
           accent='sage'
           delay={0.2}
-          onPick={pick}
+          onPick={onPick}
           pending={pending}
           picked={picked}
         />
@@ -65,7 +92,7 @@ export function Onboarding() {
           label='Pietra'
           accent='clay'
           delay={0.3}
-          onPick={pick}
+          onPick={onPick}
           pending={pending}
           picked={picked}
         />

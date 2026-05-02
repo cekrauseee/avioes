@@ -1,20 +1,21 @@
 'use server'
 
-import { refresh, revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 import { deleteIdentity, readIdentity, writeIdentity } from './lib/cookies'
-import { applyEvents, counts, writeTheme } from './lib/store'
-import type { Identity, QueueOp, Theme } from './lib/types'
+import type { SyncSnapshot } from './lib/offline-model'
+import { applyOps, readEvents, readTheme } from './lib/store'
+import type { Identity, PendingOp } from './lib/types'
 
-export async function setIdentity(who: Identity) {
-  if (who !== 'henrique' && who !== 'pietra') return
+const MAX_SYNC_OPS = 250
+const MAX_FUTURE_TS_MS = 5 * 60 * 1000
+
+export async function setIdentity(who: Identity): Promise<SyncSnapshot> {
+  if (who !== 'henrique' && who !== 'pietra') return emptySnapshot(null, [])
   await writeIdentity(who)
-  redirect('/')
+  return snapshotFor(who, [])
 }
 
 export async function clearIdentity() {
   await deleteIdentity()
-  redirect('/')
 }
 
 function isIdentity(v: unknown): v is Identity {
@@ -25,46 +26,55 @@ function opId(op: unknown): string | null {
   return typeof op === 'object' && op !== null && typeof (op as { id?: unknown }).id === 'string' ? (op as { id: string }).id : null
 }
 
-function isQueueOp(op: unknown): op is QueueOp {
+function isPendingOp(op: unknown): op is PendingOp {
   if (typeof op !== 'object' || op === null) return false
-  const item = op as { id?: unknown; op?: unknown; who?: unknown; ts?: unknown }
-  if (typeof item.id !== 'string' || !isIdentity(item.who)) return false
-  if (item.op === 'add') return Number.isFinite(item.ts)
-  return item.op === 'undo'
+  const item = op as { id?: unknown; kind?: unknown; event?: unknown; eventId?: unknown; theme?: unknown }
+  if (typeof item.id !== 'string') return false
+  if (item.kind === 'add-event') {
+    const event = item.event as { id?: unknown; who?: unknown; ts?: unknown } | null
+    return (
+      typeof event === 'object' &&
+      event !== null &&
+      typeof event.id === 'string' &&
+      isIdentity(event.who) &&
+      typeof event.ts === 'number' &&
+      Number.isFinite(event.ts) &&
+      event.ts > 0 &&
+      event.ts <= Date.now() + MAX_FUTURE_TS_MS
+    )
+  }
+  if (item.kind === 'delete-event') return typeof item.eventId === 'string'
+  return item.kind === 'set-theme' && (item.theme === 'light' || item.theme === 'dark' || item.theme === 'system')
 }
 
-export async function syncEvents(ops: unknown[]): Promise<{ acked: string[]; my: number; total: number }> {
+export async function bootstrapState(): Promise<SyncSnapshot> {
   const who = await readIdentity()
-  if (!who) return { acked: [], my: 0, total: 0 }
-  const validOps: QueueOp[] = []
+  if (!who) return emptySnapshot(null, [])
+  return snapshotFor(who, [])
+}
+
+export async function syncOps(ops: unknown[]): Promise<SyncSnapshot> {
+  const who = await readIdentity()
+  if (!who) return emptySnapshot(null, [])
+  const validOps: PendingOp[] = []
   const rejected: string[] = []
-  for (const op of Array.isArray(ops) ? ops : []) {
-    if (isQueueOp(op)) validOps.push(op)
+  const incoming = Array.isArray(ops) ? ops : []
+  for (const op of incoming.slice(0, MAX_SYNC_OPS)) {
+    if (isPendingOp(op)) validOps.push(op)
     else {
       const id = opId(op)
       if (id) rejected.push(id)
     }
   }
-  if (validOps.length === 0) {
-    const c = await counts()
-    return { acked: rejected, my: c[who], total: c.henrique + c.pietra }
-  }
-  const applied = await applyEvents(validOps)
-  const acked = [...rejected, ...applied]
-  if (applied.length > 0) {
-    revalidatePath('/')
-    revalidatePath('/diary')
-    revalidatePath('/scoreboard')
-    refresh()
-  }
-  const c = await counts()
-  return { acked, my: c[who], total: c.henrique + c.pietra }
+  const applied = validOps.length > 0 ? await applyOps(validOps, who) : []
+  return snapshotFor(who, [...rejected, ...applied])
 }
 
-export async function setTheme(theme: Theme) {
-  if (theme !== 'light' && theme !== 'dark' && theme !== 'system') return
-  const who = await readIdentity()
-  if (!who) return
-  await writeTheme(who, theme)
-  revalidatePath('/', 'layout')
+function emptySnapshot(identity: Identity | null, settled: string[]): SyncSnapshot {
+  return { identity, events: [], theme: 'system', settled }
+}
+
+async function snapshotFor(identity: Identity, settled: string[]): Promise<SyncSnapshot> {
+  const [events, theme] = await Promise.all([readEvents(), readTheme(identity)])
+  return { identity, events, theme, settled }
 }
