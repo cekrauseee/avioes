@@ -15,7 +15,8 @@ function getBuildId(): string {
 
 const SW_TEMPLATE = `const CACHE = 'airplanes-__VERSION__'
 const SHELL_ROUTES = ['/', '/diary', '/scoreboard']
-const PRECACHE = ['/manifest.webmanifest']
+const OFFLINE_ASSETS = ['/airplane-offline-light.png', '/airplane-offline-dark.png']
+const PRECACHE = ['/manifest.webmanifest', ...OFFLINE_ASSETS]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -32,22 +33,6 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'refresh-shell') {
-    event.waitUntil((async () => {
-      const cache = await caches.open(CACHE)
-      await Promise.all(
-        SHELL_ROUTES.map(async (url) => {
-          try {
-            const res = await fetch(url, { credentials: 'same-origin', cache: 'no-store' })
-            if (res.ok) await cache.put(url, res.clone())
-          } catch {}
-        })
-      )
-    })())
-  }
-})
-
 self.addEventListener('fetch', (event) => {
   const req = event.request
   if (req.method !== 'GET') return
@@ -57,6 +42,27 @@ self.addEventListener('fetch', (event) => {
   const isNav = req.mode === 'navigate'
   const isRsc = req.headers.get('rsc') === '1' || req.headers.has('next-router-state-tree')
   const isShellPath = SHELL_ROUTES.indexOf(url.pathname) !== -1
+  const isOfflineAsset = OFFLINE_ASSETS.indexOf(url.pathname) !== -1
+  const isStaticAsset = url.pathname.startsWith('/_next/static/')
+
+  if (isOfflineAsset || isStaticAsset) {
+    event.respondWith(
+      caches.match(req).then((cached) =>
+        cached ||
+        fetch(req)
+          .then(async (res) => {
+            if (res.ok) {
+              const copy = res.clone()
+              await caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {})
+            }
+            return res
+          })
+          .catch(() => Response.error())
+      )
+    )
+    return
+  }
+
   if (!isNav && !(isRsc && isShellPath)) return
 
   event.respondWith(

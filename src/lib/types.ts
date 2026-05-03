@@ -1,6 +1,7 @@
 export type Identity = 'henrique' | 'pietra'
 
 export type AirplaneEvent = {
+  id: string
   who: Identity
   ts: number
 }
@@ -14,9 +15,10 @@ export type Streak = {
 
 export type Theme = 'light' | 'dark' | 'system'
 
-export type QueueOp =
-  | { id: string; op: 'add'; who: Identity; ts: number }
-  | { id: string; op: 'undo'; who: Identity }
+export type PendingOp =
+  | { id: string; kind: 'add-event'; event: AirplaneEvent }
+  | { id: string; kind: 'delete-event'; eventId: string }
+  | { id: string; kind: 'set-theme'; theme: Theme }
 
 export const IDENTITIES: Record<
   Identity,

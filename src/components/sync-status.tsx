@@ -1,15 +1,15 @@
 'use client'
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { useOffline, useQueue } from '../lib/offline-queue'
+import { isOffline, selectPendingCount, useOfflineState } from '../lib/offline-store'
 
 const EASE = [0.22, 1, 0.36, 1] as const
 
 export function SyncStatus() {
-  const queue = useQueue()
-  const offline = useOffline()
+  const state = useOfflineState()
+  const offline = isOffline(state)
   const reducedMotion = useReducedMotion()
-  const pending = queue.length
+  const pending = selectPendingCount(state)
 
   const visible = offline
   const showCount = offline && pending > 0

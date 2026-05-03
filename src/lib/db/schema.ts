@@ -5,6 +5,7 @@ export const themeEnum = pgEnum('theme', ['light', 'dark', 'system'])
 
 export const events = pgTable('events', {
   id: serial('id').primaryKey(),
+  clientId: text('client_id').unique(),
   who: identityEnum('who').notNull(),
   ts: bigint('ts', { mode: 'number' }).notNull()
 })

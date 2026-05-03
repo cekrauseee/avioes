@@ -10,15 +10,15 @@
 ## Server vs client
 
 - Default to Server Components. Add `"use client"` only when the component needs state, effects, browser APIs, or event handlers.
-- Server Components read cookies via `app/lib/cookies.ts` helpers. They never call `cookies().set` — that only happens in Server Actions.
-- Client Components do not read cookies directly. They get data as props from the page that rendered them.
+- Server Components should stay shell-only for critical app state. They never call `cookies().set` — that only happens in Server Actions.
+- Client Components do not read cookies directly. They read the offline store and let Server Actions bootstrap/sync canonical state.
 - Mutations go through Server Actions in `app/actions.ts`. Don't add fetch routes for mutations.
 
 ## React patterns
 
-- Optimistic UI uses `useOptimistic`, not local state synced via `useEffect`. The lint rule `react-hooks/set-state-in-effect` is enforced — calling `setState` inside an effect to mirror props is a bug.
-- Wrap action calls in `startTransition` when you also call optimistic updaters in the same handler.
-- Don't introduce `useEffect` to do work that the server already does on render (e.g. don't fetch totals on the client when the page already has them).
+- Offline optimistic UI comes from the external store projection, not mirrored component state. The lint rule `react-hooks/set-state-in-effect` is enforced — calling `setState` inside an effect to mirror props is a bug.
+- Wrap Server Action calls in `startTransition` when they are invoked from event handlers and the UI also changes immediately.
+- Don't mirror props into state with `useEffect`. For browser persistence/sync, use the external offline store (`useSyncExternalStore`) instead.
 
 ## Tailwind v4
 
@@ -45,12 +45,10 @@
 
 ## Tests
 
-There are no tests yet. When tests are added, they should:
+Tests use Vitest for deterministic, browser-free logic. Add tests when a behavior depends on op ordering, persistence migration, or derived projections.
 
-- Run on Node (no browser) for `lib/streaks.ts`, `lib/cookies.ts` parsing.
+- Run on Node (no browser) for `lib/streaks.ts`, `lib/cookies.ts` parsing, `lib/offline-model.ts`, and persistence migration helpers.
 - Use Playwright or Storybook interaction tests for the counter flow if/when it grows.
-
-Don't add a testing framework speculatively — wait until there is something brittle enough to need one.
 
 ## Commit messages
 

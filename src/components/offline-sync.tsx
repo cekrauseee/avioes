@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import { onSyncAck, useOfflineSync } from '../lib/offline-queue'
+import { useOfflineSync } from '../lib/offline-store'
 
 const SHELL_ROUTES = ['/', '/diary', '/scoreboard']
 
@@ -15,13 +15,6 @@ export function OfflineSync() {
   useEffect(() => {
     for (const route of SHELL_ROUTES) router.prefetch(route)
   }, [pathname, router])
-
-  useEffect(() => {
-    return onSyncAck(() => {
-      router.refresh()
-      for (const route of SHELL_ROUTES) router.prefetch(route)
-    })
-  }, [router])
 
   return null
 }

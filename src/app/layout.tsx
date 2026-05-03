@@ -1,11 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Fraunces, Geist, Geist_Mono } from 'next/font/google'
-import { NavBar } from '../components/nav-bar'
+import { AppRuntime } from '../components/app-runtime'
 import { Noise } from '../components/noise'
-import { OfflineSync } from '../components/offline-sync'
-import { PwaRegister } from '../components/pwa-register'
-import { readIdentity } from '../lib/cookies'
-import { readTheme } from '../lib/store'
 import './globals.css'
 
 const geistSans = Geist({
@@ -52,21 +48,21 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const who = await readIdentity()
-  const theme = await readTheme(who)
-
   return (
     <html
       lang='pt-BR'
-      data-theme={theme}
+      data-theme='system'
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className='bg-bg text-ink flex min-h-full flex-col overflow-hidden'>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var d=document.documentElement;var b=JSON.parse(localStorage.getItem('ap_boot')||'{}');if(b.theme)d.dataset.theme=b.theme;var u=function(){d.dataset.offline=navigator.onLine?'':'1'};u();addEventListener('online',u);addEventListener('offline',u)}catch(e){}})()`
+          }}
+        />
         <Noise />
-        <div className='mx-auto flex w-full max-w-[420px] flex-1 flex-col overflow-hidden'>{children}</div>
-        {who && <NavBar who={who} />}
-        {who && <OfflineSync key={who} />}
-        <PwaRegister />
+        <AppRuntime>{children}</AppRuntime>
       </body>
     </html>
   )

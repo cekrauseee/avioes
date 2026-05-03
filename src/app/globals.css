@@ -134,6 +134,40 @@ body {
   background-repeat: repeat-y;
 }
 
+.theme-light-only {
+  display: block;
+}
+.theme-dark-only {
+  display: none;
+}
+[data-theme='dark'] .theme-light-only {
+  display: none;
+}
+[data-theme='dark'] .theme-dark-only {
+  display: block;
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme='system'] .theme-light-only {
+    display: none;
+  }
+  [data-theme='system'] .theme-dark-only {
+    display: block;
+  }
+}
+
+.online-only {
+  display: contents;
+}
+.offline-only {
+  display: none;
+}
+[data-offline='1'] .online-only {
+  display: none;
+}
+[data-offline='1'] .offline-only {
+  display: contents;
+}
+
 @property --fade-top {
   syntax: '<length>';
   inherits: false;
