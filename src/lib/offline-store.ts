@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useSyncExternalStore } from 'react'
 import { bootstrapState, syncOps } from '../actions'
-import { clearBootState, clearPersistedState, migrateLegacyQueue, readBootState, readPersistedState, writeBootState, writePersistedState } from './offline-db'
+import {
+  clearBootState,
+  clearPersistedState,
+  migrateLegacyQueue,
+  readBootState,
+  readPersistedState,
+  writeBootState,
+  writePersistedState
+} from './offline-db'
 import {
   makeAddEventOp,
   makeDeleteLatestEventOp,
