@@ -86,5 +86,6 @@ The `docs/` folder is the source of truth for how this project is designed and b
 - [`docs/code-style.md`](./docs/code-style.md) — conventions for writing code in this repo
 - [`docs/ui-ux.md`](./docs/ui-ux.md) — design language, palette, typography, motion
 - [`docs/context.md`](./docs/context.md) — running implementation log (kept up to date)
+- [`docs/backlog.md`](./docs/backlog.md) — known deferred follow-ups
 
 If you are an AI agent picking up this project, read [`AGENTS.md`](./AGENTS.md) first.

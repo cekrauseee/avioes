@@ -20,6 +20,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-03 — Backlog doc for deferred follow-ups
+
+Deferred, non-current work now lives in `docs/backlog.md` with priority, trigger, and done criteria. `AGENTS.md` explains when to use backlog versus `context.md`: backlog is for parked follow-ups, context is still the active-session scratchpad.
+
 ### 2026-05-02 — Offline-first architecture reset
 
 Offline state now has one source of truth in the browser: IndexedDB stores a canonical server snapshot plus ordered pending ops, while localStorage only stores `ap_boot` (last-known identity/theme display hint). BroadcastChannel shares canonical snapshot hints only; pending op queues remain tab-local. RSC pages are static shells; Server Actions only write identity, bootstrap snapshots, and sync ops. Pending airplane/theme ops are untrusted until server validation under the current `ap_id` cookie; future real auth should keep bearer/session tokens in httpOnly cookies, not client storage. Sync drains in 250-op batches without settling overflow, and old `ap_queue` localStorage queues are migrated into the new op model when possible. See `docs/architecture.md`.
