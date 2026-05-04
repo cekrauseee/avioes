@@ -3,7 +3,7 @@
 import { motion, useReducedMotion } from 'motion/react'
 import { useSyncExternalStore } from 'react'
 import { t, type TKey } from '../lib/i18n'
-import { queueLocale, queuePalette, queueTheme, selectLocale, selectPalette, selectTheme, useOfflineState } from '../lib/offline-store'
+import { queuePalette, queueTheme, selectLocale, selectPalette, selectTheme, switchLocale, useOfflineState } from '../lib/offline-store'
 import { PALETTES, type Locale, type Palette, type Theme } from '../lib/types'
 import { AppShell } from './app-shell'
 import { Onboarding } from './onboarding'
@@ -138,7 +138,7 @@ export function SettingsView() {
                   <button
                     key={opt.id}
                     type='button'
-                    onClick={() => queueLocale(opt.id)}
+                    onClick={() => switchLocale(opt.id)}
                     className={`relative flex items-center justify-center rounded-xl border-2 py-4 transition-all ${
                       active ? 'bg-paper border-ink' : 'border-line hover:border-ink-faint'
                     }`}

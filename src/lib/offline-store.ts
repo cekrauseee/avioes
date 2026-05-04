@@ -35,6 +35,7 @@ export type OfflineStoreState = OfflineSnapshot & {
   lastSyncOk: boolean | null
   syncInFlight: boolean
   introSeen: boolean
+  localeFading: boolean
 }
 
 type BroadcastState = Pick<OfflineStoreState, 'identity' | 'baseEvents' | 'baseTheme' | 'basePalette' | 'baseLocale' | 'lastSyncOk'>
@@ -55,7 +56,8 @@ let state: OfflineStoreState = {
   storageError: false,
   lastSyncOk: null,
   syncInFlight: false,
-  introSeen: false
+  introSeen: false,
+  localeFading: false
 }
 
 const serverState: OfflineStoreState = state
@@ -172,8 +174,15 @@ export function queuePalette(palette: Palette): void {
   commit({ pendingOps: [...state.pendingOps, makePaletteOp(palette, `op:${crypto.randomUUID()}`)] })
 }
 
-export function queueLocale(locale: Locale): void {
-  commit({ pendingOps: [...state.pendingOps, makeLocaleOp(locale, `op:${crypto.randomUUID()}`)] })
+const LOCALE_FADE_MS = 180
+
+export function switchLocale(locale: Locale): void {
+  if (selectLocale(state) === locale) return
+  updateState({ localeFading: true })
+  window.setTimeout(() => {
+    commit({ pendingOps: [...state.pendingOps, makeLocaleOp(locale, `op:${crypto.randomUUID()}`)] })
+    updateState({ localeFading: false })
+  }, LOCALE_FADE_MS)
 }
 
 export function applyServerSnapshot(sync: SyncSnapshot): void {
