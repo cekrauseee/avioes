@@ -64,6 +64,7 @@ export async function clearPersistedState(): Promise<void> {
 }
 
 export function migrateLegacyQueue(snapshot: OfflineSnapshot): OfflineSnapshot {
+  if (!snapshot.identity) return snapshot
   if (typeof window === 'undefined') return snapshot
   let raw: string | null = null
   try {

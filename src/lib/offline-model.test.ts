@@ -63,4 +63,23 @@ describe('offline model', () => {
     expect(settled.pendingOps).toEqual([addB])
     expect(projectEvents(settled.baseEvents, settled.pendingOps).map((event) => event.id)).toEqual(['server:1', 'server:2', addA.event.id, addB.event.id])
   })
+
+  it('drops pending ops when the server has no identity', () => {
+    const add = makeAddEventOp('henrique', 30, 'a')
+    const snapshot = { ...base, pendingOps: [add] }
+
+    const settled = settleSnapshot(snapshot, {
+      identity: null,
+      events: [],
+      theme: 'system',
+      settled: []
+    })
+
+    expect(settled).toEqual({
+      identity: null,
+      baseEvents: [],
+      baseTheme: 'system',
+      pendingOps: []
+    })
+  })
 })

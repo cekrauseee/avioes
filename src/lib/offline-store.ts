@@ -173,6 +173,7 @@ export async function drainOnce(): Promise<void> {
     updateState({ lastSyncOk: false })
     return
   }
+  if (state.pendingOps.length === 0 && state.lastSyncOk === true) return
   if (!state.identity) {
     syncInFlight = true
     updateState({ syncInFlight: true })
@@ -189,7 +190,6 @@ export async function drainOnce(): Promise<void> {
     }
     return
   }
-  if (state.pendingOps.length === 0 && state.lastSyncOk === true) return
 
   syncInFlight = true
   updateState({ syncInFlight: true })

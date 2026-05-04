@@ -71,7 +71,7 @@ export function settleSnapshot(snapshot: OfflineSnapshot, sync: SyncSnapshot): O
     identity: sync.identity,
     baseEvents: sync.events,
     baseTheme: sync.theme,
-    pendingOps: snapshot.pendingOps.filter((op) => !settled.has(op.id))
+    pendingOps: sync.identity ? snapshot.pendingOps.filter((op) => !settled.has(op.id)) : []
   }
 }
 

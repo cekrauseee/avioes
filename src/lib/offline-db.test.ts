@@ -51,4 +51,13 @@ describe('offline DB migration', () => {
     expect(migrated.pendingOps).toEqual([{ id: 'old-undo', kind: 'delete-event', eventId: 'server:1' }])
     expect(window.localStorage.getItem('ap_queue')).toBeNull()
   })
+
+  it('does not migrate legacy ops before identity exists', () => {
+    window.localStorage.setItem('ap_queue', JSON.stringify([{ id: 'old-add', op: 'add', who: 'henrique', ts: 20 }]))
+
+    const migrated = migrateLegacyQueue({ ...base, identity: null })
+
+    expect(migrated.pendingOps).toEqual([])
+    expect(window.localStorage.getItem('ap_queue')).toBe(JSON.stringify([{ id: 'old-add', op: 'add', who: 'henrique', ts: 20 }]))
+  })
 })

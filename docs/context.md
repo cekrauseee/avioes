@@ -20,6 +20,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-03 — Missing identity stops sync replay
+
+When `bootstrapState()` returns no identity, the offline model now treats that as an unauthenticated reset: local pending ops are dropped and legacy queue migration waits until an identity exists. This avoids a bootstrap loop when a stale IndexedDB/legacy queue is present but the `ap_id` cookie is missing.
+
 ### 2026-05-03 — Backlog doc for deferred follow-ups
 
 Deferred, non-current work now lives in `docs/backlog.md` with priority, trigger, and done criteria. `AGENTS.md` explains when to use backlog versus `context.md`: backlog is for parked follow-ups, context is still the active-session scratchpad.
