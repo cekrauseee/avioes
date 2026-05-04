@@ -30,6 +30,7 @@ export type OfflineStoreState = OfflineSnapshot & {
   storageError: boolean
   lastSyncOk: boolean | null
   syncInFlight: boolean
+  introSeen: boolean
 }
 
 type BroadcastState = Pick<OfflineStoreState, 'identity' | 'baseEvents' | 'baseTheme' | 'lastSyncOk'>
@@ -47,7 +48,8 @@ let state: OfflineStoreState = {
   storageReady: false,
   storageError: false,
   lastSyncOk: null,
-  syncInFlight: false
+  syncInFlight: false,
+  introSeen: false
 }
 
 const serverState: OfflineStoreState = state
@@ -71,8 +73,8 @@ export function useOfflineRuntime(): void {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    writeBootState({ identity: snapshot.identity, theme })
-  }, [snapshot.identity, theme])
+    writeBootState({ identity: snapshot.identity, theme, introSeen: snapshot.introSeen })
+  }, [snapshot.identity, theme, snapshot.introSeen])
 }
 
 export function useOfflineSync(): void {
@@ -150,7 +152,18 @@ export function queueTheme(theme: Theme): void {
 
 export function applyServerSnapshot(sync: SyncSnapshot): void {
   const next = migrateLegacyQueue(settleSnapshot(state, sync))
-  commit({ ...next, lastSyncOk: true, storageReady: true, storageError: false, syncInFlight: false })
+  commit({
+    ...next,
+    introSeen: sync.introSeen || state.introSeen,
+    lastSyncOk: true,
+    storageReady: true,
+    storageError: false,
+    syncInFlight: false
+  })
+}
+
+export function applyIntroSeen(): void {
+  commit({ introSeen: true })
 }
 
 export function applyLocalIdentity(identity: Identity | null): void {
@@ -213,7 +226,7 @@ function initOfflineStore(): void {
 
   queueMicrotask(() => {
     const boot = readBootState()
-    updateState({ hydrated: true, identity: boot.identity, baseTheme: boot.theme })
+    updateState({ hydrated: true, identity: boot.identity, baseTheme: boot.theme, introSeen: boot.introSeen })
     void readPersistedState()
       .then((persisted) => {
         if (!persisted) {
@@ -280,7 +293,7 @@ function commit(patch: Partial<OfflineStoreState>): void {
     baseTheme: state.baseTheme,
     pendingOps: state.pendingOps
   }
-  writeBootState({ identity: state.identity, theme: selectTheme(state) })
+  writeBootState({ identity: state.identity, theme: selectTheme(state), introSeen: state.introSeen })
   void writePersistedState(persisted).catch(() => updateState({ storageError: true }))
 }
 

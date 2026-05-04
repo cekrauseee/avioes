@@ -8,6 +8,7 @@ export type PersistedOfflineState = OfflineSnapshot & {
 export type BootState = {
   identity: Identity | null
   theme: Theme
+  introSeen: boolean
 }
 
 const DB_NAME = 'airplanes-offline'
@@ -20,15 +21,16 @@ const LEGACY_QUEUE_KEY = 'ap_queue'
 let dbPromise: Promise<IDBDatabase> | null = null
 
 export function readBootState(): BootState {
-  if (typeof window === 'undefined') return { identity: null, theme: 'system' }
+  if (typeof window === 'undefined') return { identity: null, theme: 'system', introSeen: false }
   try {
     const parsed = JSON.parse(window.localStorage.getItem(BOOT_KEY) ?? '{}') as Partial<BootState>
     return {
       identity: parsed.identity === 'henrique' || parsed.identity === 'pietra' ? parsed.identity : null,
-      theme: parsed.theme === 'light' || parsed.theme === 'dark' || parsed.theme === 'system' ? parsed.theme : 'system'
+      theme: parsed.theme === 'light' || parsed.theme === 'dark' || parsed.theme === 'system' ? parsed.theme : 'system',
+      introSeen: parsed.introSeen === true
     }
   } catch {
-    return { identity: null, theme: 'system' }
+    return { identity: null, theme: 'system', introSeen: false }
   }
 }
 

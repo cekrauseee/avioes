@@ -17,6 +17,7 @@ export type SyncSnapshot = {
   events: AirplaneEvent[]
   theme: Theme
   settled: string[]
+  introSeen: boolean
 }
 
 export function projectEvents(baseEvents: readonly AirplaneEvent[], pendingOps: readonly PendingOp[]): AirplaneEvent[] {

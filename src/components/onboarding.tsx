@@ -4,13 +4,17 @@ import { motion } from 'motion/react'
 import Image from 'next/image'
 import { useState, useTransition } from 'react'
 import { setIdentity } from '../actions'
-import { applyServerSnapshot } from '../lib/offline-store'
+import { applyServerSnapshot, useOfflineState } from '../lib/offline-store'
 import type { Identity } from '../lib/types'
+import { Intro } from './intro'
 import { OfflineGate } from './offline-gate'
 
 export function Onboarding() {
+  const state = useOfflineState()
   const [pending, start] = useTransition()
   const [picked, setPicked] = useState<Identity | null>(null)
+  const [introDismissed, setIntroDismissed] = useState(false)
+  const showPicker = state.introSeen || introDismissed
 
   const pick = (who: Identity) => {
     setPicked(who)
@@ -28,11 +32,16 @@ export function Onboarding() {
   return (
     <>
       <div className='online-only'>
-        <Picker
-          picked={picked}
-          pending={pending}
-          onPick={pick}
-        />
+        {!state.hydrated ?
+          null
+        : showPicker ?
+          <Picker
+            key={introDismissed ? 'after-intro' : 'initial'}
+            picked={picked}
+            pending={pending}
+            onPick={pick}
+          />
+        : <Intro onDone={() => setIntroDismissed(true)} />}
       </div>
       <div className='offline-only'>
         <OfflineGate />

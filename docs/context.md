@@ -20,6 +20,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-04 — First-open intro flow before identity picker
+
+A 3-page Intro (`src/components/intro.tsx`) appears once per device before the identity Picker, gated by a server cookie `ap_intro` set via `markIntroSeen()` in `src/actions.ts`. `SyncSnapshot`, `BootState`, and the offline store gained an `introSeen` flag; the inline boot script in `app/layout.tsx` mirrors it onto `<html data-intro="seen">` so returning users hit the Picker with no flash (CSS classes `.intro-only`/`.picker-only` in `globals.css`, same pattern as `.online-only`/`.offline-only`). `Onboarding` always renders both subtrees; the Picker remounts via `key` after dismissal so its entrance animation replays. A new `<Placeholder/>` (`src/components/placeholder.tsx`, dashed + 45° hatch) fills three illustration slots that still need real art (`placeholder · pessoa olhando o céu`, `· dedo tocando nuvem`, `· página de diário`).
+
 ### 2026-05-03 — Missing identity stops sync replay
 
 When `bootstrapState()` returns no identity, the offline model now treats that as an unauthenticated reset: local pending ops are dropped and legacy queue migration waits until an identity exists. This avoids a bootstrap loop when a stale IndexedDB/legacy queue is present but the `ap_id` cookie is missing.

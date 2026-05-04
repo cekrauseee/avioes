@@ -1,6 +1,6 @@
 'use server'
 
-import { deleteIdentity, readIdentity, writeIdentity } from './lib/cookies'
+import { deleteIdentity, readIdentity, readIntroSeen, writeIdentity, writeIntroSeen } from './lib/cookies'
 import type { SyncSnapshot } from './lib/offline-model'
 import { applyOps, readEvents, readTheme } from './lib/store'
 import type { Identity, PendingOp } from './lib/types'
@@ -10,13 +10,17 @@ const MAX_FUTURE_TS_MS = 5 * 60 * 1000
 const MAX_PAST_TS_MS = 7 * 24 * 60 * 60 * 1000
 
 export async function setIdentity(who: Identity): Promise<SyncSnapshot> {
-  if (who !== 'henrique' && who !== 'pietra') return emptySnapshot(null, [])
+  if (who !== 'henrique' && who !== 'pietra') return emptySnapshot(null, [], false)
   await writeIdentity(who)
   return snapshotFor(who, [])
 }
 
 export async function clearIdentity() {
   await deleteIdentity()
+}
+
+export async function markIntroSeen(): Promise<void> {
+  await writeIntroSeen()
 }
 
 function isIdentity(v: unknown): v is Identity {
@@ -50,14 +54,14 @@ function isPendingOp(op: unknown): op is PendingOp {
 }
 
 export async function bootstrapState(): Promise<SyncSnapshot> {
-  const who = await readIdentity()
-  if (!who) return emptySnapshot(null, [])
+  const [who, introSeen] = await Promise.all([readIdentity(), readIntroSeen()])
+  if (!who) return emptySnapshot(null, [], introSeen)
   return snapshotFor(who, [])
 }
 
 export async function syncOps(ops: unknown[]): Promise<SyncSnapshot> {
   const who = await readIdentity()
-  if (!who) return emptySnapshot(null, [])
+  if (!who) return emptySnapshot(null, [], await readIntroSeen())
   const validOps: PendingOp[] = []
   const rejected: string[] = []
   const incoming = Array.isArray(ops) ? ops : []
@@ -72,11 +76,11 @@ export async function syncOps(ops: unknown[]): Promise<SyncSnapshot> {
   return snapshotFor(who, [...rejected, ...applied])
 }
 
-function emptySnapshot(identity: Identity | null, settled: string[]): SyncSnapshot {
-  return { identity, events: [], theme: 'system', settled }
+function emptySnapshot(identity: Identity | null, settled: string[], introSeen: boolean): SyncSnapshot {
+  return { identity, events: [], theme: 'system', settled, introSeen }
 }
 
 async function snapshotFor(identity: Identity, settled: string[]): Promise<SyncSnapshot> {
-  const [events, theme] = await Promise.all([readEvents(), readTheme(identity)])
-  return { identity, events, theme, settled }
+  const [events, theme, introSeen] = await Promise.all([readEvents(), readTheme(identity), readIntroSeen()])
+  return { identity, events, theme, settled, introSeen }
 }

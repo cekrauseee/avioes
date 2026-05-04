@@ -57,7 +57,8 @@ describe('offline model', () => {
       identity: 'henrique',
       events: [...base.baseEvents, addA.event],
       theme: 'system',
-      settled: [addA.id]
+      settled: [addA.id],
+      introSeen: false
     })
 
     expect(settled.pendingOps).toEqual([addB])
@@ -72,7 +73,8 @@ describe('offline model', () => {
       identity: null,
       events: [],
       theme: 'system',
-      settled: []
+      settled: [],
+      introSeen: false
     })
 
     expect(settled).toEqual({
