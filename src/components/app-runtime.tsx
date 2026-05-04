@@ -1,16 +1,34 @@
 'use client'
 
+import { useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { NavDirectionProvider } from '../lib/nav-direction'
-import { useOfflineRuntime, useOfflineState } from '../lib/offline-store'
+import { t, type TKey } from '../lib/i18n'
+import { selectLocale, useOfflineRuntime, useOfflineState } from '../lib/offline-store'
 import { NavBar } from './nav-bar'
 import { OfflineSync } from './offline-sync'
 import { PwaRegister } from './pwa-register'
 import { StorageGate } from './storage-gate'
 import { SwipeableContent } from './swipeable-content'
 
+const PAGE_TITLE_KEY: Record<string, TKey> = {
+  '/': 'nav.count',
+  '/diary': 'diary.title',
+  '/scoreboard': 'scoreboard.title',
+  '/settings': 'settings.title',
+}
+
 export function AppRuntime({ children }: { children: React.ReactNode }) {
   useOfflineRuntime()
   const state = useOfflineState()
+  const pathname = usePathname()
+  const locale = selectLocale(state)
+
+  useEffect(() => {
+    const key = PAGE_TITLE_KEY[pathname]
+    if (!key) return
+    document.title = `${t(locale, key)} \\ Airplanes`
+  }, [locale, pathname])
 
   return (
     <NavDirectionProvider>

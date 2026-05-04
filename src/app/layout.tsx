@@ -23,12 +23,15 @@ const fraunces = Fraunces({
 })
 
 export const metadata: Metadata = {
-  title: 'Aviões',
+  title: {
+    default: 'Airplanes',
+    template: '%s \\ Airplanes',
+  },
   description: 'O diário de aviões da gente.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
-    title: 'Aviões',
+    title: 'Airplanes',
     statusBarStyle: 'default'
   }
 }

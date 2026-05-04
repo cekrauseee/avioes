@@ -1,10 +1,11 @@
 import 'server-only'
 
 import { cookies } from 'next/headers'
-import type { Identity } from './types'
+import type { Identity, Locale } from './types'
 
 const ID_COOKIE = 'ap_id'
 const INTRO_COOKIE = 'ap_intro'
+const LOCALE_COOKIE = 'ap_locale'
 const ONE_YEAR = 60 * 60 * 24 * 365
 
 export async function readIdentity(): Promise<Identity | null> {
@@ -28,6 +29,11 @@ export async function deleteIdentity() {
 
 export async function readIntroSeen(): Promise<boolean> {
   return (await cookies()).get(INTRO_COOKIE)?.value === '1'
+}
+
+export async function readLocale(): Promise<Locale> {
+  const v = (await cookies()).get(LOCALE_COOKIE)?.value
+  return v === 'en' ? 'en' : 'pt'
 }
 
 export async function writeIntroSeen() {

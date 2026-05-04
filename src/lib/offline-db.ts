@@ -42,6 +42,7 @@ export function writeBootState(boot: BootState): void {
   if (typeof window === 'undefined') return
   try {
     window.localStorage.setItem(BOOT_KEY, JSON.stringify(boot))
+    document.cookie = `ap_locale=${boot.locale}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`
   } catch {}
 }
 
