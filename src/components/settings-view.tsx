@@ -12,6 +12,7 @@ import { applyLocalIdentity, queuePalette, queueTheme, selectLocale, selectPalet
 import { getMemberColor, getMemberName, PALETTES, type Locale, type Palette, type Theme } from '../lib/types'
 import { AppShell } from './app-shell'
 import { Onboarding } from './onboarding'
+import { Skel } from './skeleton'
 import { ToolbarTabs, type ToolbarTabItem } from './toolbar-tabs'
 
 type Tab = 'visual' | 'group' | 'account'
@@ -292,9 +293,10 @@ function GroupTab({ locale, activeGroupId, isOwner }: { locale: Locale; activeGr
       {/* group name display */}
       <div className='border-line rounded-2xl border px-5 py-4'>
         <p className='text-ink-faint text-xs'>{t(locale, 'settings.currentGroup')}</p>
-        <p className='font-display mt-1 text-xl'>
-          {groupName ?? <span className='text-ink-faint italic text-base'>{t(locale, 'settings.loading')}</span>}
-        </p>
+        {groupName !== null
+          ? <p className='font-display mt-1 text-xl'>{groupName}</p>
+          : <Skel className='mt-2 h-6 w-36' />
+        }
       </div>
 
       <div className='flex flex-col gap-2 mt-1'>

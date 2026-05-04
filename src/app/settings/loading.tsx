@@ -3,32 +3,57 @@ import { Skel } from '../../components/skeleton'
 export default function Loading() {
   return (
     <div className='flex-1 overflow-hidden'>
-      <div className='flex h-full flex-col'>
-        <header className='px-5 pt-[max(env(safe-area-inset-top),1.25rem)] pb-3'>
-          <Skel className='h-8 w-28' />
-          <Skel className='mt-2 h-3 w-36' />
-        </header>
+      <div className='flex h-full flex-col pt-[max(env(safe-area-inset-top),1.25rem)]'>
 
-        <div className='scroll-area flex-1 overflow-y-auto px-5 pt-2 pb-8'>
-          <Skel className='h-3 w-16' />
-          <div className='mt-3 grid grid-cols-3 gap-3'>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skel
-                key={i}
-                className='aspect-[4/3] rounded-xl'
-              />
-            ))}
-          </div>
-          <Skel className='mt-8 h-3 w-12' />
-          <div className='mt-3 grid grid-cols-3 gap-3'>
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skel
-                key={i}
-                className='h-16 rounded-xl'
-              />
-            ))}
+        {/* header */}
+        <div className='px-5 pb-1'>
+          <Skel className='h-8 w-28' />
+        </div>
+
+        {/* tab bar */}
+        <div className='px-5 pb-0 pt-2'>
+          <div className='flex gap-2'>
+            <Skel className='h-8 w-20 rounded-full' />
+            <Skel className='h-8 w-16 rounded-full' />
+            <Skel className='h-8 w-20 rounded-full' />
           </div>
         </div>
+
+        {/* visual tab content */}
+        <div className='flex-1 overflow-hidden px-5 py-5'>
+          <div className='flex flex-col gap-6'>
+            {/* theme mode */}
+            <section>
+              <Skel className='h-3 w-12 mb-3' />
+              <div className='grid grid-cols-3 gap-2.5'>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skel key={i} className='h-16 rounded-xl' />
+                ))}
+              </div>
+            </section>
+
+            {/* palette */}
+            <section>
+              <Skel className='h-3 w-16 mb-3' />
+              <div className='grid grid-cols-3 gap-2.5'>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skel key={i} className='aspect-[3/2] rounded-xl' />
+                ))}
+              </div>
+            </section>
+
+            {/* language */}
+            <section>
+              <Skel className='h-3 w-14 mb-3' />
+              <div className='grid grid-cols-2 gap-2.5'>
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <Skel key={i} className='h-12 rounded-xl' />
+                ))}
+              </div>
+            </section>
+          </div>
+        </div>
+
       </div>
     </div>
   )
