@@ -21,7 +21,7 @@ export function AppRuntime({ children }: { children: React.ReactNode }) {
         <div className='mx-auto flex w-full max-w-[420px] flex-1 flex-col overflow-hidden'>
           {state.storageError ?
             <StorageGate />
-          : <SwipeableContent>{children}</SwipeableContent>}
+          : <SwipeableContent disabled={!state.identity}>{children}</SwipeableContent>}
         </div>
         {state.identity && !state.storageError && <NavBar who={state.identity} />}
       </div>

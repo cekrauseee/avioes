@@ -7,7 +7,7 @@ import { useNavDirection } from '../lib/nav-direction'
 const ROUTES = ['/', '/diary', '/scoreboard', '/settings']
 const SWIPE_THRESHOLD = 60
 
-export function SwipeableContent({ children }: { children: React.ReactNode }) {
+export function SwipeableContent({ children, disabled }: { children: React.ReactNode; disabled?: boolean }) {
   const router = useRouter()
   const pathname = usePathname()
   const { set } = useNavDirection()
@@ -27,7 +27,7 @@ export function SwipeableContent({ children }: { children: React.ReactNode }) {
     else if (info.offset.x > SWIPE_THRESHOLD && info.velocity.x > 0) navigate(-1)
   }
 
-  if (currentIndex === -1 || reduce) return <>{children}</>
+  if (currentIndex === -1 || reduce || disabled) return <>{children}</>
 
   return (
     <motion.div
@@ -36,7 +36,6 @@ export function SwipeableContent({ children }: { children: React.ReactNode }) {
       dragElastic={0.15}
       dragConstraints={{ left: 0, right: 0 }}
       onDragEnd={onDragEnd}
-      style={{ cursor: 'grab' }}
       whileDrag={{ cursor: 'grabbing' }}
     >
       {children}

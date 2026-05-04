@@ -28,6 +28,7 @@ export function Nav({ who }: { who: Identity }) {
   const currentIndex = links.findIndex((l) => l.href === pathname)
   const [scrubbing, setScrubbing] = useState(false)
   const [scrubIndex, setScrubIndex] = useState(currentIndex)
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null)
   const navRef = useRef<HTMLElement>(null)
 
   const indicatorX = useMotionValue(0)
@@ -93,15 +94,15 @@ export function Nav({ who }: { who: Identity }) {
           >
             <span
               className={`h-1.5 w-1.5 rounded-full transition-all duration-200 ${
-                active ?
-                  accent.bg
-                : 'bg-ink-faint/30 group-hover:bg-ink-faint/70 group-focus-visible:bg-ink-faint/70 group-hover:scale-125 group-focus-visible:scale-125'
+                active ? accent.bg
+                : hoverIndex === i ? 'bg-ink-faint/70 scale-125'
+                : 'bg-ink-faint/30 group-focus-visible:bg-ink-faint/70 group-focus-visible:scale-125'
               }`}
               aria-hidden
             />
             <span
               className={`font-display text-base leading-none transition-colors duration-200 ${
-                active ? 'text-ink' : 'text-ink-soft group-hover:text-ink group-focus-visible:text-ink'
+                active || hoverIndex === i ? 'text-ink' : 'text-ink-soft group-focus-visible:text-ink'
               }`}
             >
               {t(locale, l.labelKey)}
@@ -131,7 +132,7 @@ export function Nav({ who }: { who: Identity }) {
       )}
 
       <motion.div
-        className='absolute inset-0 z-10 cursor-grab touch-none active:cursor-grabbing'
+        className='absolute inset-0 z-10 touch-none cursor-pointer active:cursor-grabbing'
         drag='x'
         dragElastic={0}
         dragConstraints={{ left: 0, right: 0 }}
@@ -139,6 +140,15 @@ export function Nav({ who }: { who: Identity }) {
         onDragStart={onDragStart}
         onDrag={onDrag}
         onDragEnd={onDragEnd}
+        onHoverStart={(e) => {
+          const idx = getIndexFromPointer((e as PointerEvent).clientX)
+          setHoverIndex(idx)
+        }}
+        onHoverEnd={() => setHoverIndex(null)}
+        onPointerMove={(e) => {
+          const idx = getIndexFromPointer(e.clientX)
+          setHoverIndex(idx)
+        }}
         onTap={(e) => {
           if (!navRef.current) return
           const rect = navRef.current.getBoundingClientRect()

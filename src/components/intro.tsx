@@ -121,7 +121,7 @@ export function Intro({ onDone, locale }: { onDone: () => void; locale: Locale }
       </header>
 
       <motion.div
-        className='relative mt-3 flex flex-1 cursor-grab touch-pan-y flex-col active:cursor-grabbing'
+        className='relative mt-3 flex flex-1 touch-pan-y flex-col active:cursor-grabbing'
         drag={leaving ? false : 'x'}
         dragElastic={0.18}
         dragConstraints={{ left: 0, right: 0 }}
