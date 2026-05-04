@@ -8,7 +8,8 @@ import { IDENTITIES, type Identity } from '../lib/types'
 const links = [
   { href: '/', label: 'Contar' },
   { href: '/diary', label: 'Diário' },
-  { href: '/scoreboard', label: 'Placar' }
+  { href: '/scoreboard', label: 'Placar' },
+  { href: '/settings', label: 'Ajustes' }
 ]
 
 export function Nav({ who }: { who: Identity }) {

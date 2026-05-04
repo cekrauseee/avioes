@@ -14,15 +14,17 @@ import {
 import {
   makeAddEventOp,
   makeDeleteLatestEventOp,
+  makePaletteOp,
   makeThemeOp,
   pendingWriteCount,
   projectEvents,
+  projectPalette,
   projectTheme,
   settleSnapshot,
   type OfflineSnapshot,
   type SyncSnapshot
 } from './offline-model'
-import type { AirplaneEvent, Identity, PendingOp, Theme } from './types'
+import type { AirplaneEvent, Identity, Palette, PendingOp, Theme } from './types'
 
 export type OfflineStoreState = OfflineSnapshot & {
   hydrated: boolean
@@ -33,7 +35,7 @@ export type OfflineStoreState = OfflineSnapshot & {
   introSeen: boolean
 }
 
-type BroadcastState = Pick<OfflineStoreState, 'identity' | 'baseEvents' | 'baseTheme' | 'lastSyncOk'>
+type BroadcastState = Pick<OfflineStoreState, 'identity' | 'baseEvents' | 'baseTheme' | 'basePalette' | 'lastSyncOk'>
 
 const EMPTY_EVENTS: AirplaneEvent[] = []
 const EMPTY_OPS: PendingOp[] = []
@@ -43,6 +45,7 @@ let state: OfflineStoreState = {
   identity: null,
   baseEvents: EMPTY_EVENTS,
   baseTheme: 'system',
+  basePalette: 'default',
   pendingOps: EMPTY_OPS,
   hydrated: false,
   storageReady: false,
@@ -70,11 +73,13 @@ export function useOfflineRuntime(): void {
 
   const snapshot = useOfflineState()
   const theme = selectTheme(snapshot)
+  const palette = selectPalette(snapshot)
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    writeBootState({ identity: snapshot.identity, theme, introSeen: snapshot.introSeen })
-  }, [snapshot.identity, theme, snapshot.introSeen])
+    document.documentElement.dataset.palette = palette
+    writeBootState({ identity: snapshot.identity, theme, palette, introSeen: snapshot.introSeen })
+  }, [snapshot.identity, theme, palette, snapshot.introSeen])
 }
 
 export function useOfflineSync(): void {
@@ -123,6 +128,10 @@ export function selectTheme(snapshot: OfflineSnapshot): Theme {
   return projectTheme(snapshot.baseTheme, snapshot.pendingOps)
 }
 
+export function selectPalette(snapshot: OfflineSnapshot): Palette {
+  return projectPalette(snapshot.basePalette, snapshot.pendingOps)
+}
+
 export function selectPendingCount(snapshot: OfflineSnapshot): number {
   return pendingWriteCount(snapshot.pendingOps)
 }
@@ -150,6 +159,10 @@ export function queueTheme(theme: Theme): void {
   commit({ pendingOps: [...state.pendingOps, makeThemeOp(theme, `op:${crypto.randomUUID()}`)] })
 }
 
+export function queuePalette(palette: Palette): void {
+  commit({ pendingOps: [...state.pendingOps, makePaletteOp(palette, `op:${crypto.randomUUID()}`)] })
+}
+
 export function applyServerSnapshot(sync: SyncSnapshot): void {
   const next = migrateLegacyQueue(settleSnapshot(state, sync))
   commit({
@@ -170,7 +183,7 @@ export function applyLocalIdentity(identity: Identity | null): void {
   if (identity) {
     commit({ identity })
   } else {
-    commit({ identity: null, baseEvents: EMPTY_EVENTS, baseTheme: 'system', pendingOps: EMPTY_OPS })
+    commit({ identity: null, baseEvents: EMPTY_EVENTS, baseTheme: 'system', basePalette: 'default', pendingOps: EMPTY_OPS })
     clearBootState()
     void clearPersistedState().catch(() => {})
   }
@@ -226,7 +239,7 @@ function initOfflineStore(): void {
 
   queueMicrotask(() => {
     const boot = readBootState()
-    updateState({ hydrated: true, identity: boot.identity, baseTheme: boot.theme, introSeen: boot.introSeen })
+    updateState({ hydrated: true, identity: boot.identity, baseTheme: boot.theme, basePalette: boot.palette, introSeen: boot.introSeen })
     void readPersistedState()
       .then((persisted) => {
         if (!persisted) {
@@ -234,6 +247,7 @@ function initOfflineStore(): void {
             identity: boot.identity,
             baseEvents: EMPTY_EVENTS,
             baseTheme: boot.theme,
+            basePalette: boot.palette,
             pendingOps: EMPTY_OPS
           })
           updateState({ ...next, storageReady: true })
@@ -243,6 +257,7 @@ function initOfflineStore(): void {
           identity: persisted.identity,
           baseEvents: persisted.baseEvents,
           baseTheme: persisted.baseTheme,
+          basePalette: persisted.basePalette,
           pendingOps: persisted.pendingOps
         })
         updateState({
@@ -257,7 +272,7 @@ function initOfflineStore(): void {
   window.addEventListener('storage', (event) => {
     if (event.key !== 'ap_boot') return
     const boot = readBootState()
-    updateState({ identity: boot.identity, baseTheme: boot.theme })
+    updateState({ identity: boot.identity, baseTheme: boot.theme, basePalette: boot.palette })
   })
 
   if (typeof BroadcastChannel !== 'undefined') {
@@ -291,9 +306,10 @@ function commit(patch: Partial<OfflineStoreState>): void {
     identity: state.identity,
     baseEvents: state.baseEvents,
     baseTheme: state.baseTheme,
+    basePalette: state.basePalette,
     pendingOps: state.pendingOps
   }
-  writeBootState({ identity: state.identity, theme: selectTheme(state), introSeen: state.introSeen })
+  writeBootState({ identity: state.identity, theme: selectTheme(state), palette: selectPalette(state), introSeen: state.introSeen })
   void writePersistedState(persisted).catch(() => updateState({ storageError: true }))
 }
 
@@ -313,6 +329,7 @@ function toBroadcastState(snapshot: OfflineStoreState): BroadcastState {
     identity: snapshot.identity,
     baseEvents: snapshot.baseEvents,
     baseTheme: snapshot.baseTheme,
+    basePalette: snapshot.basePalette,
     lastSyncOk: snapshot.lastSyncOk
   }
 }
@@ -322,12 +339,14 @@ function readBroadcastState(value: unknown): BroadcastState | null {
   const item = value as Partial<BroadcastState>
   if (!isIdentityOrNull(item.identity)) return null
   if (!isTheme(item.baseTheme)) return null
+  if (!isPalette(item.basePalette)) return null
   if (item.lastSyncOk !== true && item.lastSyncOk !== false && item.lastSyncOk !== null) return null
   if (!Array.isArray(item.baseEvents) || !item.baseEvents.every(isEvent)) return null
   return {
     identity: item.identity,
     baseEvents: item.baseEvents,
     baseTheme: item.baseTheme,
+    basePalette: item.basePalette,
     lastSyncOk: item.lastSyncOk
   }
 }
@@ -342,6 +361,10 @@ function isIdentityOrNull(value: unknown): value is Identity | null {
 
 function isTheme(value: unknown): value is Theme {
   return value === 'light' || value === 'dark' || value === 'system'
+}
+
+function isPalette(value: unknown): value is Palette {
+  return value === 'default' || value === 'ocean' || value === 'lavender' || value === 'earth' || value === 'blossom' || value === 'sky'
 }
 
 function isEvent(value: unknown): value is AirplaneEvent {

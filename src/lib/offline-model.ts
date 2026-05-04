@@ -1,14 +1,16 @@
 import { totals } from './streaks'
-import type { AirplaneEvent, Identity, PendingOp, Theme } from './types'
+import type { AirplaneEvent, Identity, Palette, PendingOp, Theme } from './types'
 
 export type AddEventOp = Extract<PendingOp, { kind: 'add-event' }>
 export type DeleteEventOp = Extract<PendingOp, { kind: 'delete-event' }>
 export type ThemeOp = Extract<PendingOp, { kind: 'set-theme' }>
+export type PaletteOp = Extract<PendingOp, { kind: 'set-palette' }>
 
 export type OfflineSnapshot = {
   identity: Identity | null
   baseEvents: AirplaneEvent[]
   baseTheme: Theme
+  basePalette: Palette
   pendingOps: PendingOp[]
 }
 
@@ -16,6 +18,7 @@ export type SyncSnapshot = {
   identity: Identity | null
   events: AirplaneEvent[]
   theme: Theme
+  palette: Palette
   settled: string[]
   introSeen: boolean
 }
@@ -66,12 +69,25 @@ export function makeThemeOp(theme: Theme, id: string): ThemeOp {
   return { id, kind: 'set-theme', theme }
 }
 
+export function projectPalette(basePalette: Palette, pendingOps: readonly PendingOp[]): Palette {
+  let palette = basePalette
+  for (const op of pendingOps) {
+    if (op.kind === 'set-palette') palette = op.palette
+  }
+  return palette
+}
+
+export function makePaletteOp(palette: Palette, id: string): PaletteOp {
+  return { id, kind: 'set-palette', palette }
+}
+
 export function settleSnapshot(snapshot: OfflineSnapshot, sync: SyncSnapshot): OfflineSnapshot {
   const settled = new Set(sync.settled)
   return {
     identity: sync.identity,
     baseEvents: sync.events,
     baseTheme: sync.theme,
+    basePalette: sync.palette,
     pendingOps: sync.identity ? snapshot.pendingOps.filter((op) => !settled.has(op.id)) : []
   }
 }

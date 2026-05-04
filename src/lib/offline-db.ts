@@ -1,5 +1,5 @@
 import { makeDeleteLatestEventOp, type OfflineSnapshot } from './offline-model'
-import type { AirplaneEvent, Identity, PendingOp, Theme } from './types'
+import type { AirplaneEvent, Identity, Palette, PendingOp, Theme } from './types'
 
 export type PersistedOfflineState = OfflineSnapshot & {
   version: 1
@@ -8,6 +8,7 @@ export type PersistedOfflineState = OfflineSnapshot & {
 export type BootState = {
   identity: Identity | null
   theme: Theme
+  palette: Palette
   introSeen: boolean
 }
 
@@ -21,16 +22,17 @@ const LEGACY_QUEUE_KEY = 'ap_queue'
 let dbPromise: Promise<IDBDatabase> | null = null
 
 export function readBootState(): BootState {
-  if (typeof window === 'undefined') return { identity: null, theme: 'system', introSeen: false }
+  if (typeof window === 'undefined') return { identity: null, theme: 'system', palette: 'default', introSeen: false }
   try {
     const parsed = JSON.parse(window.localStorage.getItem(BOOT_KEY) ?? '{}') as Partial<BootState>
     return {
       identity: parsed.identity === 'henrique' || parsed.identity === 'pietra' ? parsed.identity : null,
       theme: parsed.theme === 'light' || parsed.theme === 'dark' || parsed.theme === 'system' ? parsed.theme : 'system',
+      palette: isPalette(parsed.palette) ? parsed.palette : 'default',
       introSeen: parsed.introSeen === true
     }
   } catch {
-    return { identity: null, theme: 'system', introSeen: false }
+    return { identity: null, theme: 'system', palette: 'default', introSeen: false }
   }
 }
 
@@ -143,16 +145,15 @@ function request<T>(req: IDBRequest<T>): Promise<T> {
 
 function isPersistedState(value: unknown): value is PersistedOfflineState {
   if (typeof value !== 'object' || value === null) return false
-  const item = value as Partial<PersistedOfflineState>
-  return (
-    item.version === 1 &&
-    isIdentityOrNull(item.identity) &&
-    isTheme(item.baseTheme) &&
-    Array.isArray(item.baseEvents) &&
-    item.baseEvents.every(isEvent) &&
-    Array.isArray(item.pendingOps) &&
-    item.pendingOps.every(isPendingOp)
-  )
+  const item = value as Record<string, unknown>
+  if (item.version !== 1) return false
+  if (!isIdentityOrNull(item.identity)) return false
+  if (!isTheme(item.baseTheme)) return false
+  if (item.basePalette !== undefined && !isPalette(item.basePalette)) return false
+  if (!Array.isArray(item.baseEvents) || !item.baseEvents.every(isEvent)) return false
+  if (!Array.isArray(item.pendingOps) || !item.pendingOps.every(isPendingOp)) return false
+  if (item.basePalette === undefined) (item as Record<string, unknown>).basePalette = 'default'
+  return true
 }
 
 function isIdentity(value: unknown): value is Identity {
@@ -173,13 +174,19 @@ function isEvent(value: unknown): value is AirplaneEvent {
   return typeof item.id === 'string' && isIdentity(item.who) && typeof item.ts === 'number' && Number.isFinite(item.ts) && item.ts > 0
 }
 
+function isPalette(value: unknown): value is Palette {
+  return value === 'default' || value === 'ocean' || value === 'lavender' || value === 'earth' || value === 'blossom' || value === 'sky'
+}
+
 function isPendingOp(value: unknown): value is PendingOp {
   if (typeof value !== 'object' || value === null) return false
   const item = value as Partial<PendingOp>
   if (typeof item.id !== 'string') return false
   if (item.kind === 'add-event') return isEvent(item.event)
   if (item.kind === 'delete-event') return typeof item.eventId === 'string'
-  return item.kind === 'set-theme' && isTheme(item.theme)
+  if (item.kind === 'set-theme') return isTheme(item.theme)
+  if (item.kind === 'set-palette') return isPalette(item.palette)
+  return false
 }
 
 type LegacyOp = { id: string; op: 'add'; who: Identity; ts: number } | { id: string; op: 'undo'; who: Identity }

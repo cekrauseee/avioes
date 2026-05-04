@@ -60,7 +60,7 @@ export default async function RootLayout({
       <body className='bg-bg text-ink flex min-h-full flex-col overflow-hidden'>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var d=document.documentElement;var b=JSON.parse(localStorage.getItem('ap_boot')||'{}');if(b.theme)d.dataset.theme=b.theme;var u=function(){d.dataset.offline=navigator.onLine?'':'1'};u();addEventListener('online',u);addEventListener('offline',u)}catch(e){}})()`
+            __html: `(function(){try{var d=document.documentElement;var b=JSON.parse(localStorage.getItem('ap_boot')||'{}');if(b.theme)d.dataset.theme=b.theme;if(b.palette)d.dataset.palette=b.palette;var u=function(){d.dataset.offline=navigator.onLine?'':'1'};u();addEventListener('online',u);addEventListener('offline',u)}catch(e){}})()`
           }}
         />
         <Noise />

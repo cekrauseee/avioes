@@ -5,6 +5,7 @@ import type { OfflineSnapshot } from './offline-model'
 const base: OfflineSnapshot = {
   identity: 'henrique',
   baseTheme: 'system',
+  basePalette: 'default',
   baseEvents: [{ id: 'server:1', who: 'henrique', ts: 10 }],
   pendingOps: []
 }

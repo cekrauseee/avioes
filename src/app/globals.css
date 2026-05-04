@@ -1,5 +1,66 @@
 @import 'tailwindcss';
 
+@property --bg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #f6f1e7;
+}
+@property --bg-soft {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #efe8d8;
+}
+@property --ink {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #1f2a24;
+}
+@property --ink-soft {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #4a5a52;
+}
+@property --ink-faint {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #8a9890;
+}
+@property --sage {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #7c9a82;
+}
+@property --sage-soft {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #c5d3c8;
+}
+@property --clay {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #c97b5c;
+}
+@property --clay-soft {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #e8c5b6;
+}
+@property --sky {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #a8c3d4;
+}
+@property --line {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #1f2a2418;
+}
+@property --paper {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #ffffff80;
+}
+
 :root {
   --bg: #f6f1e7;
   --bg-soft: #efe8d8;
@@ -44,6 +105,236 @@
     --sky: #6e8fa3;
     --line: #ede6d622;
     --paper: #1d222540;
+  }
+}
+
+/* --- Palette: ocean --- */
+[data-palette='ocean'] {
+  --bg: #ecf2f6;
+  --bg-soft: #e1ebf0;
+  --ink: #182530;
+  --ink-soft: #3a5060;
+  --ink-faint: #7890a0;
+  --sage: #4e8fa8;
+  --sage-soft: #b5d0dc;
+  --clay: #c8754e;
+  --clay-soft: #e4c0ad;
+  --sky: #88b4ca;
+  --line: #18253018;
+  --paper: #ffffff80;
+}
+[data-palette='ocean'][data-theme='dark'] {
+  --bg: #101a20;
+  --bg-soft: #182430;
+  --ink: #d6e4ee;
+  --ink-soft: #98b0c4;
+  --ink-faint: #587080;
+  --sage: #68a8c0;
+  --sage-soft: #1c3240;
+  --clay: #da886a;
+  --clay-soft: #382218;
+  --sky: #4e6e80;
+  --line: #d6e4ee22;
+  --paper: #18243040;
+}
+@media (prefers-color-scheme: dark) {
+  [data-palette='ocean'][data-theme='system'] {
+    --bg: #101a20;
+    --bg-soft: #182430;
+    --ink: #d6e4ee;
+    --ink-soft: #98b0c4;
+    --ink-faint: #587080;
+    --sage: #68a8c0;
+    --sage-soft: #1c3240;
+    --clay: #da886a;
+    --clay-soft: #382218;
+    --sky: #4e6e80;
+    --line: #d6e4ee22;
+    --paper: #18243040;
+  }
+}
+
+/* --- Palette: lavender --- */
+[data-palette='lavender'] {
+  --bg: #f0ebf6;
+  --bg-soft: #e6deee;
+  --ink: #201830;
+  --ink-soft: #4a3a5e;
+  --ink-faint: #887898;
+  --sage: #7b6eaa;
+  --sage-soft: #c2b8d6;
+  --clay: #c07488;
+  --clay-soft: #e0b8c4;
+  --sky: #a0a0ca;
+  --line: #20183018;
+  --paper: #ffffff80;
+}
+[data-palette='lavender'][data-theme='dark'] {
+  --bg: #161220;
+  --bg-soft: #1e1828;
+  --ink: #ded6ec;
+  --ink-soft: #ae9ec8;
+  --ink-faint: #685e78;
+  --sage: #988ac5;
+  --sage-soft: #28203a;
+  --clay: #d08a9c;
+  --clay-soft: #3a1e28;
+  --sky: #686088;
+  --line: #ded6ec22;
+  --paper: #1e182840;
+}
+@media (prefers-color-scheme: dark) {
+  [data-palette='lavender'][data-theme='system'] {
+    --bg: #161220;
+    --bg-soft: #1e1828;
+    --ink: #ded6ec;
+    --ink-soft: #ae9ec8;
+    --ink-faint: #685e78;
+    --sage: #988ac5;
+    --sage-soft: #28203a;
+    --clay: #d08a9c;
+    --clay-soft: #3a1e28;
+    --sky: #686088;
+    --line: #ded6ec22;
+    --paper: #1e182840;
+  }
+}
+
+/* --- Palette: earth --- */
+[data-palette='earth'] {
+  --bg: #f4eee0;
+  --bg-soft: #eae2d0;
+  --ink: #2a2016;
+  --ink-soft: #584c36;
+  --ink-faint: #968a70;
+  --sage: #8a7a4a;
+  --sage-soft: #cec4a5;
+  --clay: #b56840;
+  --clay-soft: #deb8a0;
+  --sky: #b4a888;
+  --line: #2a201618;
+  --paper: #ffffff80;
+}
+[data-palette='earth'][data-theme='dark'] {
+  --bg: #1a1610;
+  --bg-soft: #221e16;
+  --ink: #e8dec8;
+  --ink-soft: #beb098;
+  --ink-faint: #787058;
+  --sage: #a69860;
+  --sage-soft: #383020;
+  --clay: #d0804e;
+  --clay-soft: #3e2618;
+  --sky: #7e7058;
+  --line: #e8dec822;
+  --paper: #221e1640;
+}
+@media (prefers-color-scheme: dark) {
+  [data-palette='earth'][data-theme='system'] {
+    --bg: #1a1610;
+    --bg-soft: #221e16;
+    --ink: #e8dec8;
+    --ink-soft: #beb098;
+    --ink-faint: #787058;
+    --sage: #a69860;
+    --sage-soft: #383020;
+    --clay: #d0804e;
+    --clay-soft: #3e2618;
+    --sky: #7e7058;
+    --line: #e8dec822;
+    --paper: #221e1640;
+  }
+}
+
+/* --- Palette: blossom --- */
+[data-palette='blossom'] {
+  --bg: #f6eeef;
+  --bg-soft: #eee4e7;
+  --ink: #2c1a20;
+  --ink-soft: #5e4050;
+  --ink-faint: #98808a;
+  --sage: #a06880;
+  --sage-soft: #d2b5c2;
+  --clay: #d08860;
+  --clay-soft: #e6c5b0;
+  --sky: #c09eae;
+  --line: #2c1a2018;
+  --paper: #ffffff80;
+}
+[data-palette='blossom'][data-theme='dark'] {
+  --bg: #1c1316;
+  --bg-soft: #24181e;
+  --ink: #ead8de;
+  --ink-soft: #c09eb0;
+  --ink-faint: #786068;
+  --sage: #be7e98;
+  --sage-soft: #381e2c;
+  --clay: #de9e78;
+  --clay-soft: #401e16;
+  --sky: #805868;
+  --line: #ead8de22;
+  --paper: #24181e40;
+}
+@media (prefers-color-scheme: dark) {
+  [data-palette='blossom'][data-theme='system'] {
+    --bg: #1c1316;
+    --bg-soft: #24181e;
+    --ink: #ead8de;
+    --ink-soft: #c09eb0;
+    --ink-faint: #786068;
+    --sage: #be7e98;
+    --sage-soft: #381e2c;
+    --clay: #de9e78;
+    --clay-soft: #401e16;
+    --sky: #805868;
+    --line: #ead8de22;
+    --paper: #24181e40;
+  }
+}
+
+/* --- Palette: sky --- */
+[data-palette='sky'] {
+  --bg: #eef3f8;
+  --bg-soft: #e3ecf2;
+  --ink: #162028;
+  --ink-soft: #384e5e;
+  --ink-faint: #788ea0;
+  --sage: #5892aa;
+  --sage-soft: #b2ced8;
+  --clay: #cc7e50;
+  --clay-soft: #e2bea8;
+  --sky: #8eb5cc;
+  --line: #16202818;
+  --paper: #ffffff80;
+}
+[data-palette='sky'][data-theme='dark'] {
+  --bg: #0e161c;
+  --bg-soft: #141e26;
+  --ink: #d6e6f0;
+  --ink-soft: #96afc0;
+  --ink-faint: #4e6878;
+  --sage: #6eaabc;
+  --sage-soft: #182e3c;
+  --clay: #dc9468;
+  --clay-soft: #362018;
+  --sky: #466878;
+  --line: #d6e6f022;
+  --paper: #141e2640;
+}
+@media (prefers-color-scheme: dark) {
+  [data-palette='sky'][data-theme='system'] {
+    --bg: #0e161c;
+    --bg-soft: #141e26;
+    --ink: #d6e6f0;
+    --ink-soft: #96afc0;
+    --ink-faint: #4e6878;
+    --sage: #6eaabc;
+    --sage-soft: #182e3c;
+    --clay: #dc9468;
+    --clay-soft: #362018;
+    --sky: #466878;
+    --line: #d6e6f022;
+    --paper: #141e2640;
   }
 }
 
@@ -96,6 +387,25 @@ body {
 html {
   background: var(--bg);
   color: var(--ink);
+  transition:
+    --bg 0.35s ease,
+    --bg-soft 0.35s ease,
+    --ink 0.35s ease,
+    --ink-soft 0.35s ease,
+    --ink-faint 0.35s ease,
+    --sage 0.35s ease,
+    --sage-soft 0.35s ease,
+    --clay 0.35s ease,
+    --clay-soft 0.35s ease,
+    --sky 0.35s ease,
+    --line 0.35s ease,
+    --paper 0.35s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    transition-duration: 0s;
+  }
 }
 
 body {

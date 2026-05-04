@@ -13,6 +13,7 @@ import {
 const base: OfflineSnapshot = {
   identity: 'henrique',
   baseTheme: 'system',
+  basePalette: 'default',
   baseEvents: [
     { id: 'server:1', who: 'henrique', ts: 10 },
     { id: 'server:2', who: 'pietra', ts: 20 }
@@ -57,6 +58,7 @@ describe('offline model', () => {
       identity: 'henrique',
       events: [...base.baseEvents, addA.event],
       theme: 'system',
+      palette: 'default',
       settled: [addA.id],
       introSeen: false
     })
@@ -73,6 +75,7 @@ describe('offline model', () => {
       identity: null,
       events: [],
       theme: 'system',
+      palette: 'default',
       settled: [],
       introSeen: false
     })
@@ -81,6 +84,7 @@ describe('offline model', () => {
       identity: null,
       baseEvents: [],
       baseTheme: 'system',
+      basePalette: 'default',
       pendingOps: []
     })
   })

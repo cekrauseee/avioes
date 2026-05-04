@@ -2,7 +2,7 @@
 
 import { deleteIdentity, readIdentity, readIntroSeen, writeIdentity, writeIntroSeen } from './lib/cookies'
 import type { SyncSnapshot } from './lib/offline-model'
-import { applyOps, readEvents, readTheme } from './lib/store'
+import { applyOps, readEvents, readPalette, readTheme } from './lib/store'
 import type { Identity, PendingOp } from './lib/types'
 
 const MAX_SYNC_OPS = 250
@@ -33,7 +33,7 @@ function opId(op: unknown): string | null {
 
 function isPendingOp(op: unknown): op is PendingOp {
   if (typeof op !== 'object' || op === null) return false
-  const item = op as { id?: unknown; kind?: unknown; event?: unknown; eventId?: unknown; theme?: unknown }
+  const item = op as { id?: unknown; kind?: unknown; event?: unknown; eventId?: unknown; theme?: unknown; palette?: unknown }
   if (typeof item.id !== 'string') return false
   if (item.kind === 'add-event') {
     const event = item.event as { id?: unknown; who?: unknown; ts?: unknown } | null
@@ -50,7 +50,17 @@ function isPendingOp(op: unknown): op is PendingOp {
     )
   }
   if (item.kind === 'delete-event') return typeof item.eventId === 'string'
-  return item.kind === 'set-theme' && (item.theme === 'light' || item.theme === 'dark' || item.theme === 'system')
+  if (item.kind === 'set-theme') return item.theme === 'light' || item.theme === 'dark' || item.theme === 'system'
+  if (item.kind === 'set-palette')
+    return (
+      item.palette === 'default' ||
+      item.palette === 'ocean' ||
+      item.palette === 'lavender' ||
+      item.palette === 'earth' ||
+      item.palette === 'blossom' ||
+      item.palette === 'sky'
+    )
+  return false
 }
 
 export async function bootstrapState(): Promise<SyncSnapshot> {
@@ -77,10 +87,10 @@ export async function syncOps(ops: unknown[]): Promise<SyncSnapshot> {
 }
 
 function emptySnapshot(identity: Identity | null, settled: string[], introSeen: boolean): SyncSnapshot {
-  return { identity, events: [], theme: 'system', settled, introSeen }
+  return { identity, events: [], theme: 'system', palette: 'default', settled, introSeen }
 }
 
 async function snapshotFor(identity: Identity, settled: string[]): Promise<SyncSnapshot> {
-  const [events, theme, introSeen] = await Promise.all([readEvents(), readTheme(identity), readIntroSeen()])
-  return { identity, events, theme, settled, introSeen }
+  const [events, theme, palette, introSeen] = await Promise.all([readEvents(), readTheme(identity), readPalette(identity), readIntroSeen()])
+  return { identity, events, theme, palette, settled, introSeen }
 }

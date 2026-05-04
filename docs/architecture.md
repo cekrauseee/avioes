@@ -38,7 +38,7 @@ Schema in `src/lib/db/schema.ts`:
 
 ```ts
 events        (id serial pk, client_id text unique nullable, who identity, ts bigint)
-preferences   (who identity pk, theme theme default 'system')
+preferences   (who identity pk, theme theme default 'system', palette palette default 'default')
 processed_ops (id text pk)
 ```
 
@@ -75,6 +75,7 @@ Routes are static App Router shells:
 - `/` renders `<Counter/>`
 - `/diary` renders `<DiaryView/>`
 - `/scoreboard` renders `<ScoreboardView/>`
+- `/settings` renders `<SettingsView/>`
 
 Each route reads the local store. If no identity is available:
 

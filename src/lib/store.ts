@@ -2,7 +2,7 @@ import 'server-only'
 
 import { and, eq, sql } from 'drizzle-orm'
 import { db, events, preferences, processedOps } from './db'
-import type { AirplaneEvent, Identity, PendingOp, Theme } from './types'
+import type { AirplaneEvent, Identity, Palette, PendingOp, Theme } from './types'
 
 export async function readEvents(): Promise<AirplaneEvent[]> {
   const rows = await db.select({ id: events.id, clientId: events.clientId, who: events.who, ts: events.ts }).from(events).orderBy(events.ts, events.id)
@@ -17,6 +17,12 @@ export async function readTheme(who: Identity | null): Promise<Theme> {
   if (!who) return 'system'
   const row = await db.select({ theme: preferences.theme }).from(preferences).where(eq(preferences.who, who)).limit(1)
   return row[0]?.theme ?? 'system'
+}
+
+export async function readPalette(who: Identity | null): Promise<Palette> {
+  if (!who) return 'default'
+  const row = await db.select({ palette: preferences.palette }).from(preferences).where(eq(preferences.who, who)).limit(1)
+  return row[0]?.palette ?? 'default'
 }
 
 export async function writeTheme(who: Identity, theme: Theme): Promise<void> {
@@ -41,11 +47,16 @@ export async function applyOps(ops: PendingOp[], who: Identity): Promise<string[
           } else {
             await tx.delete(events).where(and(eq(events.clientId, op.eventId), eq(events.who, who)))
           }
-        } else {
+        } else if (op.kind === 'set-theme') {
           await tx
             .insert(preferences)
             .values({ who, theme: op.theme })
             .onConflictDoUpdate({ target: preferences.who, set: { theme: op.theme } })
+        } else if (op.kind === 'set-palette') {
+          await tx
+            .insert(preferences)
+            .values({ who, palette: op.palette })
+            .onConflictDoUpdate({ target: preferences.who, set: { palette: op.palette } })
         }
       })
       settled.push(op.id)

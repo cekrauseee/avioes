@@ -20,6 +20,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-04 — Palette themes: per-user color customization
+
+Six palettes (Caderno/Oceano/Lavanda/Terra/Flor/Céu) selectable on a new `/settings` page ("Ajustes"), persisted per-user in Postgres via a `palette` column on `preferences` and synced through the offline op queue (`set-palette` op kind). Each palette overrides all CSS color tokens for both light and dark modes via `[data-palette]` selectors in `globals.css`. The palette is applied at boot via the `ap_boot` localStorage hint (same pattern as theme mode). Nav gained a 4th tab for settings. ThemeToggle remains in page headers for quick light/dark/system switching; the settings page has both palette and mode pickers. Run `npm run db:push` after pulling to add the `palette` enum and column.
+
 ### 2026-05-04 — First-open intro flow before identity picker
 
 A 3-page Intro (`src/components/intro.tsx`) appears once per device before the identity Picker, gated by a server cookie `ap_intro` set via `markIntroSeen()` in `src/actions.ts`. `SyncSnapshot`, `BootState`, and the offline store gained an `introSeen` flag; the inline boot script in `app/layout.tsx` mirrors it onto `<html data-intro="seen">` so returning users hit the Picker with no flash (CSS classes `.intro-only`/`.picker-only` in `globals.css`, same pattern as `.online-only`/`.offline-only`). `Onboarding` always renders both subtrees; the Picker remounts via `key` after dismissal so its entrance animation replays. A new `<Placeholder/>` (`src/components/placeholder.tsx`, dashed + 45° hatch) fills three illustration slots that still need real art (`placeholder · pessoa olhando o céu`, `· dedo tocando nuvem`, `· página de diário`).

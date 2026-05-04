@@ -32,6 +32,10 @@ Defined as CSS variables in `app/globals.css`. Light is the default; dark applie
 
 Per-identity classes (e.g. `bg-sage`, `text-clay`) come from the `IDENTITIES` map in `app/lib/types.ts`. Never build them by string concatenation — Tailwind won't pick them up.
 
+### Palettes
+
+Six palettes (`default`, `ocean`, `lavender`, `earth`, `blossom`, `sky`) redefine all CSS color tokens. Each palette has both light and dark variants, applied via `[data-palette="X"]` selectors in `globals.css`. The active palette is stored per-user in Postgres and synced offline. Metadata for the palette picker lives in `PALETTES` in `app/lib/types.ts`.
+
 ## Typography
 
 - **Display**: `Fraunces` (Google) with `SOFT` and optical-sizing axes. Used for the app name, big counter, page headings, and softly italic flourishes.
@@ -59,4 +63,4 @@ Labels (timestamps, helper text under a number, "trocar", "desfazer") are render
 - Don't add gradients, shadows, or glassmorphism. The aesthetic is matte paper.
 - Don't introduce icon libraries. Use text glyphs (`✈`) or hand-drawn SVG.
 - Don't add a desktop-specific layout. Desktop is a centered phone frame.
-- Don't add an "About", "Settings", or "Help" page. The app is its own help.
+- Don't add an "About" or "Help" page. The app is its own help.
