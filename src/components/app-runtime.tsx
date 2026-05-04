@@ -15,14 +15,16 @@ export function AppRuntime({ children }: { children: React.ReactNode }) {
   return (
     <NavDirectionProvider>
       <div
-        className='mx-auto flex w-full max-w-[420px] flex-1 flex-col overflow-hidden transition-opacity duration-180 ease-out'
+        className='flex flex-1 flex-col transition-opacity duration-180 ease-out'
         style={{ opacity: state.localeFading ? 0 : 1 }}
       >
-        {state.storageError ?
-          <StorageGate />
-        : <SwipeableContent>{children}</SwipeableContent>}
+        <div className='mx-auto flex w-full max-w-[420px] flex-1 flex-col overflow-hidden'>
+          {state.storageError ?
+            <StorageGate />
+          : <SwipeableContent>{children}</SwipeableContent>}
+        </div>
+        {state.identity && !state.storageError && <NavBar who={state.identity} />}
       </div>
-      {state.identity && !state.storageError && <NavBar who={state.identity} />}
       {!state.storageError && <OfflineSync />}
       <PwaRegister />
     </NavDirectionProvider>
