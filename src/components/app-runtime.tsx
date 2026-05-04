@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
-import { NavDirectionProvider } from '../lib/nav-direction'
+import { useEffect } from 'react'
 import { t, type TKey } from '../lib/i18n'
+import { NavDirectionProvider } from '../lib/nav-direction'
 import { selectLocale, useOfflineRuntime, useOfflineState } from '../lib/offline-store'
 import { NavBar } from './nav-bar'
 import { OfflineSync } from './offline-sync'
@@ -15,7 +15,7 @@ const PAGE_TITLE_KEY: Record<string, TKey> = {
   '/': 'nav.count',
   '/diary': 'diary.title',
   '/scoreboard': 'scoreboard.title',
-  '/settings': 'settings.title',
+  '/settings': 'settings.title'
 }
 
 export function AppRuntime({ children }: { children: React.ReactNode }) {
@@ -29,7 +29,7 @@ export function AppRuntime({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const key = PAGE_TITLE_KEY[pathname]
     if (!key) return
-    document.title = `${t(locale, key)} \\ Airplanes`
+    document.title = `${t(locale, key)}`
   }, [locale, pathname])
 
   return (
