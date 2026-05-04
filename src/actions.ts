@@ -48,6 +48,11 @@ export async function bootstrapState(): Promise<SyncSnapshot> {
     readLocale(user.id)
   ])
 
+  if (!groupMembers.some((m) => m.userId === user.id)) {
+    await writeActiveGroupId(user.id, null)
+    return emptySnapshot(user.id, null, [], [])
+  }
+
   return {
     identity: user.id,
     activeGroupId,
@@ -79,8 +84,6 @@ export async function syncOps(ops: unknown[]): Promise<SyncSnapshot> {
     }
   }
 
-  const applied = validOps.length > 0 ? await applyOps(validOps, user.id, activeGroupId) : []
-
   const [groupMembers, events, theme, palette, locale] = await Promise.all([
     readGroupMembers(activeGroupId),
     readEvents(activeGroupId),
@@ -88,6 +91,13 @@ export async function syncOps(ops: unknown[]): Promise<SyncSnapshot> {
     readPalette(user.id),
     readLocale(user.id)
   ])
+
+  if (!groupMembers.some((m) => m.userId === user.id)) {
+    await writeActiveGroupId(user.id, null)
+    return emptySnapshot(user.id, null, [], rejected)
+  }
+
+  const applied = validOps.length > 0 ? await applyOps(validOps, user.id, activeGroupId) : []
 
   return {
     identity: user.id,

@@ -10,12 +10,10 @@ export async function readGroupsForUser(userId: string): Promise<(Group & { memb
       id: groups.id,
       name: groups.name,
       ownerId: groups.ownerId,
-      memberCount: sql<number>`count(${groupMembers.userId})::int`
+      memberCount: sql<number>`(select count(*)::int from "group_members" where "group_members"."group_id" = ${groups.id})`
     })
     .from(groups)
-    .innerJoin(groupMembers, eq(groupMembers.groupId, groups.id))
-    .where(eq(groupMembers.userId, userId))
-    .groupBy(groups.id, groups.name, groups.ownerId)
+    .innerJoin(groupMembers, and(eq(groupMembers.groupId, groups.id), eq(groupMembers.userId, userId)))
   return rows
 }
 
@@ -81,7 +79,13 @@ export async function addGroupMember(groupId: string, userId: string): Promise<v
 }
 
 export async function removeGroupMember(groupId: string, userId: string): Promise<void> {
-  await db.delete(groupMembers).where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+  await db.transaction(async (tx) => {
+    await tx.delete(groupMembers).where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+    await tx
+      .update(preferences)
+      .set({ activeGroupId: null })
+      .where(and(eq(preferences.userId, userId), eq(preferences.activeGroupId, groupId)))
+  })
 }
 
 export async function findUserByEmail(email: string): Promise<{ id: string; name: string; email: string } | null> {

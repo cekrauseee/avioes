@@ -129,7 +129,7 @@ function isPersistedState(value: unknown): value is PersistedOfflineState {
   if (item.baseLocale !== undefined && !isLocale(item.baseLocale)) return false
   if (!Array.isArray(item.baseEvents) || !item.baseEvents.every(isEvent)) return false
   if (!Array.isArray(item.pendingOps) || !item.pendingOps.every(isPendingOp)) return false
-  if (!Array.isArray(item.groupMembers)) return false
+  if (!Array.isArray(item.groupMembers) || !item.groupMembers.every(isGroupMember)) return false
   if (item.basePalette === undefined) (item as Record<string, unknown>).basePalette = 'default'
   if (item.baseLocale === undefined) (item as Record<string, unknown>).baseLocale = 'pt'
   return true
@@ -160,6 +160,17 @@ function isLocale(value: unknown): value is Locale {
 function detectLocale(): Locale {
   if (typeof navigator === 'undefined') return 'pt'
   return (navigator.language || '').startsWith('pt') ? 'pt' : 'en'
+}
+
+function isGroupMember(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) return false
+  const item = value as Record<string, unknown>
+  return (
+    typeof item.userId === 'string' &&
+    typeof item.name === 'string' &&
+    typeof item.email === 'string' &&
+    (item.role === 'owner' || item.role === 'member')
+  )
 }
 
 function isPendingOp(value: unknown): value is PendingOp {

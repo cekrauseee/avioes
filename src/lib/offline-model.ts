@@ -101,6 +101,14 @@ export function makeLocaleOp(locale: Locale, id: string): LocaleOp {
 
 export function settleSnapshot(snapshot: OfflineSnapshot, sync: SyncSnapshot): OfflineSnapshot {
   const settled = new Set(sync.settled)
+  const groupChanged = sync.activeGroupId !== snapshot.activeGroupId
+  const pendingOps = sync.identity
+    ? snapshot.pendingOps.filter((op) => {
+        if (settled.has(op.id)) return false
+        if (groupChanged && (op.kind === 'add-event' || op.kind === 'delete-event')) return false
+        return true
+      })
+    : []
   return {
     identity: sync.identity,
     activeGroupId: sync.activeGroupId,
@@ -109,7 +117,7 @@ export function settleSnapshot(snapshot: OfflineSnapshot, sync: SyncSnapshot): O
     baseTheme: sync.theme,
     basePalette: sync.palette,
     baseLocale: sync.locale,
-    pendingOps: sync.identity ? snapshot.pendingOps.filter((op) => !settled.has(op.id)) : []
+    pendingOps
   }
 }
 
