@@ -75,6 +75,26 @@ describe('offline model', () => {
     expect(projectEvents(settled.baseEvents, settled.pendingOps).map((event) => event.id)).toEqual(['server:1', 'server:2', addA.event.id, addB.event.id])
   })
 
+  it('drops pending event ops when the active group changes', () => {
+    const add = makeAddEventOp(USER_A, 30, 'a')
+    const undo = makeDeleteLatestEventOp(base, USER_A, 'op:undo')!
+    const theme = makeThemeOp('dark', 'op:theme')
+    const snapshot = { ...base, pendingOps: [add, undo, theme] }
+
+    const settled = settleSnapshot(snapshot, {
+      identity: USER_A,
+      activeGroupId: 'group-2',
+      groupMembers: [],
+      events: [],
+      theme: 'system',
+      palette: 'default',
+      locale: 'pt',
+      settled: []
+    })
+
+    expect(settled.pendingOps).toEqual([theme])
+  })
+
   it('drops pending ops when the server has no identity', () => {
     const add = makeAddEventOp(USER_A, 30, 'a')
     const snapshot = { ...base, pendingOps: [add] }

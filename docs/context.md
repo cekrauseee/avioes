@@ -20,6 +20,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-04 — Tenant boundary hardening
+
+Group reads now go through membership-scoped store queries (`readGroupMembership`, `readGroupMembersForMember`, `readEventsForMember`) before returning group names, member lists, or events. Route guards and sync both re-check membership so stale `activeGroupId` values clear instead of leaking or writing into groups the user no longer belongs to.
+
 ### 2026-05-04 — Auth is route-based, not component fallback
 
 Unauthenticated access to protected pages (`/`, `/diary`, `/scoreboard`, `/settings`, `/groups/*`) redirects to `/auth?next=...` via `src/proxy.ts` before render, with server page guards still validating Better Auth sessions. `/auth` is the public login route and redirects authenticated users away. Login/group setup screens now render inside the normal app frame/background instead of fullscreen overlay components.

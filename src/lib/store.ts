@@ -1,8 +1,11 @@
 import 'server-only'
 
 import { and, eq, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import { db, events, groupMembers, groups, preferences, processedOps, users } from './db'
-import type { AirplaneEvent, Group, GroupMember, Locale, Palette, PendingOp, Theme } from './types'
+import type { AirplaneEvent, Group, GroupMember, GroupRole, Locale, Palette, PendingOp, Theme } from './types'
+
+const groupMembersForCount = alias(groupMembers, 'group_members_for_count')
 
 export async function readGroupsForUser(userId: string): Promise<(Group & { memberCount: number })[]> {
   const rows = await db
@@ -10,14 +13,37 @@ export async function readGroupsForUser(userId: string): Promise<(Group & { memb
       id: groups.id,
       name: groups.name,
       ownerId: groups.ownerId,
-      memberCount: sql<number>`(select count(*)::int from "group_members" where "group_members"."group_id" = ${groups.id})`
+      memberCount: sql<number>`count(${groupMembersForCount.userId})::int`
     })
     .from(groups)
     .innerJoin(groupMembers, and(eq(groupMembers.groupId, groups.id), eq(groupMembers.userId, userId)))
+    .leftJoin(groupMembersForCount, eq(groupMembersForCount.groupId, groups.id))
+    .groupBy(groups.id, groups.name, groups.ownerId)
   return rows
 }
 
-export async function readGroupMembers(groupId: string): Promise<GroupMember[]> {
+export async function readGroupMembership(groupId: string, userId: string): Promise<{ userId: string; role: GroupRole } | null> {
+  const row = await db
+    .select({ userId: groupMembers.userId, role: groupMembers.role })
+    .from(groupMembers)
+    .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+    .limit(1)
+  return row[0] ?? null
+}
+
+export async function readGroupForMember(groupId: string, userId: string): Promise<Group | null> {
+  const requester = alias(groupMembers, 'requester_group_member')
+  const row = await db
+    .select({ id: groups.id, name: groups.name, ownerId: groups.ownerId })
+    .from(groups)
+    .innerJoin(requester, and(eq(requester.groupId, groups.id), eq(requester.userId, userId)))
+    .where(eq(groups.id, groupId))
+    .limit(1)
+  return row[0] ?? null
+}
+
+export async function readGroupMembersForMember(groupId: string, userId: string): Promise<GroupMember[]> {
+  const requester = alias(groupMembers, 'requester_group_member_for_list')
   const rows = await db
     .select({
       userId: groupMembers.userId,
@@ -26,6 +52,7 @@ export async function readGroupMembers(groupId: string): Promise<GroupMember[]> 
       role: groupMembers.role
     })
     .from(groupMembers)
+    .innerJoin(requester, and(eq(requester.groupId, groupMembers.groupId), eq(requester.userId, userId)))
     .innerJoin(users, eq(users.id, groupMembers.userId))
     .where(eq(groupMembers.groupId, groupId))
     .orderBy(groupMembers.joinedAt)
@@ -38,15 +65,6 @@ export async function createGroup(id: string, name: string, ownerId: string): Pr
     await tx.insert(groups).values({ id, name, ownerId, createdAt: now })
     await tx.insert(groupMembers).values({ groupId: id, userId: ownerId, role: 'owner', joinedAt: now })
   })
-}
-
-export async function readGroup(groupId: string): Promise<Group | null> {
-  const row = await db
-    .select({ id: groups.id, name: groups.name, ownerId: groups.ownerId })
-    .from(groups)
-    .where(eq(groups.id, groupId))
-    .limit(1)
-  return row[0] ?? null
 }
 
 export async function updateGroup(groupId: string, updates: { name?: string }): Promise<void> {
@@ -93,10 +111,12 @@ export async function findUserByEmail(email: string): Promise<{ id: string; name
   return row[0] ?? null
 }
 
-export async function readEvents(groupId: string): Promise<AirplaneEvent[]> {
+export async function readEventsForMember(groupId: string, userId: string): Promise<AirplaneEvent[]> {
+  const requester = alias(groupMembers, 'requester_group_member_for_events')
   const rows = await db
     .select({ id: events.id, clientId: events.clientId, who: events.who, ts: events.ts })
     .from(events)
+    .innerJoin(requester, and(eq(requester.groupId, events.groupId), eq(requester.userId, userId)))
     .where(eq(events.groupId, groupId))
     .orderBy(events.ts, events.id)
   return rows.map((row) => ({
@@ -143,6 +163,12 @@ export async function applyOps(ops: PendingOp[], userId: string, groupId: string
       await db.transaction(async (tx) => {
         const inserted = await tx.insert(processedOps).values({ id: op.id }).onConflictDoNothing().returning({ id: processedOps.id })
         if (inserted.length === 0) return
+        const membership = await tx
+          .select({ userId: groupMembers.userId })
+          .from(groupMembers)
+          .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+          .limit(1)
+        if (membership.length === 0) return
         if (op.kind === 'add-event') {
           if (op.event.who !== userId) return
           await tx.insert(events).values({ clientId: op.event.id, who: userId, groupId, ts: op.event.ts }).onConflictDoNothing()

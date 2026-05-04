@@ -3,7 +3,7 @@ import 'server-only'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { auth, type Session } from './auth'
-import { readActiveGroupId } from './store'
+import { readActiveGroupId, readGroupMembership, writeActiveGroupId } from './store'
 
 type User = Session['user']
 
@@ -40,7 +40,19 @@ export async function requireActiveGroup(nextPath: string): Promise<{ user: User
   const user = await requireUser(nextPath)
   const activeGroupId = await readActiveGroupId(user.id)
   if (!activeGroupId) redirect('/groups')
+  const membership = await readGroupMembership(activeGroupId, user.id)
+  if (!membership) {
+    await writeActiveGroupId(user.id, null)
+    redirect('/groups')
+  }
   return { user, activeGroupId }
+}
+
+export async function requireGroupMember(groupId: string, nextPath: string): Promise<User> {
+  const user = await requireUser(nextPath)
+  const membership = await readGroupMembership(groupId, user.id)
+  if (!membership) redirect('/groups')
+  return user
 }
 
 export async function redirectAuthenticatedUser(nextPathValue: unknown): Promise<void> {
@@ -51,5 +63,11 @@ export async function redirectAuthenticatedUser(nextPathValue: unknown): Promise
   if (nextPath === '/groups') redirect('/groups')
 
   const activeGroupId = await readActiveGroupId(user.id)
-  redirect(activeGroupId ? nextPath : '/groups')
+  if (!activeGroupId) redirect('/groups')
+  const membership = await readGroupMembership(activeGroupId, user.id)
+  if (!membership) {
+    await writeActiveGroupId(user.id, null)
+    redirect('/groups')
+  }
+  redirect(nextPath)
 }

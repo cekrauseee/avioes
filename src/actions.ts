@@ -11,9 +11,10 @@ import {
   findUserByEmail,
   leaveGroup as leaveGroupInStore,
   readActiveGroupId,
-  readEvents,
-  readGroup,
-  readGroupMembers,
+  readEventsForMember,
+  readGroupForMember,
+  readGroupMembersForMember,
+  readGroupMembership,
   readGroupsForUser,
   readLocale,
   readPalette,
@@ -40,29 +41,7 @@ export async function bootstrapState(): Promise<SyncSnapshot> {
   const activeGroupId = await readActiveGroupId(user.id)
   if (!activeGroupId) return emptySnapshot(user.id, null, [], [])
 
-  const [groupMembers, events, theme, palette, locale] = await Promise.all([
-    readGroupMembers(activeGroupId),
-    readEvents(activeGroupId),
-    readTheme(user.id),
-    readPalette(user.id),
-    readLocale(user.id)
-  ])
-
-  if (!groupMembers.some((m) => m.userId === user.id)) {
-    await writeActiveGroupId(user.id, null)
-    return emptySnapshot(user.id, null, [], [])
-  }
-
-  return {
-    identity: user.id,
-    activeGroupId,
-    groupMembers,
-    events,
-    theme,
-    palette,
-    locale,
-    settled: []
-  }
+  return snapshotForMember(user.id, activeGroupId, [], true)
 }
 
 export async function syncOps(ops: unknown[]): Promise<SyncSnapshot> {
@@ -84,60 +63,25 @@ export async function syncOps(ops: unknown[]): Promise<SyncSnapshot> {
     }
   }
 
-  const [groupMembers, events, theme, palette, locale] = await Promise.all([
-    readGroupMembers(activeGroupId),
-    readEvents(activeGroupId),
-    readTheme(user.id),
-    readPalette(user.id),
-    readLocale(user.id)
-  ])
-
-  if (!groupMembers.some((m) => m.userId === user.id)) {
+  const membership = await readGroupMembership(activeGroupId, user.id)
+  if (!membership) {
     await writeActiveGroupId(user.id, null)
     return emptySnapshot(user.id, null, [], rejected)
   }
 
   const applied = validOps.length > 0 ? await applyOps(validOps, user.id, activeGroupId) : []
-
-  return {
-    identity: user.id,
-    activeGroupId,
-    groupMembers,
-    events,
-    theme,
-    palette,
-    locale,
-    settled: [...rejected, ...applied]
-  }
+  return snapshotForMember(user.id, activeGroupId, [...rejected, ...applied], true)
 }
 
 export async function setActiveGroup(groupId: string): Promise<SyncSnapshot> {
   const user = await getSessionUser()
   if (!user) return emptySnapshot(null, null, [], [])
 
-  const userGroups = await readGroupsForUser(user.id)
-  if (!userGroups.find((g) => g.id === groupId)) return emptySnapshot(user.id, null, [], [])
+  const membership = await readGroupMembership(groupId, user.id)
+  if (!membership) return emptySnapshot(user.id, null, [], [])
 
   await writeActiveGroupId(user.id, groupId)
-
-  const [groupMembers, events, theme, palette, locale] = await Promise.all([
-    readGroupMembers(groupId),
-    readEvents(groupId),
-    readTheme(user.id),
-    readPalette(user.id),
-    readLocale(user.id)
-  ])
-
-  return {
-    identity: user.id,
-    activeGroupId: groupId,
-    groupMembers,
-    events,
-    theme,
-    palette,
-    locale,
-    settled: []
-  }
+  return snapshotForMember(user.id, groupId, [], true)
 }
 
 export async function getUserGroups(): Promise<(Group & { memberCount: number })[]> {
@@ -169,21 +113,21 @@ export async function getGroupDetails(groupId: string): Promise<{ name: string; 
   const user = await getSessionUser()
   if (!user) return null
 
-  const [group, members] = await Promise.all([readGroup(groupId), readGroupMembers(groupId)])
-  if (!group) return null
-  const isMember = members.some((m) => m.userId === user.id)
-  if (!isMember) return null
+  const membership = await readGroupMembership(groupId, user.id)
+  if (!membership) return null
 
-  return { name: group.name, members, isOwner: members.find((m) => m.userId === user.id)?.role === 'owner' }
+  const [group, members] = await Promise.all([readGroupForMember(groupId, user.id), readGroupMembersForMember(groupId, user.id)])
+  if (!group) return null
+
+  return { name: group.name, members, isOwner: membership.role === 'owner' }
 }
 
 export async function updateGroup(groupId: string, updates: { name?: string }): Promise<{ success: true } | { error: string }> {
   const user = await getSessionUser()
   if (!user) return { error: 'Não autenticado' }
 
-  const members = await readGroupMembers(groupId)
-  const isOwner = members.find((m) => m.userId === user.id)?.role === 'owner'
-  if (!isOwner) return { error: 'Apenas o dono pode editar' }
+  const membership = await readGroupMembership(groupId, user.id)
+  if (membership?.role !== 'owner') return { error: 'Apenas o dono pode editar' }
 
   const sanitized: { name?: string } = {}
   if (updates.name !== undefined) {
@@ -209,14 +153,13 @@ export async function lookupUserToAdd(
   const trimmed = email.trim().toLowerCase()
   if (!trimmed || !trimmed.includes('@')) return { ok: false, error: 'E-mail inválido' }
 
-  const members = await readGroupMembers(groupId)
-  const isOwner = members.find((m) => m.userId === user.id)?.role === 'owner'
-  if (!isOwner) return { ok: false, error: 'Apenas o dono pode adicionar membros' }
+  const membership = await readGroupMembership(groupId, user.id)
+  if (membership?.role !== 'owner') return { ok: false, error: 'Apenas o dono pode adicionar membros' }
 
   const target = await findUserByEmail(trimmed)
   if (!target) return { ok: false, error: 'Usuário não encontrado' }
 
-  if (members.some((m) => m.userId === target.id)) return { ok: false, error: 'Usuário já está no grupo' }
+  if (await readGroupMembership(groupId, target.id)) return { ok: false, error: 'Usuário já está no grupo' }
 
   return { ok: true, name: target.name, email: target.email }
 }
@@ -225,14 +168,13 @@ export async function addMemberByEmail(groupId: string, email: string): Promise<
   const user = await getSessionUser()
   if (!user) return { error: 'Não autenticado' }
 
-  const members = await readGroupMembers(groupId)
-  const isOwner = members.find((m) => m.userId === user.id)?.role === 'owner'
-  if (!isOwner) return { error: 'Apenas o dono pode adicionar membros' }
+  const membership = await readGroupMembership(groupId, user.id)
+  if (membership?.role !== 'owner') return { error: 'Apenas o dono pode adicionar membros' }
 
   const target = await findUserByEmail(email.trim().toLowerCase())
   if (!target) return { error: 'Usuário não encontrado' }
 
-  if (members.some((m) => m.userId === target.id)) return { error: 'Usuário já está no grupo' }
+  if (await readGroupMembership(groupId, target.id)) return { error: 'Usuário já está no grupo' }
 
   await addGroupMember(groupId, target.id)
   return { success: true }
@@ -242,9 +184,8 @@ export async function deleteGroup(groupId: string): Promise<{ success: true } | 
   const user = await getSessionUser()
   if (!user) return { error: 'Não autenticado' }
 
-  const members = await readGroupMembers(groupId)
-  const isOwner = members.find((m) => m.userId === user.id)?.role === 'owner'
-  if (!isOwner) return { error: 'Apenas o dono pode excluir' }
+  const membership = await readGroupMembership(groupId, user.id)
+  if (membership?.role !== 'owner') return { error: 'Apenas o dono pode excluir' }
 
   await deleteGroupInStore(groupId)
   return { success: true }
@@ -254,10 +195,9 @@ export async function leaveGroup(groupId: string): Promise<{ success: true } | {
   const user = await getSessionUser()
   if (!user) return { error: 'Não autenticado' }
 
-  const members = await readGroupMembers(groupId)
-  const target = members.find((m) => m.userId === user.id)
-  if (!target) return { error: 'Você não está nesse grupo' }
-  if (target.role === 'owner') return { error: 'O dono precisa excluir o grupo, não pode apenas sair' }
+  const membership = await readGroupMembership(groupId, user.id)
+  if (!membership) return { error: 'Você não está nesse grupo' }
+  if (membership.role === 'owner') return { error: 'O dono precisa excluir o grupo, não pode apenas sair' }
 
   await leaveGroupInStore(groupId, user.id)
   return { success: true }
@@ -267,11 +207,11 @@ export async function removeMember(groupId: string, userId: string): Promise<{ s
   const user = await getSessionUser()
   if (!user) return { error: 'Não autenticado' }
 
-  const members = await readGroupMembers(groupId)
-  const isOwner = members.find((m) => m.userId === user.id)?.role === 'owner'
-  if (!isOwner && user.id !== userId) return { error: 'Sem permissão' }
+  const actor = await readGroupMembership(groupId, user.id)
+  if (!actor) return { error: 'Sem permissão' }
+  if (actor.role !== 'owner' && user.id !== userId) return { error: 'Sem permissão' }
 
-  const target = members.find((m) => m.userId === userId)
+  const target = await readGroupMembership(groupId, userId)
   if (!target) return { error: 'Membro não encontrado' }
   if (target.role === 'owner') return { error: 'Não é possível remover o dono' }
 
@@ -281,6 +221,38 @@ export async function removeMember(groupId: string, userId: string): Promise<{ s
 
 function emptySnapshot(identity: string | null, activeGroupId: string | null, groupMembers: GroupMember[], settled: string[]): SyncSnapshot {
   return { identity, activeGroupId, groupMembers, events: [], theme: 'system', palette: 'default', locale: 'pt', settled }
+}
+
+async function snapshotForMember(userId: string, groupId: string, settled: string[], clearStaleActiveGroup: boolean): Promise<SyncSnapshot> {
+  const membership = await readGroupMembership(groupId, userId)
+  if (!membership) {
+    if (clearStaleActiveGroup) await writeActiveGroupId(userId, null)
+    return emptySnapshot(userId, null, [], settled)
+  }
+
+  const [groupMembers, events, theme, palette, locale] = await Promise.all([
+    readGroupMembersForMember(groupId, userId),
+    readEventsForMember(groupId, userId),
+    readTheme(userId),
+    readPalette(userId),
+    readLocale(userId)
+  ])
+
+  if (!groupMembers.some((m) => m.userId === userId)) {
+    if (clearStaleActiveGroup) await writeActiveGroupId(userId, null)
+    return emptySnapshot(userId, null, [], settled)
+  }
+
+  return {
+    identity: userId,
+    activeGroupId: groupId,
+    groupMembers,
+    events,
+    theme,
+    palette,
+    locale,
+    settled
+  }
 }
 
 function opId(op: unknown): string | null {
