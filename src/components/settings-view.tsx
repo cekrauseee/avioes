@@ -71,6 +71,15 @@ export function SettingsView() {
                       active ? 'bg-paper border-ink' : 'border-line hover:border-ink-faint'
                     }`}
                   >
+                    {active && (
+                      <motion.span
+                        layoutId='theme-active'
+                        className='bg-ink text-bg absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] leading-none'
+                        transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 30 }}
+                      >
+                        ✓
+                      </motion.span>
+                    )}
                     <span className='text-xl leading-none'>{mode.glyph}</span>
                     <span className={`text-xs transition-colors ${active ? 'text-ink' : 'text-ink-faint'}`}>{t(currentLocale, mode.labelKey)}</span>
                   </button>
@@ -143,6 +152,15 @@ export function SettingsView() {
                       active ? 'bg-paper border-ink' : 'border-line hover:border-ink-faint'
                     }`}
                   >
+                    {active && (
+                      <motion.span
+                        layoutId='locale-active'
+                        className='bg-ink text-bg absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] leading-none'
+                        transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 30 }}
+                      >
+                        ✓
+                      </motion.span>
+                    )}
                     <span className={`font-display text-sm transition-colors ${active ? 'text-ink' : 'text-ink-faint'}`}>{opt.label}</span>
                   </button>
                 )
