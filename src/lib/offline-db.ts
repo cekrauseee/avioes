@@ -1,5 +1,5 @@
 import { makeDeleteLatestEventOp, type OfflineSnapshot } from './offline-model'
-import type { AirplaneEvent, Identity, Palette, PendingOp, Theme } from './types'
+import type { AirplaneEvent, Identity, Locale, Palette, PendingOp, Theme } from './types'
 
 export type PersistedOfflineState = OfflineSnapshot & {
   version: 1
@@ -9,6 +9,7 @@ export type BootState = {
   identity: Identity | null
   theme: Theme
   palette: Palette
+  locale: Locale
   introSeen: boolean
 }
 
@@ -22,17 +23,18 @@ const LEGACY_QUEUE_KEY = 'ap_queue'
 let dbPromise: Promise<IDBDatabase> | null = null
 
 export function readBootState(): BootState {
-  if (typeof window === 'undefined') return { identity: null, theme: 'system', palette: 'default', introSeen: false }
+  if (typeof window === 'undefined') return { identity: null, theme: 'system', palette: 'default', locale: 'pt', introSeen: false }
   try {
     const parsed = JSON.parse(window.localStorage.getItem(BOOT_KEY) ?? '{}') as Partial<BootState>
     return {
       identity: parsed.identity === 'henrique' || parsed.identity === 'pietra' ? parsed.identity : null,
       theme: parsed.theme === 'light' || parsed.theme === 'dark' || parsed.theme === 'system' ? parsed.theme : 'system',
       palette: isPalette(parsed.palette) ? parsed.palette : 'default',
+      locale: isLocale(parsed.locale) ? parsed.locale : detectLocale(),
       introSeen: parsed.introSeen === true
     }
   } catch {
-    return { identity: null, theme: 'system', palette: 'default', introSeen: false }
+    return { identity: null, theme: 'system', palette: 'default', locale: detectLocale(), introSeen: false }
   }
 }
 
@@ -150,9 +152,11 @@ function isPersistedState(value: unknown): value is PersistedOfflineState {
   if (!isIdentityOrNull(item.identity)) return false
   if (!isTheme(item.baseTheme)) return false
   if (item.basePalette !== undefined && !isPalette(item.basePalette)) return false
+  if (item.baseLocale !== undefined && !isLocale(item.baseLocale)) return false
   if (!Array.isArray(item.baseEvents) || !item.baseEvents.every(isEvent)) return false
   if (!Array.isArray(item.pendingOps) || !item.pendingOps.every(isPendingOp)) return false
   if (item.basePalette === undefined) (item as Record<string, unknown>).basePalette = 'default'
+  if (item.baseLocale === undefined) (item as Record<string, unknown>).baseLocale = 'pt'
   return true
 }
 
@@ -178,6 +182,15 @@ function isPalette(value: unknown): value is Palette {
   return value === 'default' || value === 'ocean' || value === 'lavender' || value === 'earth' || value === 'blossom' || value === 'sky'
 }
 
+function isLocale(value: unknown): value is Locale {
+  return value === 'pt' || value === 'en'
+}
+
+function detectLocale(): Locale {
+  if (typeof navigator === 'undefined') return 'pt'
+  return (navigator.language || '').startsWith('pt') ? 'pt' : 'en'
+}
+
 function isPendingOp(value: unknown): value is PendingOp {
   if (typeof value !== 'object' || value === null) return false
   const item = value as Partial<PendingOp>
@@ -186,6 +199,7 @@ function isPendingOp(value: unknown): value is PendingOp {
   if (item.kind === 'delete-event') return typeof item.eventId === 'string'
   if (item.kind === 'set-theme') return isTheme(item.theme)
   if (item.kind === 'set-palette') return isPalette(item.palette)
+  if (item.kind === 'set-locale') return isLocale((item as { locale?: unknown }).locale)
   return false
 }
 

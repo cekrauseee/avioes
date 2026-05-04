@@ -3,15 +3,19 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { startTransition } from 'react'
+import { t } from '../lib/i18n'
+import { selectLocale, useOfflineState } from '../lib/offline-store'
 
 export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  const state = useOfflineState()
+  const locale = selectLocale(state)
   const retry = () => startTransition(() => reset())
 
   return (
     <main className='relative flex h-full w-full flex-col px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.25rem)]'>
       <header className='flex items-baseline justify-between'>
-        <span className='text-ink-faint text-xs'>aviões · 500</span>
-        <span className='text-ink-faint text-xs'>turbulência</span>
+        <span className='text-ink-faint text-xs'>{t(locale, 'error.header')}</span>
+        <span className='text-ink-faint text-xs'>{t(locale, 'error.headerRight')}</span>
       </header>
 
       <div className='flex flex-1 flex-col items-center justify-center text-center'>
@@ -38,11 +42,11 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
           />
         </div>
         <h1 className='font-display mt-8 text-[34px] leading-[0.95] tracking-tight'>
-          Um pouco de
+          {t(locale, 'error.titleLine1')}
           <br />
-          <span className='text-clay italic'>turbulência</span>.
+          <span className='text-clay italic'>{t(locale, 'error.titleItalic')}</span>.
         </h1>
-        <p className='font-display text-ink-soft mt-3 max-w-[28ch] text-sm italic'>Algo saiu do prumo aqui. Tenta de novo daqui a pouco.</p>
+        <p className='font-display text-ink-soft mt-3 max-w-[28ch] text-sm italic'>{t(locale, 'error.body')}</p>
       </div>
 
       <div className='mt-4 flex flex-col items-center gap-1.5'>
@@ -57,14 +61,14 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
           >
             ↻
           </span>
-          <span className='font-display'>tentar de novo</span>
+          <span className='font-display'>{t(locale, 'error.retry')}</span>
         </button>
         <Link
           href='/'
           className='text-ink-faint hover:text-ink-soft focus-visible:text-ink-soft inline-flex items-center gap-1 px-3 py-1.5 text-xs transition-colors'
         >
           <span aria-hidden>←</span>
-          <span>voltar pra contagem</span>
+          <span>{t(locale, 'error.backToCount')}</span>
         </Link>
       </div>
     </main>

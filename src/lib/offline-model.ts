@@ -1,16 +1,18 @@
 import { totals } from './streaks'
-import type { AirplaneEvent, Identity, Palette, PendingOp, Theme } from './types'
+import type { AirplaneEvent, Identity, Locale, Palette, PendingOp, Theme } from './types'
 
 export type AddEventOp = Extract<PendingOp, { kind: 'add-event' }>
 export type DeleteEventOp = Extract<PendingOp, { kind: 'delete-event' }>
 export type ThemeOp = Extract<PendingOp, { kind: 'set-theme' }>
 export type PaletteOp = Extract<PendingOp, { kind: 'set-palette' }>
+export type LocaleOp = Extract<PendingOp, { kind: 'set-locale' }>
 
 export type OfflineSnapshot = {
   identity: Identity | null
   baseEvents: AirplaneEvent[]
   baseTheme: Theme
   basePalette: Palette
+  baseLocale: Locale
   pendingOps: PendingOp[]
 }
 
@@ -19,6 +21,7 @@ export type SyncSnapshot = {
   events: AirplaneEvent[]
   theme: Theme
   palette: Palette
+  locale: Locale
   settled: string[]
   introSeen: boolean
 }
@@ -81,6 +84,18 @@ export function makePaletteOp(palette: Palette, id: string): PaletteOp {
   return { id, kind: 'set-palette', palette }
 }
 
+export function projectLocale(baseLocale: Locale, pendingOps: readonly PendingOp[]): Locale {
+  let locale = baseLocale
+  for (const op of pendingOps) {
+    if (op.kind === 'set-locale') locale = op.locale
+  }
+  return locale
+}
+
+export function makeLocaleOp(locale: Locale, id: string): LocaleOp {
+  return { id, kind: 'set-locale', locale }
+}
+
 export function settleSnapshot(snapshot: OfflineSnapshot, sync: SyncSnapshot): OfflineSnapshot {
   const settled = new Set(sync.settled)
   return {
@@ -88,6 +103,7 @@ export function settleSnapshot(snapshot: OfflineSnapshot, sync: SyncSnapshot): O
     baseEvents: sync.events,
     baseTheme: sync.theme,
     basePalette: sync.palette,
+    baseLocale: sync.locale,
     pendingOps: sync.identity ? snapshot.pendingOps.filter((op) => !settled.has(op.id)) : []
   }
 }

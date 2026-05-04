@@ -4,10 +4,14 @@ import { motion } from 'motion/react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { startTransition, useState } from 'react'
+import { t } from '../lib/i18n'
+import { selectLocale, useOfflineState } from '../lib/offline-store'
 
 export function OfflineGate() {
   const router = useRouter()
   const [retrying, setRetrying] = useState(false)
+  const state = useOfflineState()
+  const locale = selectLocale(state)
 
   const retry = () => {
     setRetrying(true)
@@ -25,8 +29,8 @@ export function OfflineGate() {
       className='relative flex h-full w-full flex-col px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.25rem)]'
     >
       <header className='flex items-baseline justify-between'>
-        <span className='text-ink-faint text-xs'>aviões · sem sinal</span>
-        <span className='text-ink-faint text-xs'>pouso adiado</span>
+        <span className='text-ink-faint text-xs'>{t(locale, 'offline.noSignal')}</span>
+        <span className='text-ink-faint text-xs'>{t(locale, 'offline.delayed')}</span>
       </header>
 
       <div className='flex flex-1 flex-col items-center justify-center text-center'>
@@ -66,9 +70,9 @@ export function OfflineGate() {
           transition={{ duration: 0.55, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           className='font-display mt-8 text-[34px] leading-[0.95] tracking-tight'
         >
-          Sem rede,
+          {t(locale, 'offline.titleLine1')}
           <br />
-          <span className='text-clay italic'>sem rumo</span>.
+          <span className='text-clay italic'>{t(locale, 'offline.titleItalic')}</span>.
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 8 }}
@@ -76,7 +80,7 @@ export function OfflineGate() {
           transition={{ duration: 0.55, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
           className='font-display text-ink-soft mt-3 max-w-[28ch] text-sm italic'
         >
-          A gente precisa saber quem está olhando o céu antes de contar offline. Volta quando o avião pousar — basta um instante de internet.
+          {t(locale, 'offline.body')}
         </motion.p>
       </div>
 
@@ -100,9 +104,9 @@ export function OfflineGate() {
           >
             ↻
           </motion.span>
-          <span className='font-display'>tentar de novo</span>
+          <span className='font-display'>{t(locale, 'offline.retry')}</span>
         </button>
-        <p className='text-ink-faint mt-1 max-w-[28ch] text-center text-[11px]'>identidade fica salva neste dispositivo · sem login</p>
+        <p className='text-ink-faint mt-1 max-w-[28ch] text-center text-[11px]'>{t(locale, 'offline.savedOnDevice')}</p>
       </motion.div>
     </motion.main>
   )

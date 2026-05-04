@@ -1,5 +1,7 @@
 export type Identity = 'henrique' | 'pietra'
 
+export type Locale = 'pt' | 'en'
+
 export type AirplaneEvent = {
   id: string
   who: Identity
@@ -22,6 +24,7 @@ export type PendingOp =
   | { id: string; kind: 'delete-event'; eventId: string }
   | { id: string; kind: 'set-theme'; theme: Theme }
   | { id: string; kind: 'set-palette'; palette: Palette }
+  | { id: string; kind: 'set-locale'; locale: Locale }
 
 export type PalettePreview = {
   bg: string

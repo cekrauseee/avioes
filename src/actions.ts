@@ -2,7 +2,7 @@
 
 import { deleteIdentity, readIdentity, readIntroSeen, writeIdentity, writeIntroSeen } from './lib/cookies'
 import type { SyncSnapshot } from './lib/offline-model'
-import { applyOps, readEvents, readPalette, readTheme } from './lib/store'
+import { applyOps, readEvents, readLocale, readPalette, readTheme } from './lib/store'
 import type { Identity, PendingOp } from './lib/types'
 
 const MAX_SYNC_OPS = 250
@@ -33,7 +33,7 @@ function opId(op: unknown): string | null {
 
 function isPendingOp(op: unknown): op is PendingOp {
   if (typeof op !== 'object' || op === null) return false
-  const item = op as { id?: unknown; kind?: unknown; event?: unknown; eventId?: unknown; theme?: unknown; palette?: unknown }
+  const item = op as { id?: unknown; kind?: unknown; event?: unknown; eventId?: unknown; theme?: unknown; palette?: unknown; locale?: unknown }
   if (typeof item.id !== 'string') return false
   if (item.kind === 'add-event') {
     const event = item.event as { id?: unknown; who?: unknown; ts?: unknown } | null
@@ -60,6 +60,7 @@ function isPendingOp(op: unknown): op is PendingOp {
       item.palette === 'blossom' ||
       item.palette === 'sky'
     )
+  if (item.kind === 'set-locale') return item.locale === 'pt' || item.locale === 'en'
   return false
 }
 
@@ -87,10 +88,10 @@ export async function syncOps(ops: unknown[]): Promise<SyncSnapshot> {
 }
 
 function emptySnapshot(identity: Identity | null, settled: string[], introSeen: boolean): SyncSnapshot {
-  return { identity, events: [], theme: 'system', palette: 'default', settled, introSeen }
+  return { identity, events: [], theme: 'system', palette: 'default', locale: 'pt', settled, introSeen }
 }
 
 async function snapshotFor(identity: Identity, settled: string[]): Promise<SyncSnapshot> {
-  const [events, theme, palette, introSeen] = await Promise.all([readEvents(), readTheme(identity), readPalette(identity), readIntroSeen()])
-  return { identity, events, theme, palette, settled, introSeen }
+  const [events, theme, palette, locale, introSeen] = await Promise.all([readEvents(), readTheme(identity), readPalette(identity), readLocale(identity), readIntroSeen()])
+  return { identity, events, theme, palette, locale, settled, introSeen }
 }

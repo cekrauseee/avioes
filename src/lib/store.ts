@@ -2,7 +2,7 @@ import 'server-only'
 
 import { and, eq, sql } from 'drizzle-orm'
 import { db, events, preferences, processedOps } from './db'
-import type { AirplaneEvent, Identity, Palette, PendingOp, Theme } from './types'
+import type { AirplaneEvent, Identity, Locale, Palette, PendingOp, Theme } from './types'
 
 export async function readEvents(): Promise<AirplaneEvent[]> {
   const rows = await db.select({ id: events.id, clientId: events.clientId, who: events.who, ts: events.ts }).from(events).orderBy(events.ts, events.id)
@@ -23,6 +23,12 @@ export async function readPalette(who: Identity | null): Promise<Palette> {
   if (!who) return 'default'
   const row = await db.select({ palette: preferences.palette }).from(preferences).where(eq(preferences.who, who)).limit(1)
   return row[0]?.palette ?? 'default'
+}
+
+export async function readLocale(who: Identity | null): Promise<Locale> {
+  if (!who) return 'pt'
+  const row = await db.select({ locale: preferences.locale }).from(preferences).where(eq(preferences.who, who)).limit(1)
+  return row[0]?.locale ?? 'pt'
 }
 
 export async function writeTheme(who: Identity, theme: Theme): Promise<void> {
@@ -57,6 +63,11 @@ export async function applyOps(ops: PendingOp[], who: Identity): Promise<string[
             .insert(preferences)
             .values({ who, palette: op.palette })
             .onConflictDoUpdate({ target: preferences.who, set: { palette: op.palette } })
+        } else if (op.kind === 'set-locale') {
+          await tx
+            .insert(preferences)
+            .values({ who, locale: op.locale })
+            .onConflictDoUpdate({ target: preferences.who, set: { locale: op.locale } })
         }
       })
       settled.push(op.id)

@@ -4,14 +4,16 @@ import { motion, useMotionValue, useReducedMotion, type PanInfo } from 'motion/r
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
+import { t, type TKey } from '../lib/i18n'
 import { useNavDirection } from '../lib/nav-direction'
+import { selectLocale, useOfflineState } from '../lib/offline-store'
 import { IDENTITIES, type Identity } from '../lib/types'
 
-const links = [
-  { href: '/', label: 'Contar' },
-  { href: '/diary', label: 'Diário' },
-  { href: '/scoreboard', label: 'Placar' },
-  { href: '/settings', label: 'Ajustes' }
+const links: { href: string; labelKey: TKey }[] = [
+  { href: '/', labelKey: 'nav.count' },
+  { href: '/diary', labelKey: 'nav.diary' },
+  { href: '/scoreboard', labelKey: 'nav.scoreboard' },
+  { href: '/settings', labelKey: 'nav.settings' }
 ]
 
 export function Nav({ who }: { who: Identity }) {
@@ -20,6 +22,8 @@ export function Nav({ who }: { who: Identity }) {
   const reduceMotion = useReducedMotion()
   const { set: setDirection } = useNavDirection()
   const accent = IDENTITIES[who]
+  const state = useOfflineState()
+  const locale = selectLocale(state)
 
   const currentIndex = links.findIndex((l) => l.href === pathname)
   const [scrubbing, setScrubbing] = useState(false)
@@ -100,7 +104,7 @@ export function Nav({ who }: { who: Identity }) {
                 active ? 'text-ink' : 'text-ink-soft group-hover:text-ink group-focus-visible:text-ink'
               }`}
             >
-              {l.label}
+              {t(locale, l.labelKey)}
             </span>
           </Link>
         )

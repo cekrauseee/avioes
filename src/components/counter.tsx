@@ -4,7 +4,8 @@ import { AnimatePresence, motion, useReducedMotion, useSpring, useTransform } fr
 import Image from 'next/image'
 import { startTransition, useEffect, useRef, useState } from 'react'
 import { clearIdentity } from '../actions'
-import { addAirplane, applyLocalIdentity, isOffline, selectEvents, selectPendingCount, undoAirplane, useOfflineState } from '../lib/offline-store'
+import { t } from '../lib/i18n'
+import { addAirplane, applyLocalIdentity, isOffline, selectEvents, selectLocale, selectPendingCount, undoAirplane, useOfflineState } from '../lib/offline-store'
 import { totals } from '../lib/streaks'
 import { IDENTITIES } from '../lib/types'
 import { AppShell } from './app-shell'
@@ -31,9 +32,10 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
   const partner = who === 'henrique' ? 'pietra' : 'henrique'
   const partnerName = IDENTITIES[partner].label
   const myName = me.label
+  const locale = selectLocale(state)
 
   const events = selectEvents(state)
-  const t = totals(events)
+  const tt = totals(events)
   const offline = isOffline(state)
   const pendingCount = selectPendingCount(state)
   const syncVisible = offline
@@ -43,15 +45,12 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
   const tokenExit = reducedMotion ? { opacity: 0 } : { opacity: 0, y: -2 }
   const tokenTransition = { duration: 0.15, ease: [0.22, 1, 0.36, 1] as const }
 
-  const display = t[who]
-  const totalDisplay = t.henrique + t.pietra
+  const display = tt[who]
+  const totalDisplay = tt.henrique + tt.pietra
   const canUndo = display > 0
 
   const [flights, setFlights] = useState<ArcKey[]>([])
   const spring = useSpring(display, { stiffness: 220, damping: 22 })
-  // Animate only when the change came from a user interaction (tap/undo).
-  // Mount, hydration, and sync snapshots all jump to avoid replaying cached
-  // offline state as a fake increment animation on reload.
   const animateNextRef = useRef(false)
   useEffect(() => {
     if (animateNextRef.current) {
@@ -63,8 +62,6 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
   }, [display, spring])
   const displayed = useTransform(spring, (v) => Math.round(v).toString())
 
-  // Gate the total's AnimatePresence on hydration so cached offline state does
-  // not play as a fake real-time increment animation on reload.
   const hydrated = state.hydrated
 
   const tap = () => {
@@ -106,10 +103,10 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
             <span className='font-display text-sm'>{myName}</span>
             <span className='text-ink-faint group-hover:text-ink-soft group-focus-visible:text-ink-soft text-xs transition-colors'>
               {offline ?
-                'offline'
+                t(locale, 'counter.offline')
               : pendingCount > 0 ?
-                'pendente'
-              : 'trocar'}
+                t(locale, 'counter.pending')
+              : t(locale, 'counter.switch')}
             </span>
           </button>
           <div className='flex items-center gap-2'>
@@ -140,7 +137,7 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
                   </motion.span>
                 </AnimatePresence>
               : <span className='inline-block'>{totalDisplay}</span>}
-              <span>no total</span>
+              <span>{t(locale, 'counter.total')}</span>
             </span>
             <ThemeToggle />
           </div>
@@ -150,10 +147,10 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
           type='button'
           onClick={tap}
           className='relative z-10 mt-4 flex flex-1 flex-col items-end justify-center text-right transition-transform select-none active:scale-[0.99]'
-          aria-label='Vi um avião'
+          aria-label={t(locale, 'counter.ariaLabel')}
         >
           <AnimatePresence>
-            {display === 0 && t[partner] === 0 && (
+            {display === 0 && tt[partner] === 0 && (
               <motion.div
                 key='empty-counter'
                 initial={{ opacity: 0, scale: 0.94 }}
@@ -186,23 +183,23 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
               </motion.div>
             )}
           </AnimatePresence>
-          <span className='text-ink-faint text-xs'>toque · vi um avião</span>
+          <span className='text-ink-faint text-xs'>{t(locale, 'counter.tapHint')}</span>
           <motion.span className='font-display text-[clamp(96px,32vw,150px)] leading-[0.85] tracking-tight'>{displayed}</motion.span>
           <span className='font-display text-ink-soft -mt-1 text-base italic'>
-            {display === 1 ? 'avião' : 'aviões'} {myName.toLowerCase()}
+            {display === 1 ? t(locale, 'counter.airplane') : t(locale, 'counter.airplanes')} {myName.toLowerCase()}
           </span>
         </button>
 
         <footer className='relative z-10 mt-4 flex items-end justify-between gap-4'>
           <div className='flex flex-col gap-0.5'>
             <span className='text-ink-faint text-xs'>{partnerName}</span>
-            <span className='font-display text-ink-soft text-xl'>{t[partner]}</span>
+            <span className='font-display text-ink-soft text-xl'>{tt[partner]}</span>
           </div>
           <button
             type='button'
             onClick={undo}
             disabled={!canUndo}
-            aria-label='desfazer último avião'
+            aria-label={t(locale, 'counter.undoAriaLabel')}
             className='group text-ink-soft hover:bg-line/40 hover:text-ink focus-visible:bg-line/40 focus-visible:text-ink -mr-3 inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm transition-colors active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent disabled:focus-visible:bg-transparent'
           >
             <span
@@ -211,7 +208,7 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
             >
               ↶
             </span>
-            <span>desfazer</span>
+            <span>{t(locale, 'counter.undo')}</span>
           </button>
         </footer>
       </main>

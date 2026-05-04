@@ -20,6 +20,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-04 — Internationalization (i18n): per-user language preference
+
+Two locales: `pt` (Brazilian Portuguese, default) and `en` (English). Stored per-user in Postgres via a `locale` column on `preferences`, synced through the offline op queue (`set-locale` op kind). Browser language detected on first visit as default. All UI strings extracted to `src/lib/i18n.ts` with translation keys. Locale selectable on `/settings` (new "idioma" section). The `<html lang>` attribute, `Intl.DateTimeFormat` locale, and all component text update reactively. Boot script in `layout.tsx` detects and applies locale before paint. Metadata (title "Aviões", manifest) stays Portuguese — it's the brand name. Run `npm run db:push` after pulling to add the `locale` enum and column.
+
 ### 2026-05-04 — Palette themes: per-user color customization
 
 Six palettes (Caderno/Oceano/Lavanda/Terra/Flor/Céu) selectable on a new `/settings` page ("Ajustes"), persisted per-user in Postgres via a `palette` column on `preferences` and synced through the offline op queue (`set-palette` op kind). Each palette overrides all CSS color tokens for both light and dark modes via `[data-palette]` selectors in `globals.css`. The palette is applied at boot via the `ap_boot` localStorage hint (same pattern as theme mode). Nav gained a 4th tab for settings. ThemeToggle remains in page headers for quick light/dark/system switching; the settings page has both palette and mode pickers. Run `npm run db:push` after pulling to add the `palette` enum and column.

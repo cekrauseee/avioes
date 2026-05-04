@@ -2,17 +2,23 @@
 
 import { motion, useReducedMotion } from 'motion/react'
 import { useSyncExternalStore } from 'react'
-import { queuePalette, queueTheme, selectPalette, selectTheme, useOfflineState } from '../lib/offline-store'
-import { PALETTES, type Palette, type Theme } from '../lib/types'
+import { t, type TKey } from '../lib/i18n'
+import { queueLocale, queuePalette, queueTheme, selectLocale, selectPalette, selectTheme, useOfflineState } from '../lib/offline-store'
+import { PALETTES, type Locale, type Palette, type Theme } from '../lib/types'
 import { AppShell } from './app-shell'
 import { Onboarding } from './onboarding'
 
 const PALETTE_KEYS = Object.keys(PALETTES) as Palette[]
 
-const THEME_MODES: { id: Theme; label: string; glyph: string }[] = [
-  { id: 'light', label: 'Claro', glyph: '☀' },
-  { id: 'dark', label: 'Escuro', glyph: '☾' },
-  { id: 'system', label: 'Auto', glyph: '◐' }
+const THEME_MODES: { id: Theme; labelKey: TKey; glyph: string }[] = [
+  { id: 'light', labelKey: 'settings.light', glyph: '☀' },
+  { id: 'dark', labelKey: 'settings.dark', glyph: '☾' },
+  { id: 'system', labelKey: 'settings.auto', glyph: '◐' }
+]
+
+const LOCALE_OPTIONS: { id: Locale; label: string }[] = [
+  { id: 'pt', label: 'Português' },
+  { id: 'en', label: 'English' }
 ]
 
 function subscribeSystemDark(callback: () => void) {
@@ -36,6 +42,7 @@ export function SettingsView() {
   const state = useOfflineState()
   const currentTheme = selectTheme(state)
   const currentPalette = selectPalette(state)
+  const currentLocale = selectLocale(state)
   const reducedMotion = useReducedMotion()
   const isDark = useEffectiveDark(currentTheme)
 
@@ -45,13 +52,13 @@ export function SettingsView() {
     <AppShell scroll>
       <div className='flex h-full flex-col'>
         <header className='px-5 pt-[max(env(safe-area-inset-top),1.25rem)] pb-3'>
-          <h1 className='font-display text-3xl tracking-tight'>Ajustes</h1>
-          <p className='font-display text-ink-soft mt-1 text-sm italic'>Deixe do seu jeito.</p>
+          <h1 className='font-display text-3xl tracking-tight'>{t(currentLocale, 'settings.title')}</h1>
+          <p className='font-display text-ink-soft mt-1 text-sm italic'>{t(currentLocale, 'settings.subtitle')}</p>
         </header>
 
         <div className='scroll-area fade-scroll flex-1 overflow-y-auto px-5 pt-2 pb-8'>
           <section>
-            <h2 className='text-ink-faint text-xs'>modo</h2>
+            <h2 className='text-ink-faint text-xs'>{t(currentLocale, 'settings.mode')}</h2>
             <div className='mt-3 grid grid-cols-3 gap-3'>
               {THEME_MODES.map((mode) => {
                 const active = currentTheme === mode.id
@@ -65,7 +72,7 @@ export function SettingsView() {
                     }`}
                   >
                     <span className='text-xl leading-none'>{mode.glyph}</span>
-                    <span className={`text-xs transition-colors ${active ? 'text-ink' : 'text-ink-faint'}`}>{mode.label}</span>
+                    <span className={`text-xs transition-colors ${active ? 'text-ink' : 'text-ink-faint'}`}>{t(currentLocale, mode.labelKey)}</span>
                   </button>
                 )
               })}
@@ -73,7 +80,7 @@ export function SettingsView() {
           </section>
 
           <section className='mt-8'>
-            <h2 className='text-ink-faint text-xs'>paleta</h2>
+            <h2 className='text-ink-faint text-xs'>{t(currentLocale, 'settings.palette')}</h2>
             <div className='mt-3 grid grid-cols-3 gap-3'>
               {PALETTE_KEYS.map((id) => {
                 const meta = PALETTES[id]
@@ -113,7 +120,30 @@ export function SettingsView() {
                         </motion.span>
                       )}
                     </div>
-                    <span className={`text-xs transition-colors ${active ? 'text-ink' : 'text-ink-faint'}`}>{meta.label}</span>
+                    <span className={`text-xs transition-colors ${active ? 'text-ink' : 'text-ink-faint'}`}>
+                      {t(currentLocale, `palette.${id}` as TKey)}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+
+          <section className='mt-8'>
+            <h2 className='text-ink-faint text-xs'>{t(currentLocale, 'settings.language')}</h2>
+            <div className='mt-3 grid grid-cols-2 gap-3'>
+              {LOCALE_OPTIONS.map((opt) => {
+                const active = currentLocale === opt.id
+                return (
+                  <button
+                    key={opt.id}
+                    type='button'
+                    onClick={() => queueLocale(opt.id)}
+                    className={`relative flex items-center justify-center rounded-xl border-2 py-4 transition-all ${
+                      active ? 'bg-paper border-ink' : 'border-line hover:border-ink-faint'
+                    }`}
+                  >
+                    <span className={`font-display text-sm transition-colors ${active ? 'text-ink' : 'text-ink-faint'}`}>{opt.label}</span>
                   </button>
                 )
               })}

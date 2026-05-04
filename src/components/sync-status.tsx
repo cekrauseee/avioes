@@ -1,12 +1,14 @@
 'use client'
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { isOffline, selectPendingCount, useOfflineState } from '../lib/offline-store'
+import { t } from '../lib/i18n'
+import { isOffline, selectLocale, selectPendingCount, useOfflineState } from '../lib/offline-store'
 
 const EASE = [0.22, 1, 0.36, 1] as const
 
 export function SyncStatus() {
   const state = useOfflineState()
+  const locale = selectLocale(state)
   const offline = isOffline(state)
   const reducedMotion = useReducedMotion()
   const pending = selectPendingCount(state)
@@ -14,13 +16,13 @@ export function SyncStatus() {
   const visible = offline
   const showCount = offline && pending > 0
 
-  const label = offline ? 'offline' : null
+  const label = offline ? t(locale, 'sync.offline') : null
   const countNumber = showCount ? pending : null
   const countWord =
     showCount ?
       pending === 1 ?
-        'pendente'
-      : 'pendentes'
+        t(locale, 'sync.pendingSingular')
+      : t(locale, 'sync.pendingPlural')
     : null
 
   const tokenEnter = reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }

@@ -3,44 +3,50 @@
 import { AnimatePresence, motion, useReducedMotion, type PanInfo } from 'motion/react'
 import { useState, useTransition } from 'react'
 import { markIntroSeen } from '../actions'
+import { t, type TKey } from '../lib/i18n'
 import { applyIntroSeen } from '../lib/offline-store'
+import type { Locale } from '../lib/types'
 import { Placeholder } from './placeholder'
 
 type Page = {
   eyebrow: string
-  title: string
-  italic: string
-  body: string
-  art: { label: string; glyph: string }
+  titleKey: TKey
+  italicKey: TKey
+  bodyKey: TKey
+  artLabelKey: TKey
+  glyph: string
 }
 
 const PAGES: Page[] = [
   {
     eyebrow: 'i.',
-    title: 'Para os dias de',
-    italic: 'céu aberto',
-    body: 'Aviões é um diário pequeno pra duas pessoas que olham pra cima juntas.',
-    art: { label: 'placeholder · pessoa olhando o céu', glyph: '✈' }
+    titleKey: 'intro.page1.title',
+    italicKey: 'intro.page1.italic',
+    bodyKey: 'intro.page1.body',
+    artLabelKey: 'intro.page1.artLabel',
+    glyph: '✈'
   },
   {
     eyebrow: 'ii.',
-    title: 'Toca, e fica',
-    italic: 'registrado',
-    body: 'Quando aparecer um avião, quem vir primeiro toca a tela. Conta um.',
-    art: { label: 'placeholder · dedo tocando nuvem', glyph: '·' }
+    titleKey: 'intro.page2.title',
+    italicKey: 'intro.page2.italic',
+    bodyKey: 'intro.page2.body',
+    artLabelKey: 'intro.page2.artLabel',
+    glyph: '·'
   },
   {
     eyebrow: 'iii.',
-    title: 'O céu de vocês,',
-    italic: 'em ordem',
-    body: 'A gente guarda toda sequência. Pra olhar depois, e lembrar do dia.',
-    art: { label: 'placeholder · página de diário', glyph: '◌' }
+    titleKey: 'intro.page3.title',
+    italicKey: 'intro.page3.italic',
+    bodyKey: 'intro.page3.body',
+    artLabelKey: 'intro.page3.artLabel',
+    glyph: '◌'
   }
 ]
 
 const SLIDE_THRESHOLD = 60
 
-export function Intro({ onDone }: { onDone: () => void }) {
+export function Intro({ onDone, locale }: { onDone: () => void; locale: Locale }) {
   const [index, setIndex] = useState(0)
   const [direction, setDirection] = useState<1 | -1>(1)
   const [leaving, setLeaving] = useState(false)
@@ -110,7 +116,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
           disabled={pending || leaving}
           className='text-ink-faint hover:text-ink-soft focus-visible:text-ink-soft -mr-2 rounded-full px-2 py-1 text-xs transition-colors disabled:opacity-50'
         >
-          pular
+          {t(locale, 'intro.skip')}
         </button>
       </header>
 
@@ -145,18 +151,18 @@ export function Intro({ onDone }: { onDone: () => void }) {
 
             <div className='relative mx-auto w-[78%] max-w-[260px]'>
               <Placeholder
-                label={page.art.label}
-                glyph={page.art.glyph}
+                label={`placeholder · ${t(locale, page.artLabelKey)}`}
+                glyph={page.glyph}
               />
             </div>
 
             <div className='mt-7'>
               <h1 className='font-display text-[34px] leading-[0.95] tracking-tight'>
-                {page.title}
+                {t(locale, page.titleKey)}
                 <br />
-                <span className='text-clay italic'>{page.italic}</span>.
+                <span className='text-clay italic'>{t(locale, page.italicKey)}</span>.
               </h1>
-              <p className='font-display text-ink-soft mt-3 max-w-[30ch] text-sm italic'>{page.body}</p>
+              <p className='font-display text-ink-soft mt-3 max-w-[30ch] text-sm italic'>{t(locale, page.bodyKey)}</p>
             </div>
           </motion.section>
         </AnimatePresence>
@@ -168,7 +174,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
             type='button'
             onClick={goPrev}
             disabled={pending || leaving || index === 0}
-            aria-label='página anterior'
+            aria-label={t(locale, 'intro.prevPage')}
             aria-hidden={index === 0}
             tabIndex={index === 0 ? -1 : 0}
             className={`group focus-visible:bg-line/40 hover:bg-line/40 -ml-2 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm transition-all duration-300 active:scale-[0.99] ${
@@ -181,13 +187,13 @@ export function Intro({ onDone }: { onDone: () => void }) {
             >
               ←
             </span>
-            <span className='font-display'>voltar</span>
+            <span className='font-display'>{t(locale, 'intro.back')}</span>
           </button>
         </div>
 
         <div
           role='tablist'
-          aria-label='páginas da introdução'
+          aria-label={t(locale, 'intro.pagesAriaLabel')}
           className='flex items-center justify-center gap-2'
         >
           {PAGES.map((_, i) => {
@@ -198,7 +204,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
                 type='button'
                 role='tab'
                 aria-selected={active}
-                aria-label={`ir para a página ${i + 1}`}
+                aria-label={`${t(locale, 'intro.goToPage')} ${i + 1}`}
                 onClick={() => goTo(i)}
                 disabled={pending || leaving}
                 className='group relative h-6 px-1'
@@ -220,7 +226,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
             disabled={pending || leaving}
             className='group focus-visible:bg-line/40 hover:bg-line/40 -mr-2 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm transition-colors active:scale-[0.99] disabled:opacity-50'
           >
-            <span className='font-display'>{isLast ? 'começar' : 'próximo'}</span>
+            <span className='font-display'>{isLast ? t(locale, 'intro.start') : t(locale, 'intro.next')}</span>
             <span
               aria-hidden
               className='text-base leading-none transition-transform duration-300 group-hover:translate-x-1 group-focus-visible:translate-x-1'

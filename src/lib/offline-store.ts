@@ -14,17 +14,19 @@ import {
 import {
   makeAddEventOp,
   makeDeleteLatestEventOp,
+  makeLocaleOp,
   makePaletteOp,
   makeThemeOp,
   pendingWriteCount,
   projectEvents,
+  projectLocale,
   projectPalette,
   projectTheme,
   settleSnapshot,
   type OfflineSnapshot,
   type SyncSnapshot
 } from './offline-model'
-import type { AirplaneEvent, Identity, Palette, PendingOp, Theme } from './types'
+import type { AirplaneEvent, Identity, Locale, Palette, PendingOp, Theme } from './types'
 
 export type OfflineStoreState = OfflineSnapshot & {
   hydrated: boolean
@@ -35,7 +37,7 @@ export type OfflineStoreState = OfflineSnapshot & {
   introSeen: boolean
 }
 
-type BroadcastState = Pick<OfflineStoreState, 'identity' | 'baseEvents' | 'baseTheme' | 'basePalette' | 'lastSyncOk'>
+type BroadcastState = Pick<OfflineStoreState, 'identity' | 'baseEvents' | 'baseTheme' | 'basePalette' | 'baseLocale' | 'lastSyncOk'>
 
 const EMPTY_EVENTS: AirplaneEvent[] = []
 const EMPTY_OPS: PendingOp[] = []
@@ -46,6 +48,7 @@ let state: OfflineStoreState = {
   baseEvents: EMPTY_EVENTS,
   baseTheme: 'system',
   basePalette: 'default',
+  baseLocale: 'pt',
   pendingOps: EMPTY_OPS,
   hydrated: false,
   storageReady: false,
@@ -74,12 +77,14 @@ export function useOfflineRuntime(): void {
   const snapshot = useOfflineState()
   const theme = selectTheme(snapshot)
   const palette = selectPalette(snapshot)
+  const locale = selectLocale(snapshot)
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     document.documentElement.dataset.palette = palette
-    writeBootState({ identity: snapshot.identity, theme, palette, introSeen: snapshot.introSeen })
-  }, [snapshot.identity, theme, palette, snapshot.introSeen])
+    document.documentElement.lang = locale === 'en' ? 'en' : 'pt-BR'
+    writeBootState({ identity: snapshot.identity, theme, palette, locale, introSeen: snapshot.introSeen })
+  }, [snapshot.identity, theme, palette, locale, snapshot.introSeen])
 }
 
 export function useOfflineSync(): void {
@@ -132,6 +137,10 @@ export function selectPalette(snapshot: OfflineSnapshot): Palette {
   return projectPalette(snapshot.basePalette, snapshot.pendingOps)
 }
 
+export function selectLocale(snapshot: OfflineSnapshot): Locale {
+  return projectLocale(snapshot.baseLocale, snapshot.pendingOps)
+}
+
 export function selectPendingCount(snapshot: OfflineSnapshot): number {
   return pendingWriteCount(snapshot.pendingOps)
 }
@@ -163,6 +172,10 @@ export function queuePalette(palette: Palette): void {
   commit({ pendingOps: [...state.pendingOps, makePaletteOp(palette, `op:${crypto.randomUUID()}`)] })
 }
 
+export function queueLocale(locale: Locale): void {
+  commit({ pendingOps: [...state.pendingOps, makeLocaleOp(locale, `op:${crypto.randomUUID()}`)] })
+}
+
 export function applyServerSnapshot(sync: SyncSnapshot): void {
   const next = migrateLegacyQueue(settleSnapshot(state, sync))
   commit({
@@ -183,7 +196,7 @@ export function applyLocalIdentity(identity: Identity | null): void {
   if (identity) {
     commit({ identity })
   } else {
-    commit({ identity: null, baseEvents: EMPTY_EVENTS, baseTheme: 'system', basePalette: 'default', pendingOps: EMPTY_OPS })
+    commit({ identity: null, baseEvents: EMPTY_EVENTS, baseTheme: 'system', basePalette: 'default', baseLocale: 'pt', pendingOps: EMPTY_OPS })
     clearBootState()
     void clearPersistedState().catch(() => {})
   }
@@ -239,7 +252,7 @@ function initOfflineStore(): void {
 
   queueMicrotask(() => {
     const boot = readBootState()
-    updateState({ hydrated: true, identity: boot.identity, baseTheme: boot.theme, basePalette: boot.palette, introSeen: boot.introSeen })
+    updateState({ hydrated: true, identity: boot.identity, baseTheme: boot.theme, basePalette: boot.palette, baseLocale: boot.locale, introSeen: boot.introSeen })
     void readPersistedState()
       .then((persisted) => {
         if (!persisted) {
@@ -248,6 +261,7 @@ function initOfflineStore(): void {
             baseEvents: EMPTY_EVENTS,
             baseTheme: boot.theme,
             basePalette: boot.palette,
+            baseLocale: boot.locale,
             pendingOps: EMPTY_OPS
           })
           updateState({ ...next, storageReady: true })
@@ -258,6 +272,7 @@ function initOfflineStore(): void {
           baseEvents: persisted.baseEvents,
           baseTheme: persisted.baseTheme,
           basePalette: persisted.basePalette,
+          baseLocale: persisted.baseLocale ?? 'pt',
           pendingOps: persisted.pendingOps
         })
         updateState({
@@ -272,7 +287,7 @@ function initOfflineStore(): void {
   window.addEventListener('storage', (event) => {
     if (event.key !== 'ap_boot') return
     const boot = readBootState()
-    updateState({ identity: boot.identity, baseTheme: boot.theme, basePalette: boot.palette })
+    updateState({ identity: boot.identity, baseTheme: boot.theme, basePalette: boot.palette, baseLocale: boot.locale })
   })
 
   if (typeof BroadcastChannel !== 'undefined') {
@@ -307,9 +322,10 @@ function commit(patch: Partial<OfflineStoreState>): void {
     baseEvents: state.baseEvents,
     baseTheme: state.baseTheme,
     basePalette: state.basePalette,
+    baseLocale: state.baseLocale,
     pendingOps: state.pendingOps
   }
-  writeBootState({ identity: state.identity, theme: selectTheme(state), palette: selectPalette(state), introSeen: state.introSeen })
+  writeBootState({ identity: state.identity, theme: selectTheme(state), palette: selectPalette(state), locale: selectLocale(state), introSeen: state.introSeen })
   void writePersistedState(persisted).catch(() => updateState({ storageError: true }))
 }
 
@@ -330,6 +346,7 @@ function toBroadcastState(snapshot: OfflineStoreState): BroadcastState {
     baseEvents: snapshot.baseEvents,
     baseTheme: snapshot.baseTheme,
     basePalette: snapshot.basePalette,
+    baseLocale: snapshot.baseLocale,
     lastSyncOk: snapshot.lastSyncOk
   }
 }
@@ -340,6 +357,7 @@ function readBroadcastState(value: unknown): BroadcastState | null {
   if (!isIdentityOrNull(item.identity)) return null
   if (!isTheme(item.baseTheme)) return null
   if (!isPalette(item.basePalette)) return null
+  if (!isLocale(item.baseLocale) && item.baseLocale !== undefined) return null
   if (item.lastSyncOk !== true && item.lastSyncOk !== false && item.lastSyncOk !== null) return null
   if (!Array.isArray(item.baseEvents) || !item.baseEvents.every(isEvent)) return null
   return {
@@ -347,6 +365,7 @@ function readBroadcastState(value: unknown): BroadcastState | null {
     baseEvents: item.baseEvents,
     baseTheme: item.baseTheme,
     basePalette: item.basePalette,
+    baseLocale: isLocale(item.baseLocale) ? item.baseLocale : 'pt',
     lastSyncOk: item.lastSyncOk
   }
 }
@@ -365,6 +384,10 @@ function isTheme(value: unknown): value is Theme {
 
 function isPalette(value: unknown): value is Palette {
   return value === 'default' || value === 'ocean' || value === 'lavender' || value === 'earth' || value === 'blossom' || value === 'sky'
+}
+
+function isLocale(value: unknown): value is Locale {
+  return value === 'pt' || value === 'en'
 }
 
 function isEvent(value: unknown): value is AirplaneEvent {

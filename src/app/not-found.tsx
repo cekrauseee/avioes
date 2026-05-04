@@ -1,12 +1,19 @@
+'use client'
+
 import Image from 'next/image'
 import Link from 'next/link'
+import { t } from '../lib/i18n'
+import { selectLocale, useOfflineState } from '../lib/offline-store'
 
 export default function NotFound() {
+  const state = useOfflineState()
+  const locale = selectLocale(state)
+
   return (
     <main className='relative flex h-full w-full flex-col px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.25rem)]'>
       <header className='flex items-baseline justify-between'>
-        <span className='text-ink-faint text-xs'>aviões · 404</span>
-        <span className='text-ink-faint text-xs'>fora de rota</span>
+        <span className='text-ink-faint text-xs'>{t(locale, 'notFound.header')}</span>
+        <span className='text-ink-faint text-xs'>{t(locale, 'notFound.headerRight')}</span>
       </header>
 
       <div className='flex flex-1 flex-col items-center justify-center text-center'>
@@ -33,11 +40,11 @@ export default function NotFound() {
           />
         </div>
         <h1 className='font-display mt-8 text-[34px] leading-[0.95] tracking-tight'>
-          Céu <span className='text-clay italic'>vazio</span>
+          {t(locale, 'notFound.titleLine1')} <span className='text-clay italic'>{t(locale, 'notFound.titleItalic')}</span>
           <br />
-          por aqui.
+          {t(locale, 'notFound.titleLine2')}
         </h1>
-        <p className='font-display text-ink-soft mt-3 max-w-[26ch] text-sm italic'>Essa página perdeu a rota — ou nunca decolou.</p>
+        <p className='font-display text-ink-soft mt-3 max-w-[26ch] text-sm italic'>{t(locale, 'notFound.body')}</p>
       </div>
 
       <Link
@@ -50,7 +57,7 @@ export default function NotFound() {
         >
           ←
         </span>
-        <span className='font-display'>voltar pra contagem</span>
+        <span className='font-display'>{t(locale, 'notFound.back')}</span>
       </Link>
     </main>
   )

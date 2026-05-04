@@ -1,48 +1,51 @@
 'use client'
 
 import Image from 'next/image'
-import { selectEvents, useOfflineState } from '../lib/offline-store'
+import { DATE_LOCALE, t } from '../lib/i18n'
+import { selectEvents, selectLocale, useOfflineState } from '../lib/offline-store'
 import { computeStreaks } from '../lib/streaks'
-import { IDENTITIES } from '../lib/types'
+import { IDENTITIES, type Locale } from '../lib/types'
 import { AppShell } from './app-shell'
 import { Onboarding } from './onboarding'
 import { SyncStatus } from './sync-status'
 import { ThemeToggle } from './theme-toggle'
 
-const dayFmt = new Intl.DateTimeFormat('pt-BR', {
-  day: '2-digit',
-  month: 'long'
-})
-const timeFmt = new Intl.DateTimeFormat('pt-BR', {
-  hour: '2-digit',
-  minute: '2-digit'
-})
+function dayFormatter(locale: Locale) {
+  return new Intl.DateTimeFormat(DATE_LOCALE[locale], { day: '2-digit', month: 'long' })
+}
+
+function timeFormatter(locale: Locale) {
+  return new Intl.DateTimeFormat(DATE_LOCALE[locale], { hour: '2-digit', minute: '2-digit' })
+}
 
 export function DiaryView() {
   const state = useOfflineState()
+  const locale = selectLocale(state)
   if (!state.identity) return <Onboarding />
 
   const merged = selectEvents(state)
   const streaks = computeStreaks(merged).reverse()
+  const dayFmt = dayFormatter(locale)
+  const timeFmt = timeFormatter(locale)
 
   return (
     <AppShell>
       <div className='flex h-full flex-col'>
         <header className='px-5 pt-[max(env(safe-area-inset-top),1.25rem)] pb-3'>
           <div className='flex items-center justify-between'>
-            <h1 className='font-display text-3xl tracking-tight'>Diário</h1>
+            <h1 className='font-display text-3xl tracking-tight'>{t(locale, 'diary.title')}</h1>
             <div className='flex items-center gap-2'>
               <SyncStatus />
-              <span className='text-ink-faint text-xs'>{merged.length} aviões</span>
+              <span className='text-ink-faint text-xs'>{merged.length} {t(locale, 'diary.airplanes')}</span>
               <ThemeToggle />
             </div>
           </div>
-          <p className='font-display text-ink-soft mt-1 text-sm italic'>O céu da gente, em ordem.</p>
+          <p className='font-display text-ink-soft mt-1 text-sm italic'>{t(locale, 'diary.subtitle')}</p>
         </header>
 
         <div className='scroll-area fade-scroll flex-1 overflow-y-auto px-5 pt-2 pb-8'>
           {streaks.length === 0 ?
-            <Empty />
+            <Empty locale={locale} />
           : <ol className='relative space-y-4 pl-5'>
               <span
                 aria-hidden
@@ -59,8 +62,8 @@ export function DiaryView() {
                   />
                   <article className={`bg-paper rounded-xl p-3 ${i % 2 === 0 ? 'rotate-[-0.3deg]' : 'rotate-[0.3deg]'}`}>
                     <p className='font-display text-base leading-snug'>
-                      <span className={IDENTITIES[s.who].text}>{IDENTITIES[s.who].label}</span> viu <span className='font-mono text-sm'>{s.count}</span>{' '}
-                      {s.count === 1 ? 'avião' : 'aviões em sequência'}.
+                      <span className={IDENTITIES[s.who].text}>{IDENTITIES[s.who].label}</span> {t(locale, 'diary.saw')} <span className='font-mono text-sm'>{s.count}</span>{' '}
+                      {s.count === 1 ? t(locale, 'diary.airplane') : t(locale, 'diary.airplanesInSequence')}.
                     </p>
                     <p className='text-ink-faint mt-1.5 font-mono text-[11px]'>
                       {dayFmt.format(new Date(s.startTs))} · {timeFmt.format(new Date(s.startTs))}
@@ -77,7 +80,7 @@ export function DiaryView() {
   )
 }
 
-function Empty() {
+function Empty({ locale }: { locale: Locale }) {
   return (
     <div className='mt-8 flex flex-col items-center text-center'>
       <div className='relative w-[58%] max-w-55'>
@@ -102,8 +105,8 @@ function Empty() {
           draggable={false}
         />
       </div>
-      <p className='font-display text-ink-soft mt-5 text-base'>Nenhum avião ainda.</p>
-      <p className='text-ink-faint mt-1.5 text-xs'>toque na tela inicial pra começar</p>
+      <p className='font-display text-ink-soft mt-5 text-base'>{t(locale, 'diary.empty')}</p>
+      <p className='text-ink-faint mt-1.5 text-xs'>{t(locale, 'diary.emptyHint')}</p>
     </div>
   )
 }
