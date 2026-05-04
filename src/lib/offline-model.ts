@@ -1,5 +1,5 @@
 import { totals } from './streaks'
-import type { AirplaneEvent, Identity, Locale, Palette, PendingOp, Theme } from './types'
+import type { AirplaneEvent, GroupMember, Identity, Locale, Palette, PendingOp, Theme } from './types'
 
 export type AddEventOp = Extract<PendingOp, { kind: 'add-event' }>
 export type DeleteEventOp = Extract<PendingOp, { kind: 'delete-event' }>
@@ -9,6 +9,8 @@ export type LocaleOp = Extract<PendingOp, { kind: 'set-locale' }>
 
 export type OfflineSnapshot = {
   identity: Identity | null
+  activeGroupId: string | null
+  groupMembers: GroupMember[]
   baseEvents: AirplaneEvent[]
   baseTheme: Theme
   basePalette: Palette
@@ -18,12 +20,13 @@ export type OfflineSnapshot = {
 
 export type SyncSnapshot = {
   identity: Identity | null
+  activeGroupId: string | null
+  groupMembers: GroupMember[]
   events: AirplaneEvent[]
   theme: Theme
   palette: Palette
   locale: Locale
   settled: string[]
-  introSeen: boolean
 }
 
 export function projectEvents(baseEvents: readonly AirplaneEvent[], pendingOps: readonly PendingOp[]): AirplaneEvent[] {
@@ -48,7 +51,7 @@ export function pendingWriteCount(pendingOps: readonly PendingOp[]): number {
   return pendingOps.length
 }
 
-export function visibleTotals(snapshot: OfflineSnapshot): Record<Identity, number> {
+export function visibleTotals(snapshot: OfflineSnapshot): Record<string, number> {
   return totals(projectEvents(snapshot.baseEvents, snapshot.pendingOps))
 }
 
@@ -100,6 +103,8 @@ export function settleSnapshot(snapshot: OfflineSnapshot, sync: SyncSnapshot): O
   const settled = new Set(sync.settled)
   return {
     identity: sync.identity,
+    activeGroupId: sync.activeGroupId,
+    groupMembers: sync.groupMembers,
     baseEvents: sync.events,
     baseTheme: sync.theme,
     basePalette: sync.palette,

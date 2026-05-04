@@ -15,7 +15,9 @@ export function computeStreaks(events: AirplaneEvent[]): Streak[] {
 }
 
 export function totals(events: AirplaneEvent[]): Record<Identity, number> {
-  const t: Record<Identity, number> = { henrique: 0, pietra: 0 }
-  for (const e of events) t[e.who] += 1
+  const t: Record<string, number> = {}
+  for (const e of events) {
+    t[e.who] = (t[e.who] ?? 0) + 1
+  }
   return t
 }

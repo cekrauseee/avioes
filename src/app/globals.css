@@ -50,6 +50,11 @@
   inherits: true;
   initial-value: #a8c3d4;
 }
+@property --sky-soft {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #cfe0ea;
+}
 @property --line {
   syntax: '<color>';
   inherits: true;
@@ -72,6 +77,7 @@
   --clay: #c97b5c;
   --clay-soft: #e8c5b6;
   --sky: #a8c3d4;
+  --sky-soft: #cfe0ea;
   --line: #1f2a2418;
   --paper: #ffffff80;
 }
@@ -87,6 +93,7 @@
   --clay: #e59a7e;
   --clay-soft: #4a2f25;
   --sky: #6e8fa3;
+  --sky-soft: #1e3040;
   --line: #ede6d622;
   --paper: #1d222540;
 }
@@ -103,6 +110,7 @@
     --clay: #e59a7e;
     --clay-soft: #4a2f25;
     --sky: #6e8fa3;
+    --sky-soft: #1e3040;
     --line: #ede6d622;
     --paper: #1d222540;
   }
@@ -349,6 +357,7 @@
   --color-clay: var(--clay);
   --color-clay-soft: var(--clay-soft);
   --color-sky: var(--sky);
+  --color-sky-soft: var(--sky-soft);
   --color-line: var(--line);
   --color-paper: var(--paper);
   --font-sans: var(--font-geist-sans);
@@ -398,6 +407,7 @@ html {
     --clay 0.35s ease,
     --clay-soft 0.35s ease,
     --sky 0.35s ease,
+    --sky-soft 0.35s ease,
     --line 0.35s ease,
     --paper 0.35s ease;
 }

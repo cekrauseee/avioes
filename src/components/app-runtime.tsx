@@ -23,6 +23,8 @@ export function AppRuntime({ children }: { children: React.ReactNode }) {
   const state = useOfflineState()
   const pathname = usePathname()
   const locale = selectLocale(state)
+  const inApp = state.identity && state.activeGroupId
+  const showAppNav = Boolean(inApp) && pathname !== '/auth' && !pathname.startsWith('/groups')
 
   useEffect(() => {
     const key = PAGE_TITLE_KEY[pathname]
@@ -39,9 +41,9 @@ export function AppRuntime({ children }: { children: React.ReactNode }) {
         <div className='mx-auto flex w-full max-w-[420px] flex-1 flex-col overflow-hidden'>
           {state.storageError ?
             <StorageGate />
-          : <SwipeableContent disabled={!state.identity}>{children}</SwipeableContent>}
+          : <SwipeableContent disabled={!showAppNav || pathname === '/settings'}>{children}</SwipeableContent>}
         </div>
-        {state.identity && !state.storageError && <NavBar who={state.identity} />}
+        {showAppNav && !state.storageError && <NavBar who={state.identity!} />}
       </div>
       {!state.storageError && <OfflineSync />}
       <PwaRegister />

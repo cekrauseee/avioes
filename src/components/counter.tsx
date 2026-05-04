@@ -2,12 +2,12 @@
 
 import { AnimatePresence, motion, useReducedMotion, useSpring, useTransform } from 'motion/react'
 import Image from 'next/image'
-import { startTransition, useEffect, useRef, useState } from 'react'
-import { clearIdentity } from '../actions'
+import { useEffect, useRef, useState } from 'react'
 import { t } from '../lib/i18n'
-import { addAirplane, applyLocalIdentity, isOffline, selectEvents, selectLocale, selectPendingCount, undoAirplane, useOfflineState } from '../lib/offline-store'
+import { addAirplane, isOffline, selectEvents, selectLocale, selectOfflineSyncing, undoAirplane, useOfflineState } from '../lib/offline-store'
 import { totals } from '../lib/streaks'
-import { IDENTITIES } from '../lib/types'
+import { getMemberColor, getMemberName } from '../lib/types'
+import { AccountSheet } from './account-sheet'
 import { AppShell } from './app-shell'
 import { Onboarding } from './onboarding'
 import { PlaneArc, type ArcKey } from './plane-arc'
@@ -17,27 +17,28 @@ import { ThemeToggle } from './theme-toggle'
 export function Counter() {
   const state = useOfflineState()
   const who = state.identity
-  if (!who) return <Onboarding />
+  const hasGroup = !!state.activeGroupId
 
-  return (
-    <CounterContent
-      state={state}
-      who={who}
-    />
-  )
+  if (!who || !hasGroup) return <Onboarding />
+
+  return <CounterContent state={state} who={who} />
 }
 
-function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineState>; who: NonNullable<ReturnType<typeof useOfflineState>['identity']> }) {
-  const me = IDENTITIES[who]
-  const partner = who === 'henrique' ? 'pietra' : 'henrique'
-  const partnerName = IDENTITIES[partner].label
-  const myName = me.label
+function CounterContent({
+  state,
+  who
+}: {
+  state: ReturnType<typeof useOfflineState>
+  who: NonNullable<ReturnType<typeof useOfflineState>['identity']>
+}) {
+  const me = getMemberColor(who, state.groupMembers)
+  const myName = getMemberName(who, state.groupMembers)
   const locale = selectLocale(state)
 
   const events = selectEvents(state)
   const tt = totals(events)
   const offline = isOffline(state)
-  const pendingCount = selectPendingCount(state)
+  const offlineSyncing = selectOfflineSyncing(state)
   const syncVisible = offline
   const reducedMotion = useReducedMotion()
   const tokenInitial = reducedMotion ? { opacity: 0 } : { opacity: 0, y: 2 }
@@ -45,10 +46,12 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
   const tokenExit = reducedMotion ? { opacity: 0 } : { opacity: 0, y: -2 }
   const tokenTransition = { duration: 0.15, ease: [0.22, 1, 0.36, 1] as const }
 
-  const display = tt[who]
-  const totalDisplay = tt.henrique + tt.pietra
+  const display = tt[who] ?? 0
+  const othersTotal = Object.entries(tt).filter(([id]) => id !== who).reduce((sum, [, n]) => sum + n, 0)
+  const totalDisplay = Object.values(tt).reduce((sum, n) => sum + n, 0)
   const canUndo = display > 0
 
+  const [accountOpen, setAccountOpen] = useState(false)
   const [flights, setFlights] = useState<ArcKey[]>([])
   const spring = useSpring(display, { stiffness: 220, damping: 22 })
   const animateNextRef = useRef(false)
@@ -76,13 +79,12 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
     undoAirplane(who)
   }
 
-  const switchIdentity = () => {
-    if (offline || pendingCount > 0) return
-    startTransition(async () => {
-      await clearIdentity()
-      applyLocalIdentity(null)
-    })
-  }
+  // Show other members for the footer
+  const otherMembers = state.groupMembers.filter((m) => m.userId !== who)
+  const partnerLabel =
+    otherMembers.length === 1 ? getMemberName(otherMembers[0].userId, state.groupMembers)
+    : otherMembers.length > 1 ? t(locale, 'counter.others')
+    : ''
 
   return (
     <AppShell>
@@ -92,39 +94,35 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
         <header className='relative z-10 flex items-center justify-between'>
           <button
             type='button'
-            onClick={switchIdentity}
-            disabled={offline || pendingCount > 0}
-            className='group hover:bg-line/40 focus-visible:bg-line/40 -ml-2 inline-flex items-center gap-2 rounded-full px-2 py-1 transition-colors disabled:opacity-60'
+            onClick={() => setAccountOpen(true)}
+            className='group hover:bg-line/40 -ml-3 inline-flex min-h-11 items-center gap-2.5 rounded-full px-3 transition-colors active:scale-[0.97]'
           >
             <span
-              className={`h-2 w-2 rounded-full ${me.bg} transition-transform group-hover:scale-125 group-focus-visible:scale-125`}
+              className={`h-2.5 w-2.5 shrink-0 rounded-full ${me.bg} transition-transform group-hover:scale-125`}
               aria-hidden
             />
             <span className='font-display text-sm'>{myName}</span>
-            <span className='text-ink-faint group-hover:text-ink-soft group-focus-visible:text-ink-soft text-xs transition-colors'>
+            <span className='text-ink-faint inline-flex min-h-3 min-w-3 items-center text-xs'>
               {offline ?
                 t(locale, 'counter.offline')
-              : pendingCount > 0 ?
-                t(locale, 'counter.pending')
-              : t(locale, 'counter.switch')}
+              : offlineSyncing && (
+                  <span
+                    role='status'
+                    aria-label={t(locale, 'sync.syncing')}
+                    className={`h-3 w-3 shrink-0 rounded-full border-[1.5px] border-current border-r-transparent ${me.text} ${reducedMotion ? '' : 'animate-spin'}`}
+                  />
+                )
+              }
             </span>
           </button>
           <div className='flex items-center gap-2'>
             <SyncStatus />
             {syncVisible && (
-              <span
-                aria-hidden
-                className='text-ink-faint text-xs'
-              >
-                ·
-              </span>
+              <span aria-hidden className='text-ink-faint text-xs'>·</span>
             )}
             <span className='text-ink-faint inline-flex items-baseline gap-[0.25em] text-xs whitespace-nowrap'>
               {hydrated ?
-                <AnimatePresence
-                  mode='wait'
-                  initial={false}
-                >
+                <AnimatePresence mode='wait' initial={false}>
                   <motion.span
                     key={totalDisplay}
                     initial={tokenInitial}
@@ -150,7 +148,7 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
           aria-label={t(locale, 'counter.ariaLabel')}
         >
           <AnimatePresence>
-            {display === 0 && tt[partner] === 0 && (
+            {display === 0 && othersTotal === 0 && (
               <motion.div
                 key='empty-counter'
                 initial={{ opacity: 0, scale: 0.94 }}
@@ -191,10 +189,12 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
         </button>
 
         <footer className='relative z-10 mt-4 flex items-end justify-between gap-4'>
-          <div className='flex flex-col gap-0.5'>
-            <span className='text-ink-faint text-xs'>{partnerName}</span>
-            <span className='font-display text-ink-soft text-xl'>{tt[partner]}</span>
-          </div>
+          {partnerLabel ?
+            <div className='flex flex-col gap-0.5'>
+              <span className='text-ink-faint text-xs'>{partnerLabel}</span>
+              <span className='font-display text-ink-soft text-xl'>{othersTotal}</span>
+            </div>
+          : <div />}
           <button
             type='button'
             onClick={undo}
@@ -212,6 +212,7 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
           </button>
         </footer>
       </main>
+      <AccountSheet open={accountOpen} onClose={() => setAccountOpen(false)} />
     </AppShell>
   )
 }

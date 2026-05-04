@@ -1,21 +1,21 @@
-import { makeDeleteLatestEventOp, type OfflineSnapshot } from './offline-model'
-import type { AirplaneEvent, Identity, Locale, Palette, PendingOp, Theme } from './types'
+import type { OfflineSnapshot } from './offline-model'
+import type { AirplaneEvent, Locale, Palette, PendingOp, Theme } from './types'
 
 export type PersistedOfflineState = OfflineSnapshot & {
-  version: 1
+  version: 2
 }
 
 export type BootState = {
-  identity: Identity | null
+  userId: string | null
+  activeGroupId: string | null
   theme: Theme
   palette: Palette
   locale: Locale
-  introSeen: boolean
 }
 
 const DB_NAME = 'airplanes-offline'
 const STORE_NAME = 'state'
-const DB_VERSION = 1
+const DB_VERSION = 2
 const SNAPSHOT_KEY = 'snapshot'
 const BOOT_KEY = 'ap_boot'
 const LEGACY_QUEUE_KEY = 'ap_queue'
@@ -23,18 +23,18 @@ const LEGACY_QUEUE_KEY = 'ap_queue'
 let dbPromise: Promise<IDBDatabase> | null = null
 
 export function readBootState(): BootState {
-  if (typeof window === 'undefined') return { identity: null, theme: 'system', palette: 'default', locale: 'pt', introSeen: false }
+  if (typeof window === 'undefined') return { userId: null, activeGroupId: null, theme: 'system', palette: 'default', locale: 'pt' }
   try {
     const parsed = JSON.parse(window.localStorage.getItem(BOOT_KEY) ?? '{}') as Partial<BootState>
     return {
-      identity: parsed.identity === 'henrique' || parsed.identity === 'pietra' ? parsed.identity : null,
+      userId: typeof parsed.userId === 'string' && parsed.userId.length > 0 ? parsed.userId : null,
+      activeGroupId: typeof parsed.activeGroupId === 'string' && parsed.activeGroupId.length > 0 ? parsed.activeGroupId : null,
       theme: parsed.theme === 'light' || parsed.theme === 'dark' || parsed.theme === 'system' ? parsed.theme : 'system',
       palette: isPalette(parsed.palette) ? parsed.palette : 'default',
-      locale: isLocale(parsed.locale) ? parsed.locale : detectLocale(),
-      introSeen: parsed.introSeen === true
+      locale: isLocale(parsed.locale) ? parsed.locale : detectLocale()
     }
   } catch {
-    return { identity: null, theme: 'system', palette: 'default', locale: detectLocale(), introSeen: false }
+    return { userId: null, activeGroupId: null, theme: 'system', palette: 'default', locale: detectLocale() }
   }
 }
 
@@ -61,7 +61,7 @@ export async function readPersistedState(): Promise<PersistedOfflineState | null
 
 export async function writePersistedState(snapshot: OfflineSnapshot): Promise<void> {
   const db = await openDb()
-  const value: PersistedOfflineState = { version: 1, ...snapshot }
+  const value: PersistedOfflineState = { version: 2, ...snapshot }
   await request(db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).put(value, SNAPSHOT_KEY))
 }
 
@@ -93,36 +93,8 @@ export function migrateLegacyQueue(snapshot: OfflineSnapshot): OfflineSnapshot {
     return snapshot
   }
 
-  const existing = new Set(snapshot.pendingOps.map((op) => op.id))
-  let next: OfflineSnapshot = { ...snapshot, pendingOps: [...snapshot.pendingOps] }
-  const remaining: unknown[] = []
-
-  for (const item of legacy) {
-    const op = legacyOp(item)
-    if (!op) continue
-    if (existing.has(op.id)) continue
-
-    if (op.op === 'add') {
-      const migrated: PendingOp = {
-        id: op.id,
-        kind: 'add-event',
-        event: { id: `legacy-event:${op.id}`, who: op.who, ts: op.ts }
-      }
-      next = { ...next, pendingOps: [...next.pendingOps, migrated] }
-      existing.add(op.id)
-    } else {
-      const migrated = makeDeleteLatestEventOp(next, op.who, op.id)
-      if (!migrated) {
-        remaining.push(item)
-        continue
-      }
-      next = { ...next, pendingOps: [...next.pendingOps, migrated] }
-      existing.add(op.id)
-    }
-  }
-
-  writeLegacyQueue(remaining)
-  return next
+  removeLegacyQueue()
+  return snapshot
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -149,24 +121,22 @@ function request<T>(req: IDBRequest<T>): Promise<T> {
 function isPersistedState(value: unknown): value is PersistedOfflineState {
   if (typeof value !== 'object' || value === null) return false
   const item = value as Record<string, unknown>
-  if (item.version !== 1) return false
-  if (!isIdentityOrNull(item.identity)) return false
+  if (item.version !== 2) return false
+  if (!isStringOrNull(item.identity)) return false
+  if (!isStringOrNull(item.activeGroupId)) return false
   if (!isTheme(item.baseTheme)) return false
   if (item.basePalette !== undefined && !isPalette(item.basePalette)) return false
   if (item.baseLocale !== undefined && !isLocale(item.baseLocale)) return false
   if (!Array.isArray(item.baseEvents) || !item.baseEvents.every(isEvent)) return false
   if (!Array.isArray(item.pendingOps) || !item.pendingOps.every(isPendingOp)) return false
+  if (!Array.isArray(item.groupMembers)) return false
   if (item.basePalette === undefined) (item as Record<string, unknown>).basePalette = 'default'
   if (item.baseLocale === undefined) (item as Record<string, unknown>).baseLocale = 'pt'
   return true
 }
 
-function isIdentity(value: unknown): value is Identity {
-  return value === 'henrique' || value === 'pietra'
-}
-
-function isIdentityOrNull(value: unknown): value is Identity | null {
-  return value === null || isIdentity(value)
+function isStringOrNull(value: unknown): value is string | null {
+  return value === null || typeof value === 'string'
 }
 
 function isTheme(value: unknown): value is Theme {
@@ -176,7 +146,7 @@ function isTheme(value: unknown): value is Theme {
 function isEvent(value: unknown): value is AirplaneEvent {
   if (typeof value !== 'object' || value === null) return false
   const item = value as Partial<AirplaneEvent>
-  return typeof item.id === 'string' && isIdentity(item.who) && typeof item.ts === 'number' && Number.isFinite(item.ts) && item.ts > 0
+  return typeof item.id === 'string' && typeof item.who === 'string' && item.who.length > 0 && typeof item.ts === 'number' && Number.isFinite(item.ts) && item.ts > 0
 }
 
 function isPalette(value: unknown): value is Palette {
@@ -202,29 +172,6 @@ function isPendingOp(value: unknown): value is PendingOp {
   if (item.kind === 'set-palette') return isPalette(item.palette)
   if (item.kind === 'set-locale') return isLocale((item as { locale?: unknown }).locale)
   return false
-}
-
-type LegacyOp = { id: string; op: 'add'; who: Identity; ts: number } | { id: string; op: 'undo'; who: Identity }
-
-function legacyOp(value: unknown): LegacyOp | null {
-  if (typeof value !== 'object' || value === null) return null
-  const item = value as { id?: unknown; op?: unknown; who?: unknown; ts?: unknown }
-  if (typeof item.id !== 'string' || !isIdentity(item.who)) return null
-  if (item.op === 'add' && typeof item.ts === 'number' && Number.isFinite(item.ts) && item.ts > 0) {
-    return { id: item.id, op: 'add', who: item.who, ts: item.ts }
-  }
-  if (item.op === 'undo') return { id: item.id, op: 'undo', who: item.who }
-  return null
-}
-
-function writeLegacyQueue(remaining: unknown[]): void {
-  if (remaining.length === 0) {
-    removeLegacyQueue()
-    return
-  }
-  try {
-    window.localStorage.setItem(LEGACY_QUEUE_KEY, JSON.stringify(remaining))
-  } catch {}
 }
 
 function removeLegacyQueue(): void {

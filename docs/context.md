@@ -20,6 +20,14 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-04 — Auth is route-based, not component fallback
+
+Unauthenticated access to protected pages (`/`, `/diary`, `/scoreboard`, `/settings`, `/groups/*`) redirects to `/auth?next=...` via `src/proxy.ts` before render, with server page guards still validating Better Auth sessions. `/auth` is the public login route and redirects authenticated users away. Login/group setup screens now render inside the normal app frame/background instead of fullscreen overlay components.
+
+### 2026-05-04 — Groups rearchitecture: generic multi-user system
+
+Replaced hardcoded `'henrique' | 'pietra'` identities with a full group-based multi-user system. Authentication via **better-auth** (email+password, unified sign-in/sign-up flow). Users can create and join multiple groups; an `activeGroupId` tracks the current context. Groups have `owner` and `member` roles; owners add members by email and can remove non-owners. Identity is now a string userId from better-auth sessions (not a cookie enum). `IDENTITIES` map replaced by `MEMBER_COLORS` array + `getMemberColor(userId, members)` / `getMemberName(userId, members)` helpers. Four new screens: `AuthScreen`, `GroupsScreen`, `NewGroupScreen`, `ManageGroupScreen`. New routes: `/groups`, `/groups/new`, `/groups/[id]/manage`. Offline store extended with `activeGroupId` and `groupMembers`. IndexedDB version bumped to 2 (clears legacy per-device queue). Schema: `groups`, `group_members` tables + better-auth tables (`users`, `sessions`, `accounts`, `verifications`). Env vars required: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL`. Run `npm run db:push` after pulling.
+
 ### 2026-05-04 — Internationalization (i18n): per-user language preference
 
 Two locales: `pt` (Brazilian Portuguese, default) and `en` (English). Stored per-user in Postgres via a `locale` column on `preferences`, synced through the offline op queue (`set-locale` op kind). Browser language detected on first visit as default. All UI strings extracted to `src/lib/i18n.ts` with translation keys. Locale selectable on `/settings` (new "idioma" section). The `<html lang>` attribute, `Intl.DateTimeFormat` locale, and all component text update reactively. Boot script in `layout.tsx` detects and applies locale before paint. Metadata (title "Aviões", manifest) stays Portuguese — it's the brand name. Run `npm run db:push` after pulling to add the `locale` enum and column.
@@ -27,14 +35,6 @@ Two locales: `pt` (Brazilian Portuguese, default) and `en` (English). Stored per
 ### 2026-05-04 — Palette themes: per-user color customization
 
 Six palettes (Caderno/Oceano/Lavanda/Terra/Flor/Céu) selectable on a new `/settings` page ("Ajustes"), persisted per-user in Postgres via a `palette` column on `preferences` and synced through the offline op queue (`set-palette` op kind). Each palette overrides all CSS color tokens for both light and dark modes via `[data-palette]` selectors in `globals.css`. The palette is applied at boot via the `ap_boot` localStorage hint (same pattern as theme mode). Nav gained a 4th tab for settings. ThemeToggle remains in page headers for quick light/dark/system switching; the settings page has both palette and mode pickers. Run `npm run db:push` after pulling to add the `palette` enum and column.
-
-### 2026-05-04 — First-open intro flow before identity picker
-
-A 3-page Intro (`src/components/intro.tsx`) appears once per device before the identity Picker, gated by a server cookie `ap_intro` set via `markIntroSeen()` in `src/actions.ts`. `SyncSnapshot`, `BootState`, and the offline store gained an `introSeen` flag; the inline boot script in `app/layout.tsx` mirrors it onto `<html data-intro="seen">` so returning users hit the Picker with no flash (CSS classes `.intro-only`/`.picker-only` in `globals.css`, same pattern as `.online-only`/`.offline-only`). `Onboarding` always renders both subtrees; the Picker remounts via `key` after dismissal so its entrance animation replays. A new `<Placeholder/>` (`src/components/placeholder.tsx`, dashed + 45° hatch) fills three illustration slots that still need real art (`placeholder · pessoa olhando o céu`, `· dedo tocando nuvem`, `· página de diário`).
-
-### 2026-05-03 — Missing identity stops sync replay
-
-When `bootstrapState()` returns no identity, the offline model now treats that as an unauthenticated reset: local pending ops are dropped and legacy queue migration waits until an identity exists. This avoids a bootstrap loop when a stale IndexedDB/legacy queue is present but the `ap_id` cookie is missing.
 
 ### 2026-05-03 — Illustrations wired into the flow
 
@@ -58,7 +58,7 @@ Internal naming converged on `airplanes`: package name, docker compose service/c
 
 ### 2026-04-30 — Postgres persistence via Drizzle
 
-Events and per-user theme moved out of cookies into Postgres so state follows the user across devices. Identity (`ap_id`) stays in a cookie — it's still a per-device selector for one of the two hardcoded users (`henrique`, `pietra`). DB access goes through `src/lib/store.ts`; `src/lib/cookies.ts` is identity-only. Current schema/action details live in `docs/architecture.md`. Schema is applied with `npm run db:push` (no migration files generated, dev and prod). Local dev uses `docker-compose.yaml` (Postgres 17). The 1000-event cookie cap is gone with the cookie.
+Events and per-user theme moved into Postgres. DB access goes through `src/lib/store.ts`. Schema applied with `npm run db:push`. Local dev uses `docker-compose.yaml` (Postgres 17).
 
 ### 2026-04-30 — Mobile UX pass: tab bar, fewer borders, transitions
 
