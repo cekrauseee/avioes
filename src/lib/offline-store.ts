@@ -26,7 +26,7 @@ import {
   type OfflineSnapshot,
   type SyncSnapshot
 } from './offline-model'
-import type { AirplaneEvent, Identity, Locale, Palette, PendingOp, Theme } from './types'
+import type { AirplaneEvent, GroupMember, Identity, Locale, Palette, PendingOp, Theme } from './types'
 
 export type OfflineStoreState = OfflineSnapshot & {
   hydrated: boolean
@@ -34,18 +34,22 @@ export type OfflineStoreState = OfflineSnapshot & {
   storageError: boolean
   lastSyncOk: boolean | null
   syncInFlight: boolean
-  introSeen: boolean
+  offlineSyncPending: boolean
+  offlineSyncInFlight: boolean
   localeFading: boolean
 }
 
-type BroadcastState = Pick<OfflineStoreState, 'identity' | 'baseEvents' | 'baseTheme' | 'basePalette' | 'baseLocale' | 'lastSyncOk'>
+type BroadcastState = Pick<OfflineStoreState, 'identity' | 'activeGroupId' | 'groupMembers' | 'baseEvents' | 'baseTheme' | 'basePalette' | 'baseLocale' | 'lastSyncOk'>
 
 const EMPTY_EVENTS: AirplaneEvent[] = []
 const EMPTY_OPS: PendingOp[] = []
+const EMPTY_MEMBERS: GroupMember[] = []
 const SYNC_BATCH_SIZE = 250
 
 let state: OfflineStoreState = {
   identity: null,
+  activeGroupId: null,
+  groupMembers: EMPTY_MEMBERS,
   baseEvents: EMPTY_EVENTS,
   baseTheme: 'system',
   basePalette: 'default',
@@ -56,7 +60,8 @@ let state: OfflineStoreState = {
   storageError: false,
   lastSyncOk: null,
   syncInFlight: false,
-  introSeen: false,
+  offlineSyncPending: false,
+  offlineSyncInFlight: false,
   localeFading: false
 }
 
@@ -85,8 +90,8 @@ export function useOfflineRuntime(): void {
     document.documentElement.dataset.theme = theme
     document.documentElement.dataset.palette = palette
     document.documentElement.lang = locale === 'en' ? 'en' : 'pt-BR'
-    writeBootState({ identity: snapshot.identity, theme, palette, locale, introSeen: snapshot.introSeen })
-  }, [snapshot.identity, theme, palette, locale, snapshot.introSeen])
+    writeBootState({ userId: snapshot.identity, activeGroupId: snapshot.activeGroupId, theme, palette, locale })
+  }, [snapshot.identity, snapshot.activeGroupId, theme, palette, locale])
 }
 
 export function useOfflineSync(): void {
@@ -105,7 +110,13 @@ export function useOfflineSync(): void {
       updateState({ lastSyncOk: null })
       sync()
     }
-    const onOffline = () => updateState({ lastSyncOk: null })
+    const onOffline = () => {
+      updateState({
+        lastSyncOk: null,
+        offlineSyncPending: state.offlineSyncPending || state.pendingOps.length > 0,
+        offlineSyncInFlight: false
+      })
+    }
     const onVisible = () => {
       if (document.visibilityState === 'visible') sync()
     }
@@ -145,6 +156,10 @@ export function selectLocale(snapshot: OfflineSnapshot): Locale {
 
 export function selectPendingCount(snapshot: OfflineSnapshot): number {
   return pendingWriteCount(snapshot.pendingOps)
+}
+
+export function selectOfflineSyncing(snapshot: OfflineStoreState): boolean {
+  return snapshot.offlineSyncInFlight
 }
 
 export function isOffline(snapshot: OfflineStoreState): boolean {
@@ -189,26 +204,38 @@ export function applyServerSnapshot(sync: SyncSnapshot): void {
   const next = migrateLegacyQueue(settleSnapshot(state, sync))
   commit({
     ...next,
-    introSeen: sync.introSeen || state.introSeen,
     lastSyncOk: true,
     storageReady: true,
     storageError: false,
-    syncInFlight: false
+    syncInFlight: false,
+    offlineSyncPending: false,
+    offlineSyncInFlight: false
   })
-}
-
-export function applyIntroSeen(): void {
-  commit({ introSeen: true })
 }
 
 export function applyLocalIdentity(identity: Identity | null): void {
   if (identity) {
     commit({ identity })
   } else {
-    commit({ identity: null, baseEvents: EMPTY_EVENTS, baseTheme: 'system', basePalette: 'default', baseLocale: 'pt', pendingOps: EMPTY_OPS })
+    commit({
+      identity: null,
+      activeGroupId: null,
+      groupMembers: EMPTY_MEMBERS,
+      baseEvents: EMPTY_EVENTS,
+      baseTheme: 'system',
+      basePalette: 'default',
+      baseLocale: 'pt',
+      pendingOps: EMPTY_OPS,
+      offlineSyncPending: false,
+      offlineSyncInFlight: false
+    })
     clearBootState()
     void clearPersistedState().catch(() => {})
   }
+}
+
+export function applyActiveGroup(activeGroupId: string | null, groupMembers: GroupMember[]): void {
+  commit({ activeGroupId, groupMembers })
 }
 
 export async function drainOnce(): Promise<void> {
@@ -218,17 +245,21 @@ export async function drainOnce(): Promise<void> {
   }
   if (!state.hydrated || !state.storageReady || state.storageError) return
   if (!readOnline() && state.lastSyncOk !== true) {
-    updateState({ lastSyncOk: false })
+    updateState({
+      lastSyncOk: false,
+      offlineSyncPending: state.offlineSyncPending || state.pendingOps.length > 0,
+      offlineSyncInFlight: false
+    })
     return
   }
   if (state.pendingOps.length === 0 && state.lastSyncOk === true) return
   if (!state.identity) {
     syncInFlight = true
-    updateState({ syncInFlight: true })
+    updateState({ syncInFlight: true, offlineSyncInFlight: false })
     try {
       applyServerSnapshot(await bootstrapState())
     } catch {
-      updateState({ lastSyncOk: false, syncInFlight: false })
+      updateState({ lastSyncOk: false, syncInFlight: false, offlineSyncInFlight: false })
     } finally {
       syncInFlight = false
       if (rerunPending) {
@@ -240,12 +271,20 @@ export async function drainOnce(): Promise<void> {
   }
 
   syncInFlight = true
-  updateState({ syncInFlight: true })
+  updateState({
+    syncInFlight: true,
+    offlineSyncInFlight: state.pendingOps.length > 0 && state.offlineSyncPending
+  })
   try {
     const result = state.pendingOps.length > 0 ? await syncOps(state.pendingOps.slice(0, SYNC_BATCH_SIZE)) : await bootstrapState()
     applyServerSnapshot(result)
   } catch {
-    updateState({ lastSyncOk: false, syncInFlight: false })
+    updateState({
+      lastSyncOk: false,
+      syncInFlight: false,
+      offlineSyncPending: state.offlineSyncPending || (!readOnline() && state.pendingOps.length > 0),
+      offlineSyncInFlight: false
+    })
   } finally {
     syncInFlight = false
     if (rerunPending) {
@@ -261,34 +300,41 @@ function initOfflineStore(): void {
 
   queueMicrotask(() => {
     const boot = readBootState()
-    updateState({ hydrated: true, identity: boot.identity, baseTheme: boot.theme, basePalette: boot.palette, baseLocale: boot.locale, introSeen: boot.introSeen })
+    updateState({
+      hydrated: true,
+      identity: boot.userId,
+      activeGroupId: boot.activeGroupId,
+      baseTheme: boot.theme,
+      basePalette: boot.palette,
+      baseLocale: boot.locale
+    })
     void readPersistedState()
       .then((persisted) => {
         if (!persisted) {
           const next = migrateLegacyQueue({
-            identity: boot.identity,
+            identity: boot.userId,
+            activeGroupId: boot.activeGroupId,
+            groupMembers: EMPTY_MEMBERS,
             baseEvents: EMPTY_EVENTS,
             baseTheme: boot.theme,
             basePalette: boot.palette,
             baseLocale: boot.locale,
             pendingOps: EMPTY_OPS
           })
-          updateState({ ...next, storageReady: true })
+          updateState({ ...next, storageReady: true, offlineSyncPending: next.pendingOps.length > 0 })
           return
         }
         const next = migrateLegacyQueue({
           identity: persisted.identity,
+          activeGroupId: persisted.activeGroupId,
+          groupMembers: persisted.groupMembers ?? EMPTY_MEMBERS,
           baseEvents: persisted.baseEvents,
           baseTheme: persisted.baseTheme,
           basePalette: persisted.basePalette,
           baseLocale: persisted.baseLocale ?? 'pt',
           pendingOps: persisted.pendingOps
         })
-        updateState({
-          ...next,
-          storageReady: true,
-          storageError: false
-        })
+        updateState({ ...next, storageReady: true, storageError: false, offlineSyncPending: next.pendingOps.length > 0 })
       })
       .catch(() => updateState({ storageReady: true, storageError: true }))
   })
@@ -296,7 +342,7 @@ function initOfflineStore(): void {
   window.addEventListener('storage', (event) => {
     if (event.key !== 'ap_boot') return
     const boot = readBootState()
-    updateState({ identity: boot.identity, baseTheme: boot.theme, basePalette: boot.palette, baseLocale: boot.locale })
+    updateState({ identity: boot.userId, activeGroupId: boot.activeGroupId, baseTheme: boot.theme, basePalette: boot.palette, baseLocale: boot.locale })
   })
 
   if (typeof BroadcastChannel !== 'undefined') {
@@ -328,13 +374,15 @@ function commit(patch: Partial<OfflineStoreState>): void {
   updateState(patch)
   const persisted: OfflineSnapshot = {
     identity: state.identity,
+    activeGroupId: state.activeGroupId,
+    groupMembers: state.groupMembers,
     baseEvents: state.baseEvents,
     baseTheme: state.baseTheme,
     basePalette: state.basePalette,
     baseLocale: state.baseLocale,
     pendingOps: state.pendingOps
   }
-  writeBootState({ identity: state.identity, theme: selectTheme(state), palette: selectPalette(state), locale: selectLocale(state), introSeen: state.introSeen })
+  writeBootState({ userId: state.identity, activeGroupId: state.activeGroupId, theme: selectTheme(state), palette: selectPalette(state), locale: selectLocale(state) })
   void writePersistedState(persisted).catch(() => updateState({ storageError: true }))
 }
 
@@ -352,6 +400,8 @@ function readOnline(): boolean {
 function toBroadcastState(snapshot: OfflineStoreState): BroadcastState {
   return {
     identity: snapshot.identity,
+    activeGroupId: snapshot.activeGroupId,
+    groupMembers: snapshot.groupMembers,
     baseEvents: snapshot.baseEvents,
     baseTheme: snapshot.baseTheme,
     basePalette: snapshot.basePalette,
@@ -363,14 +413,18 @@ function toBroadcastState(snapshot: OfflineStoreState): BroadcastState {
 function readBroadcastState(value: unknown): BroadcastState | null {
   if (typeof value !== 'object' || value === null) return null
   const item = value as Partial<BroadcastState>
-  if (!isIdentityOrNull(item.identity)) return null
+  if (!isStringOrNull(item.identity)) return null
+  if (!isStringOrNull(item.activeGroupId)) return null
   if (!isTheme(item.baseTheme)) return null
   if (!isPalette(item.basePalette)) return null
   if (!isLocale(item.baseLocale) && item.baseLocale !== undefined) return null
   if (item.lastSyncOk !== true && item.lastSyncOk !== false && item.lastSyncOk !== null) return null
   if (!Array.isArray(item.baseEvents) || !item.baseEvents.every(isEvent)) return null
+  if (!Array.isArray(item.groupMembers)) return null
   return {
     identity: item.identity,
+    activeGroupId: item.activeGroupId,
+    groupMembers: item.groupMembers as GroupMember[],
     baseEvents: item.baseEvents,
     baseTheme: item.baseTheme,
     basePalette: item.basePalette,
@@ -379,12 +433,8 @@ function readBroadcastState(value: unknown): BroadcastState | null {
   }
 }
 
-function isIdentity(value: unknown): value is Identity {
-  return value === 'henrique' || value === 'pietra'
-}
-
-function isIdentityOrNull(value: unknown): value is Identity | null {
-  return value === null || isIdentity(value)
+function isStringOrNull(value: unknown): value is string | null {
+  return value === null || typeof value === 'string'
 }
 
 function isTheme(value: unknown): value is Theme {
@@ -402,5 +452,5 @@ function isLocale(value: unknown): value is Locale {
 function isEvent(value: unknown): value is AirplaneEvent {
   if (typeof value !== 'object' || value === null) return false
   const item = value as Partial<AirplaneEvent>
-  return typeof item.id === 'string' && isIdentity(item.who) && typeof item.ts === 'number' && Number.isFinite(item.ts) && item.ts > 0
+  return typeof item.id === 'string' && typeof item.who === 'string' && item.who.length > 0 && typeof item.ts === 'number' && Number.isFinite(item.ts) && item.ts > 0
 }

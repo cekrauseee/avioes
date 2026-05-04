@@ -1,4 +1,4 @@
-export type Identity = 'henrique' | 'pietra'
+export type Identity = string
 
 export type Locale = 'pt' | 'en'
 
@@ -18,6 +18,21 @@ export type Streak = {
 export type Theme = 'light' | 'dark' | 'system'
 
 export type Palette = 'default' | 'ocean' | 'lavender' | 'earth' | 'blossom' | 'sky'
+
+export type GroupRole = 'owner' | 'member'
+
+export type GroupMember = {
+  userId: string
+  name: string
+  email: string
+  role: GroupRole
+}
+
+export type Group = {
+  id: string
+  name: string
+  ownerId: string
+}
 
 export type PendingOp =
   | { id: string; kind: 'add-event'; event: AirplaneEvent }
@@ -44,28 +59,19 @@ export const PALETTES: Record<
   sky: { label: 'Céu', light: { bg: '#EEF3F8', sage: '#5892AA', clay: '#CC7E50' }, dark: { bg: '#0E161C', sage: '#6EAABC', clay: '#DC9468' } }
 }
 
-export const IDENTITIES: Record<
-  Identity,
-  {
-    label: string
-    bg: string
-    text: string
-    bgSoft: string
-    border: string
-  }
-> = {
-  henrique: {
-    label: 'Henrique',
-    bg: 'bg-sage',
-    text: 'text-sage',
-    bgSoft: 'bg-sage-soft',
-    border: 'border-sage'
-  },
-  pietra: {
-    label: 'Pietra',
-    bg: 'bg-clay',
-    text: 'text-clay',
-    bgSoft: 'bg-clay-soft',
-    border: 'border-clay'
-  }
+export const MEMBER_COLORS = [
+  { bg: 'bg-sage', text: 'text-sage', bgSoft: 'bg-sage-soft', border: 'border-sage' },
+  { bg: 'bg-clay', text: 'text-clay', bgSoft: 'bg-clay-soft', border: 'border-clay' },
+  { bg: 'bg-sky', text: 'text-sky', bgSoft: 'bg-sky-soft', border: 'border-sky' }
+] as const
+
+export type MemberColor = (typeof MEMBER_COLORS)[number]
+
+export function getMemberColor(userId: string, members: GroupMember[]): MemberColor {
+  const index = members.findIndex((m) => m.userId === userId)
+  return MEMBER_COLORS[Math.max(0, index) % MEMBER_COLORS.length]
+}
+
+export function getMemberName(userId: string, members: GroupMember[]): string {
+  return members.find((m) => m.userId === userId)?.name ?? 'Alguém'
 }

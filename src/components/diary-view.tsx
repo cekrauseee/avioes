@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { DATE_LOCALE, t } from '../lib/i18n'
 import { selectEvents, selectLocale, useOfflineState } from '../lib/offline-store'
 import { computeStreaks } from '../lib/streaks'
-import { IDENTITIES, type Locale } from '../lib/types'
+import { getMemberColor, getMemberName, type Locale } from '../lib/types'
 import { AppShell } from './app-shell'
 import { Onboarding } from './onboarding'
 import { SyncStatus } from './sync-status'
@@ -21,7 +21,7 @@ function timeFormatter(locale: Locale) {
 export function DiaryView() {
   const state = useOfflineState()
   const locale = selectLocale(state)
-  if (!state.identity) return <Onboarding />
+  if (!state.identity || !state.activeGroupId) return <Onboarding />
 
   const merged = selectEvents(state)
   const streaks = computeStreaks(merged).reverse()
@@ -51,27 +51,28 @@ export function DiaryView() {
                 aria-hidden
                 className='dotted-line absolute top-2 bottom-2 left-[5px] w-px'
               />
-              {streaks.map((s, i) => (
-                <li
-                  key={`${s.who}-${s.startTs}-${i}`}
-                  className='relative'
-                >
-                  <span
-                    aria-hidden
-                    className={`absolute top-2 -left-[18px] h-2 w-2 rounded-full ${IDENTITIES[s.who].bg}`}
-                  />
-                  <article className={`bg-paper rounded-xl p-3 ${i % 2 === 0 ? 'rotate-[-0.3deg]' : 'rotate-[0.3deg]'}`}>
-                    <p className='font-display text-base leading-snug'>
-                      <span className={IDENTITIES[s.who].text}>{IDENTITIES[s.who].label}</span> {t(locale, 'diary.saw')} <span className='font-mono text-sm'>{s.count}</span>{' '}
-                      {s.count === 1 ? t(locale, 'diary.airplane') : t(locale, 'diary.airplanesInSequence')}.
-                    </p>
-                    <p className='text-ink-faint mt-1.5 font-mono text-[11px]'>
-                      {dayFmt.format(new Date(s.startTs))} · {timeFmt.format(new Date(s.startTs))}
-                      {s.count > 1 ? ` – ${timeFmt.format(new Date(s.endTs))}` : ''}
-                    </p>
-                  </article>
-                </li>
-              ))}
+              {streaks.map((s, i) => {
+                const color = getMemberColor(s.who, state.groupMembers)
+                const label = getMemberName(s.who, state.groupMembers)
+                return (
+                  <li key={`${s.who}-${s.startTs}-${i}`} className='relative'>
+                    <span
+                      aria-hidden
+                      className={`absolute top-2 -left-[18px] h-2 w-2 rounded-full ${color.bg}`}
+                    />
+                    <article className={`bg-paper rounded-xl p-3 ${i % 2 === 0 ? 'rotate-[-0.3deg]' : 'rotate-[0.3deg]'}`}>
+                      <p className='font-display text-base leading-snug'>
+                        <span className={color.text}>{label}</span> {t(locale, 'diary.saw')} <span className='font-mono text-sm'>{s.count}</span>{' '}
+                        {s.count === 1 ? t(locale, 'diary.airplane') : t(locale, 'diary.airplanesInSequence')}.
+                      </p>
+                      <p className='text-ink-faint mt-1.5 font-mono text-[11px]'>
+                        {dayFmt.format(new Date(s.startTs))} · {timeFmt.format(new Date(s.startTs))}
+                        {s.count > 1 ? ` – ${timeFmt.format(new Date(s.endTs))}` : ''}
+                      </p>
+                    </article>
+                  </li>
+                )
+              })}
             </ol>
           }
         </div>

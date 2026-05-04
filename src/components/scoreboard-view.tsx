@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { DATE_LOCALE, t } from '../lib/i18n'
 import { selectEvents, selectLocale, useOfflineState } from '../lib/offline-store'
 import { computeStreaks, totals } from '../lib/streaks'
-import { IDENTITIES, type Identity, type Locale } from '../lib/types'
+import { getMemberColor, getMemberName, MEMBER_COLORS, type Locale } from '../lib/types'
 import { AppShell } from './app-shell'
 import { Onboarding } from './onboarding'
 import { SyncStatus } from './sync-status'
@@ -13,22 +13,21 @@ import { ThemeToggle } from './theme-toggle'
 export function ScoreboardView() {
   const state = useOfflineState()
   const locale = selectLocale(state)
-  if (!state.identity) return <Onboarding />
+  if (!state.identity || !state.activeGroupId) return <Onboarding />
 
   const merged = selectEvents(state)
   const tt = totals(merged)
   const streaks = computeStreaks(merged)
-  const longest = streaks.reduce<{ henrique: number; pietra: number }>(
-    (acc, s) => {
-      if (s.count > acc[s.who]) acc[s.who] = s.count
-      return acc
-    },
-    { henrique: 0, pietra: 0 }
-  )
-  const leader: Identity | null =
-    tt.henrique === tt.pietra ? null
-    : tt.henrique > tt.pietra ? 'henrique'
-    : 'pietra'
+
+  const memberEntries = state.groupMembers.map((m, index) => ({
+    member: m,
+    count: tt[m.userId] ?? 0,
+    longest: streaks.filter((s) => s.who === m.userId).reduce((max, s) => Math.max(max, s.count), 0),
+    colorIndex: index
+  }))
+
+  const sortedByCount = [...memberEntries].sort((a, b) => b.count - a.count)
+  const leader = sortedByCount[0]?.count > (sortedByCount[1]?.count ?? -1) ? sortedByCount[0] : null
 
   const timeFmt = new Intl.DateTimeFormat(DATE_LOCALE[locale], {
     day: '2-digit',
@@ -50,28 +49,60 @@ export function ScoreboardView() {
             </div>
           </div>
           <p className='font-display text-ink-soft mt-1 text-sm italic'>
-            {leader ? `${IDENTITIES[leader].label} ${t(locale, 'scoreboard.isAhead')}` : t(locale, 'scoreboard.tied')}
+            {leader ?
+              `${getMemberName(leader.member.userId, state.groupMembers)} ${t(locale, 'scoreboard.isAhead')}`
+            : t(locale, 'scoreboard.tied')}
           </p>
 
-          <section className='relative mt-7 grid grid-cols-[1fr_auto_1fr] items-center gap-2'>
-            <Score
-              id='henrique'
-              count={tt.henrique}
-              longest={longest.henrique}
-              highlight={leader === 'henrique'}
-              align='left'
-              locale={locale}
-            />
-            <span className='font-display text-ink-faint rotate-[-8deg] text-2xl italic'>vs</span>
-            <Score
-              id='pietra'
-              count={tt.pietra}
-              longest={longest.pietra}
-              highlight={leader === 'pietra'}
-              align='right'
-              locale={locale}
-            />
-          </section>
+          {/* Scores: show up to 2 members side by side, more as list */}
+          {memberEntries.length <= 2 ?
+            <section className='relative mt-7 grid grid-cols-[1fr_auto_1fr] items-center gap-2'>
+              {memberEntries[0] && (
+                <Score
+                  name={getMemberName(memberEntries[0].member.userId, state.groupMembers)}
+                  count={memberEntries[0].count}
+                  longest={memberEntries[0].longest}
+                  highlight={leader?.member.userId === memberEntries[0].member.userId}
+                  align='left'
+                  colorIndex={memberEntries[0].colorIndex}
+                  locale={locale}
+                />
+              )}
+              {memberEntries.length === 2 && (
+                <>
+                  <span className='font-display text-ink-faint rotate-[-8deg] text-2xl italic'>vs</span>
+                  <Score
+                    name={getMemberName(memberEntries[1].member.userId, state.groupMembers)}
+                    count={memberEntries[1].count}
+                    longest={memberEntries[1].longest}
+                    highlight={leader?.member.userId === memberEntries[1].member.userId}
+                    align='right'
+                    colorIndex={memberEntries[1].colorIndex}
+                    locale={locale}
+                  />
+                </>
+              )}
+            </section>
+          : <section className='mt-5 space-y-2'>
+              {sortedByCount.map((entry) => {
+                const color = MEMBER_COLORS[entry.colorIndex % MEMBER_COLORS.length]
+                return (
+                  <div
+                    key={entry.member.userId}
+                    className='border-line flex items-center justify-between rounded-xl border px-4 py-2.5'
+                  >
+                    <div className='flex items-center gap-3'>
+                      <span className={`h-2 w-2 rounded-full ${color.bg}`} aria-hidden />
+                      <span className={`font-display text-base ${color.text}`}>
+                        {getMemberName(entry.member.userId, state.groupMembers)}
+                      </span>
+                    </div>
+                    <span className='font-display text-2xl'>{entry.count}</span>
+                  </div>
+                )
+              })}
+            </section>
+          }
 
           <h2 className='text-ink-faint mt-8 text-xs'>{t(locale, 'scoreboard.lastStreaks')}</h2>
         </header>
@@ -83,17 +114,20 @@ export function ScoreboardView() {
               {streaks
                 .slice(-8)
                 .reverse()
-                .map((s, i) => (
-                  <li
-                    key={`${s.who}-${s.startTs}-${i}`}
-                    className='flex items-baseline justify-between py-2.5'
-                  >
-                    <span className='font-display text-sm'>
-                      <span className={IDENTITIES[s.who].text}>{IDENTITIES[s.who].label}</span> · {s.count}
-                    </span>
-                    <span className='text-ink-faint font-mono text-[11px]'>{timeFmt.format(new Date(s.endTs))}</span>
-                  </li>
-                ))}
+                .map((s, i) => {
+                  const color = getMemberColor(s.who, state.groupMembers)
+                  return (
+                    <li
+                      key={`${s.who}-${s.startTs}-${i}`}
+                      className='flex items-baseline justify-between py-2.5'
+                    >
+                      <span className='font-display text-sm'>
+                        <span className={color.text}>{getMemberName(s.who, state.groupMembers)}</span> · {s.count}
+                      </span>
+                      <span className='text-ink-faint font-mono text-[11px]'>{timeFmt.format(new Date(s.endTs))}</span>
+                    </li>
+                  )
+                })}
             </ul>
           }
         </div>
@@ -102,33 +136,31 @@ export function ScoreboardView() {
   )
 }
 
-function Score({ id, count, longest, highlight, align, locale }: { id: Identity; count: number; longest: number; highlight: boolean; align: 'left' | 'right'; locale: Locale }) {
+function Score({
+  name,
+  count,
+  longest,
+  highlight,
+  align,
+  colorIndex,
+  locale
+}: {
+  name: string
+  count: number
+  longest: number
+  highlight: boolean
+  align: 'left' | 'right'
+  colorIndex: number
+  locale: Locale
+}) {
+  const color = MEMBER_COLORS[colorIndex % MEMBER_COLORS.length]
   return (
     <div className={`flex flex-col gap-2 ${align === 'right' ? 'items-end text-right' : 'items-start text-left'}`}>
-      <div className='relative w-14'>
-        <Image
-          src={`/avatar-${id}-light.png`}
-          alt=''
-          aria-hidden
-          width={224}
-          height={224}
-          unoptimized
-          className='theme-light-only h-auto w-full select-none'
-          draggable={false}
-        />
-        <Image
-          src={`/avatar-${id}-dark.png`}
-          alt=''
-          aria-hidden
-          width={224}
-          height={224}
-          unoptimized
-          className='theme-dark-only h-auto w-full select-none'
-          draggable={false}
-        />
+      <div className={`flex h-12 w-12 items-center justify-center rounded-full ${color.bgSoft}`}>
+        <span className={`font-display text-2xl ${color.text}`}>{name.slice(0, 1).toUpperCase()}</span>
       </div>
-      <span className='text-ink-faint text-xs'>{IDENTITIES[id].label}</span>
-      <span className={`font-display text-[44px] leading-none tracking-tight ${highlight ? IDENTITIES[id].text : 'text-ink'}`}>{count}</span>
+      <span className='text-ink-faint text-xs'>{name}</span>
+      <span className={`font-display text-[44px] leading-none tracking-tight ${highlight ? color.text : 'text-ink'}`}>{count}</span>
       <span className='text-ink-faint text-xs'>{t(locale, 'scoreboard.longest')} · {longest}</span>
     </div>
   )

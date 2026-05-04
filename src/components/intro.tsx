@@ -1,10 +1,8 @@
 'use client'
 
 import { AnimatePresence, motion, useReducedMotion, type PanInfo } from 'motion/react'
-import { useState, useTransition } from 'react'
-import { markIntroSeen } from '../actions'
+import { useState } from 'react'
 import { t, type TKey } from '../lib/i18n'
-import { applyIntroSeen } from '../lib/offline-store'
 import type { Locale } from '../lib/types'
 import { Placeholder } from './placeholder'
 
@@ -50,7 +48,6 @@ export function Intro({ onDone, locale }: { onDone: () => void; locale: Locale }
   const [index, setIndex] = useState(0)
   const [direction, setDirection] = useState<1 | -1>(1)
   const [leaving, setLeaving] = useState(false)
-  const [pending, start] = useTransition()
   const reduce = useReducedMotion()
 
   const total = PAGES.length
@@ -82,15 +79,7 @@ export function Intro({ onDone, locale }: { onDone: () => void; locale: Locale }
   const finish = () => {
     if (leaving) return
     setLeaving(true)
-    start(async () => {
-      try {
-        await markIntroSeen()
-      } catch {}
-      window.setTimeout(() => {
-        applyIntroSeen()
-        onDone()
-      }, reduce ? 0 : 380)
-    })
+    window.setTimeout(() => onDone(), reduce ? 0 : 380)
   }
 
   const onDragEnd = (_: unknown, info: PanInfo) => {
@@ -113,7 +102,7 @@ export function Intro({ onDone, locale }: { onDone: () => void; locale: Locale }
         <button
           type='button'
           onClick={finish}
-          disabled={pending || leaving}
+          disabled={leaving}
           className='text-ink-faint hover:text-ink-soft focus-visible:text-ink-soft -mr-2 rounded-full px-2 py-1 text-xs transition-colors disabled:opacity-50'
         >
           {t(locale, 'intro.skip')}
@@ -173,7 +162,7 @@ export function Intro({ onDone, locale }: { onDone: () => void; locale: Locale }
           <button
             type='button'
             onClick={goPrev}
-            disabled={pending || leaving || index === 0}
+            disabled={leaving || index === 0}
             aria-label={t(locale, 'intro.prevPage')}
             aria-hidden={index === 0}
             tabIndex={index === 0 ? -1 : 0}
@@ -206,7 +195,7 @@ export function Intro({ onDone, locale }: { onDone: () => void; locale: Locale }
                 aria-selected={active}
                 aria-label={`${t(locale, 'intro.goToPage')} ${i + 1}`}
                 onClick={() => goTo(i)}
-                disabled={pending || leaving}
+                disabled={leaving}
                 className='group relative h-6 px-1'
               >
                 <span
@@ -223,7 +212,7 @@ export function Intro({ onDone, locale }: { onDone: () => void; locale: Locale }
           <button
             type='button'
             onClick={goNext}
-            disabled={pending || leaving}
+            disabled={leaving}
             className='group focus-visible:bg-line/40 hover:bg-line/40 -mr-2 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm transition-colors active:scale-[0.99] disabled:opacity-50'
           >
             <span className='font-display'>{isLast ? t(locale, 'intro.start') : t(locale, 'intro.next')}</span>
