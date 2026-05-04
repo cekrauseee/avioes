@@ -17,8 +17,8 @@ const THEME_MODES: { id: Theme; labelKey: TKey; glyph: string }[] = [
 ]
 
 const LOCALE_OPTIONS: { id: Locale; label: string }[] = [
-  { id: 'pt', label: 'Português' },
-  { id: 'en', label: 'English' }
+  { id: 'en', label: 'English' },
+  { id: 'pt', label: 'Português' }
 ]
 
 function subscribeSystemDark(callback: () => void) {
