@@ -55,6 +55,13 @@ export async function requireGroupMember(groupId: string, nextPath: string): Pro
   return user
 }
 
+export async function requireGroupOwner(groupId: string, nextPath: string): Promise<User> {
+  const user = await requireUser(nextPath)
+  const membership = await readGroupMembership(groupId, user.id)
+  if (membership?.role !== 'owner') redirect('/groups')
+  return user
+}
+
 export async function redirectAuthenticatedUser(nextPathValue: unknown): Promise<void> {
   const user = await getCurrentUser()
   if (!user) return

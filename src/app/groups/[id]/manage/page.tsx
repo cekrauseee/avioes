@@ -1,8 +1,8 @@
 import { ManageGroupScreen } from '@/components/manage-group-screen'
-import { requireGroupMember } from '@/lib/auth-guards'
+import { requireGroupOwner } from '@/lib/auth-guards'
 
 export default async function ManageGroupPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  await requireGroupMember(id, `/groups/${id}/manage`)
+  await requireGroupOwner(id, `/groups/${id}/manage`)
   return <ManageGroupScreen groupId={id} />
 }
