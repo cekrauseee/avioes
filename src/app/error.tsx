@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { startTransition } from 'react'
 
@@ -14,12 +15,28 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
       </header>
 
       <div className='flex flex-1 flex-col items-center justify-center text-center'>
-        <span
-          aria-hidden
-          className='font-display text-ink-faint inline-block rotate-[10deg] text-7xl leading-none'
-        >
-          ✈
-        </span>
+        <div className='relative w-[60%] max-w-55'>
+          <Image
+            src='/airplane-error-light.png'
+            alt=''
+            aria-hidden
+            width={480}
+            height={480}
+            unoptimized
+            className='theme-light-only h-auto w-full select-none'
+            draggable={false}
+          />
+          <Image
+            src='/airplane-error-dark.png'
+            alt=''
+            aria-hidden
+            width={480}
+            height={480}
+            unoptimized
+            className='theme-dark-only h-auto w-full select-none'
+            draggable={false}
+          />
+        </div>
         <h1 className='font-display mt-8 text-[34px] leading-[0.95] tracking-tight'>
           Um pouco de
           <br />

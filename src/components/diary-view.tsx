@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { selectEvents, useOfflineState } from '../lib/offline-store'
 import { computeStreaks } from '../lib/streaks'
 import { IDENTITIES } from '../lib/types'
@@ -78,8 +79,30 @@ export function DiaryView() {
 
 function Empty() {
   return (
-    <div className='border-line mt-12 rounded-xl border border-dashed p-6 text-center'>
-      <p className='font-display text-ink-soft text-base'>Nenhum avião ainda.</p>
+    <div className='mt-8 flex flex-col items-center text-center'>
+      <div className='relative w-[58%] max-w-55'>
+        <Image
+          src='/empty-diary-light.png'
+          alt=''
+          aria-hidden
+          width={440}
+          height={440}
+          unoptimized
+          className='theme-light-only h-auto w-full select-none'
+          draggable={false}
+        />
+        <Image
+          src='/empty-diary-dark.png'
+          alt=''
+          aria-hidden
+          width={440}
+          height={440}
+          unoptimized
+          className='theme-dark-only h-auto w-full select-none'
+          draggable={false}
+        />
+      </div>
+      <p className='font-display text-ink-soft mt-5 text-base'>Nenhum avião ainda.</p>
       <p className='text-ink-faint mt-1.5 text-xs'>toque na tela inicial pra começar</p>
     </div>
   )

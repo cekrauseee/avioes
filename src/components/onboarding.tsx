@@ -1,12 +1,12 @@
 'use client'
 
 import { motion } from 'motion/react'
+import Image from 'next/image'
 import { useState, useTransition } from 'react'
 import { setIdentity } from '../actions'
 import { applyServerSnapshot } from '../lib/offline-store'
 import type { Identity } from '../lib/types'
 import { OfflineGate } from './offline-gate'
-import { Placeholder } from './placeholder'
 
 export function Onboarding() {
   const [pending, start] = useTransition()
@@ -64,10 +64,40 @@ function Picker({ picked, pending, onPick }: { picked: Identity | null; pending:
       </motion.header>
 
       <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.7, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+        className='relative mx-auto mt-6 w-[58%] max-w-55'
+      >
+        <Image
+          src='/onboarding-hero-light.png'
+          alt=''
+          aria-hidden
+          width={480}
+          height={480}
+          priority
+          unoptimized
+          className='theme-light-only h-auto w-full select-none'
+          draggable={false}
+        />
+        <Image
+          src='/onboarding-hero-dark.png'
+          alt=''
+          aria-hidden
+          width={480}
+          height={480}
+          priority
+          unoptimized
+          className='theme-dark-only h-auto w-full select-none'
+          draggable={false}
+        />
+      </motion.div>
+
+      <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-        className='mt-8'
+        className='mt-6'
       >
         <h1 className='font-display text-[34px] leading-[0.95] tracking-tight'>
           Quem está
@@ -138,15 +168,32 @@ function PersonCard({
       whileTap={{ scale: 0.97 }}
       disabled={pending || picked !== null}
       onClick={() => onPick(who)}
-      className={`group bg-paper flex flex-col gap-2.5 rounded-xl p-2.5 text-left transition-all duration-300 hover:-translate-y-0.5 focus-visible:-translate-y-0.5 ${ring} ${
+      className={`group flex flex-col gap-2.5 rounded-xl p-2.5 text-left transition-all duration-300 hover:-translate-y-0.5 focus-visible:-translate-y-0.5 ${ring} ${
         accent === 'sage' ? 'focus-visible:bg-sage-soft' : 'focus-visible:bg-clay-soft'
       } disabled:opacity-50`}
     >
-      <Placeholder
-        ratio='4 / 5'
-        tone={accent}
-        label={who}
-      />
+      <div className='relative w-full'>
+        <Image
+          src={`/avatar-${who}-light.png`}
+          alt=''
+          aria-hidden
+          width={400}
+          height={500}
+          unoptimized
+          className='theme-light-only h-auto w-full select-none'
+          draggable={false}
+        />
+        <Image
+          src={`/avatar-${who}-dark.png`}
+          alt=''
+          aria-hidden
+          width={400}
+          height={500}
+          unoptimized
+          className='theme-dark-only h-auto w-full select-none'
+          draggable={false}
+        />
+      </div>
       <div className='flex items-baseline justify-between px-0.5 pb-0.5'>
         <span className={`font-display text-xl ${textClass}`}>{label}</span>
         <span className='text-ink-faint text-xs'>sou eu →</span>

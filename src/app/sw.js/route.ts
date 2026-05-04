@@ -15,7 +15,28 @@ function getBuildId(): string {
 
 const SW_TEMPLATE = `const CACHE = 'airplanes-__VERSION__'
 const SHELL_ROUTES = ['/', '/diary', '/scoreboard']
-const OFFLINE_ASSETS = ['/airplane-offline-light.png', '/airplane-offline-dark.png']
+const OFFLINE_ASSETS = [
+  '/airplane-offline-light.png',
+  '/airplane-offline-dark.png',
+  '/airplane-error-light.png',
+  '/airplane-error-dark.png',
+  '/airplane-not-found-light.png',
+  '/airplane-not-found-dark.png',
+  '/empty-counter-light.png',
+  '/empty-counter-dark.png',
+  '/empty-diary-light.png',
+  '/empty-diary-dark.png',
+  '/empty-scoreboard-light.png',
+  '/empty-scoreboard-dark.png',
+  '/avatar-henrique-light.png',
+  '/avatar-henrique-dark.png',
+  '/avatar-pietra-light.png',
+  '/avatar-pietra-dark.png',
+  '/splash-light.png',
+  '/splash-dark.png',
+  '/onboarding-hero-light.png',
+  '/onboarding-hero-dark.png'
+]
 const PRECACHE = ['/manifest.webmanifest', ...OFFLINE_ASSETS]
 
 self.addEventListener('install', (event) => {

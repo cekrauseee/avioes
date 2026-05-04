@@ -24,6 +24,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 When `bootstrapState()` returns no identity, the offline model now treats that as an unauthenticated reset: local pending ops are dropped and legacy queue migration waits until an identity exists. This avoids a bootstrap loop when a stale IndexedDB/legacy queue is present but the `ap_id` cookie is missing.
 
+### 2026-05-03 — Illustrations wired into the flow
+
+Replaced `<Placeholder/>` slots and several text-glyph fallbacks with real PNGs in `public/`, paired light/dark via the existing `theme-light-only` / `theme-dark-only` utilities and rendered with `next/image` (`unoptimized`). Mappings: onboarding hero + per-person avatars (onboarding picker and scoreboard `Score`), empty-state illustrations for counter (only when both totals are 0, fades out on first tap), diary, and scoreboard, plus `airplane-not-found` (404), `airplane-error` (500), and `splash` (root `loading.tsx`). The new asset URLs were added to `OFFLINE_ASSETS` in `src/app/sw.js/route.ts` so empty states/avatars survive offline. `src/components/placeholder.tsx` was removed (no remaining call sites).
+
 ### 2026-05-03 — Backlog doc for deferred follow-ups
 
 Deferred, non-current work now lives in `docs/backlog.md` with priority, trigger, and done criteria. `AGENTS.md` explains when to use backlog versus `context.md`: backlog is for parked follow-ups, context is still the active-session scratchpad.
@@ -59,7 +63,3 @@ The whole app is wrapped in a 420px-wide centered column. Desktop renders as a p
 ### 2026-04-30 — Labels: simple, not modernist
 
 Replaced `uppercase tracking-[0.2em]` mono labels with plain `text-xs text-ink-faint` (or `text-[11px]` for timestamps). Mono is reserved for actual numerals. See `docs/ui-ux.md` ("Typography").
-
-### 2026-04-30 — Placeholder illustrations
-
-All illustration slots use `<Placeholder/>` (dashed border, hatch, small label). Real drawings will swap the component, not the call sites.

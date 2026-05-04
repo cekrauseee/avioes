@@ -1,6 +1,7 @@
 'use client'
 
 import { AnimatePresence, motion, useReducedMotion, useSpring, useTransform } from 'motion/react'
+import Image from 'next/image'
 import { startTransition, useEffect, useRef, useState } from 'react'
 import { clearIdentity } from '../actions'
 import { addAirplane, applyLocalIdentity, isOffline, selectEvents, selectPendingCount, undoAirplane, useOfflineState } from '../lib/offline-store'
@@ -151,6 +152,40 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
           className='relative z-10 mt-4 flex flex-1 flex-col items-end justify-center text-right transition-transform select-none active:scale-[0.99]'
           aria-label='Vi um avião'
         >
+          <AnimatePresence>
+            {display === 0 && t[partner] === 0 && (
+              <motion.div
+                key='empty-counter'
+                initial={{ opacity: 0, scale: 0.94 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.94 }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                aria-hidden
+                className='pointer-events-none absolute top-1/2 left-0 w-[48%] max-w-50 -translate-y-1/2'
+              >
+                <Image
+                  src='/empty-counter-light.png'
+                  alt=''
+                  aria-hidden
+                  width={400}
+                  height={400}
+                  unoptimized
+                  className='theme-light-only h-auto w-full select-none'
+                  draggable={false}
+                />
+                <Image
+                  src='/empty-counter-dark.png'
+                  alt=''
+                  aria-hidden
+                  width={400}
+                  height={400}
+                  unoptimized
+                  className='theme-dark-only h-auto w-full select-none'
+                  draggable={false}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
           <span className='text-ink-faint text-xs'>toque · vi um avião</span>
           <motion.span className='font-display text-[clamp(96px,32vw,150px)] leading-[0.85] tracking-tight'>{displayed}</motion.span>
           <span className='font-display text-ink-soft -mt-1 text-base italic'>

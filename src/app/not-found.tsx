@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 
 export default function NotFound() {
@@ -9,12 +10,28 @@ export default function NotFound() {
       </header>
 
       <div className='flex flex-1 flex-col items-center justify-center text-center'>
-        <span
-          aria-hidden
-          className='font-display text-ink-faint inline-block -rotate-[14deg] text-7xl leading-none'
-        >
-          ✈
-        </span>
+        <div className='relative w-[60%] max-w-55'>
+          <Image
+            src='/airplane-not-found-light.png'
+            alt=''
+            aria-hidden
+            width={480}
+            height={480}
+            unoptimized
+            className='theme-light-only h-auto w-full select-none'
+            draggable={false}
+          />
+          <Image
+            src='/airplane-not-found-dark.png'
+            alt=''
+            aria-hidden
+            width={480}
+            height={480}
+            unoptimized
+            className='theme-dark-only h-auto w-full select-none'
+            draggable={false}
+          />
+        </div>
         <h1 className='font-display mt-8 text-[34px] leading-[0.95] tracking-tight'>
           Céu <span className='text-clay italic'>vazio</span>
           <br />
