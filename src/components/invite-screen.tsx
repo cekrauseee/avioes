@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { acceptInvitation, rejectInvitation } from '../actions'
 import { t, tf } from '../lib/i18n'
-import { selectLocale, useOfflineState } from '../lib/offline-store'
+import { applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 
 type InviteStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'expired' | 'not_found'
 
@@ -87,6 +87,7 @@ export function InviteScreen({
     startTransition(async () => {
       const result = await acceptInvitation(token)
       if (result.ok) {
+        applyServerSnapshot(result.snapshot)
         setAcceptedGroupName(result.groupName)
         setScreenState('accepted')
       } else {

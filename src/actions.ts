@@ -213,7 +213,9 @@ export async function getInvitationDetails(token: string) {
   }
 }
 
-export async function acceptInvitation(token: string): Promise<{ ok: true; groupId: string; groupName: string } | { ok: false; error: string }> {
+export async function acceptInvitation(
+  token: string
+): Promise<{ ok: true; groupId: string; groupName: string; snapshot: SyncSnapshot } | { ok: false; error: string }> {
   const user = await getSessionUser()
   if (!user) return { ok: false, error: 'Não autenticado' }
 
@@ -224,7 +226,10 @@ export async function acceptInvitation(token: string): Promise<{ ok: true; group
   }
 
   const result = await acceptInvitationInStore(token, user.id)
-  return result
+  if (!result.ok) return result
+
+  const snapshot = await snapshotForMember(user.id, result.groupId, [], true)
+  return { ok: true, groupId: result.groupId, groupName: result.groupName, snapshot }
 }
 
 export async function rejectInvitation(token: string): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -247,7 +252,7 @@ export async function cancelInvitation(groupId: string, invitationId: string): P
   const membership = await readGroupMembership(groupId, user.id)
   if (membership?.role !== 'owner') return { error: 'Apenas o dono pode cancelar convites' }
 
-  await cancelInvitationInStore(invitationId)
+  await cancelInvitationInStore(groupId, invitationId)
   return { success: true }
 }
 

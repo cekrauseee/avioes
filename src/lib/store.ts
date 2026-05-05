@@ -236,8 +236,14 @@ export async function acceptInvitation(
       .limit(1)
     if (existing.length > 0) return { ok: false as const, error: 'already_member' as const }
 
-    await tx.update(groupInvitations).set({ status: 'accepted' }).where(eq(groupInvitations.id, inv.id))
-    await tx.insert(groupMembers).values({ groupId: inv.groupId, userId, role: 'member', joinedAt: Date.now() })
+    const claimed = await tx
+      .update(groupInvitations)
+      .set({ status: 'accepted' })
+      .where(and(eq(groupInvitations.id, inv.id), eq(groupInvitations.status, 'pending')))
+      .returning({ id: groupInvitations.id })
+    if (claimed.length === 0) return { ok: false as const, error: 'already_used' as const }
+
+    await tx.insert(groupMembers).values({ groupId: inv.groupId, userId, role: 'member', joinedAt: Date.now() }).onConflictDoNothing()
     await tx
       .insert(preferences)
       .values({ userId, activeGroupId: inv.groupId })
@@ -263,13 +269,21 @@ export async function rejectInvitation(
     if (inv.status !== 'pending') return { ok: false as const, error: 'already_used' as const }
     if (inv.expiresAt <= Date.now()) return { ok: false as const, error: 'expired' as const }
 
-    await tx.update(groupInvitations).set({ status: 'rejected' }).where(eq(groupInvitations.id, inv.id))
+    const claimed = await tx
+      .update(groupInvitations)
+      .set({ status: 'rejected' })
+      .where(and(eq(groupInvitations.id, inv.id), eq(groupInvitations.status, 'pending')))
+      .returning({ id: groupInvitations.id })
+    if (claimed.length === 0) return { ok: false as const, error: 'already_used' as const }
     return { ok: true as const }
   })
 }
 
-export async function cancelInvitation(invitationId: string): Promise<void> {
-  await db.update(groupInvitations).set({ status: 'cancelled' }).where(eq(groupInvitations.id, invitationId))
+export async function cancelInvitation(groupId: string, invitationId: string): Promise<void> {
+  await db
+    .update(groupInvitations)
+    .set({ status: 'cancelled' })
+    .where(and(eq(groupInvitations.id, invitationId), eq(groupInvitations.groupId, groupId), eq(groupInvitations.status, 'pending')))
 }
 
 export async function readExistingPendingInvitation(groupId: string, email: string): Promise<{ id: string; token: string } | null> {
