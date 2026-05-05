@@ -148,8 +148,39 @@ export function AuthScreen({ nextPath }: { nextPath: string }) {
         <span className='text-ink-faint text-xs'>{new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date())}</span>
       </motion.header>
 
+      {/* Hero illustration */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+        className='relative mx-auto mt-8 w-[68%] max-w-64'
+      >
+        <Image
+          src='/onboarding-hero-light.png'
+          alt=''
+          aria-hidden
+          width={720}
+          height={420}
+          unoptimized
+          priority
+          className='theme-light-only h-auto w-full select-none'
+          draggable={false}
+        />
+        <Image
+          src='/onboarding-hero-dark.png'
+          alt=''
+          aria-hidden
+          width={720}
+          height={420}
+          unoptimized
+          priority
+          className='theme-dark-only h-auto w-full select-none'
+          draggable={false}
+        />
+      </motion.div>
+
       {/* Main content */}
-      <div className='mt-12 flex flex-1 flex-col'>
+      <div className='mt-8 flex flex-1 flex-col'>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
