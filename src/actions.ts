@@ -255,6 +255,23 @@ async function snapshotForMember(userId: string, groupId: string, settled: strin
   }
 }
 
+export async function setNewPassword(newPassword: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false, error: 'Não autenticado.' }
+  if (typeof newPassword !== 'string' || newPassword.length < 8 || newPassword.length > 128) {
+    return { ok: false, error: 'Senha precisa ter entre 8 e 128 caracteres.' }
+  }
+  try {
+    await auth.api.setPassword({
+      body: { newPassword },
+      headers: await headers()
+    })
+    return { ok: true }
+  } catch {
+    return { ok: false, error: 'Não foi possível criar a senha.' }
+  }
+}
+
 function opId(op: unknown): string | null {
   return typeof op === 'object' && op !== null && typeof (op as { id?: unknown }).id === 'string' ? (op as { id: string }).id : null
 }
