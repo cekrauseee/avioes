@@ -54,6 +54,7 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
 
   const [accountOpen, setAccountOpen] = useState(false)
   const [flights, setFlights] = useState<ArcKey[]>([])
+  const flightIdRef = useRef(0)
   const spring = useSpring(display, { stiffness: 220, damping: 22 })
   const animateNextRef = useRef(false)
   useEffect(() => {
@@ -66,12 +67,28 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
   }, [display, spring])
   const displayed = useTransform(spring, (v) => Math.round(v).toString())
 
+  useEffect(() => {
+    for (const src of ['/flying-airplane-light.png', '/flying-airplane-dark.png']) {
+      const img = new window.Image()
+      img.src = src
+    }
+  }, [])
+
   const hydrated = state.hydrated
 
   const tap = () => {
-    setFlights((f) => [...f.slice(-2), { id: Date.now(), from: Math.random() > 0.5 ? 'left' : 'right' }])
+    flightIdRef.current += 1
+    const from: ArcKey['from'] = Math.random() > 0.5 ? 'left' : 'right'
+    const entryY = 15 + Math.random() * 55
+    const exitY = 15 + Math.random() * 55
+    const pitch = (Math.atan2(exitY - entryY, 125) * 180) / Math.PI
+    setFlights((f) => [...f, { id: flightIdRef.current, from, entryY, exitY, pitch }])
     animateNextRef.current = true
     addAirplane(who)
+  }
+
+  const handleFlightDone = (id: number) => {
+    setFlights((f) => f.filter((x) => x.id !== id))
   }
 
   const undo = () => {
@@ -90,7 +107,10 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
   return (
     <AppShell>
       <main className='relative flex min-h-0 w-full flex-1 flex-col px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.25rem)]'>
-        <PlaneArc flights={flights} />
+        <PlaneArc
+          flights={flights}
+          onFlightDone={handleFlightDone}
+        />
 
         <header className='relative z-10 flex items-center justify-between'>
           <button

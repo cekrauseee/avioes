@@ -28,14 +28,18 @@ const OFFLINE_ASSETS = [
   '/empty-diary-dark.png',
   '/empty-scoreboard-light.png',
   '/empty-scoreboard-dark.png',
-  '/avatar-henrique-light.png',
-  '/avatar-henrique-dark.png',
-  '/avatar-pietra-light.png',
-  '/avatar-pietra-dark.png',
   '/splash-light.png',
   '/splash-dark.png',
   '/onboarding-hero-light.png',
-  '/onboarding-hero-dark.png'
+  '/onboarding-hero-dark.png',
+  '/invite-hero-light.png',
+  '/invite-hero-dark.png',
+  '/invite-accepted-light.png',
+  '/invite-accepted-dark.png',
+  '/flying-airplane-light.png',
+  '/flying-airplane-dark.png',
+  '/favicon-light.png',
+  '/favicon-dark.png'
 ]
 const PRECACHE = ['/manifest.webmanifest', ...OFFLINE_ASSETS]
 

@@ -1,41 +1,71 @@
 'use client'
 
 import { AnimatePresence, motion } from 'motion/react'
+import Image from 'next/image'
 
-export type ArcKey = { id: number; from: 'left' | 'right' }
+export type ArcKey = {
+  id: number
+  from: 'left' | 'right'
+  entryY: number
+  exitY: number
+  pitch: number
+}
 
-export function PlaneArc({ flights }: { flights: ArcKey[] }) {
+export function PlaneArc({ flights, onFlightDone }: { flights: ArcKey[]; onFlightDone: (id: number) => void }) {
   return (
     <div
       aria-hidden
-      className='pointer-events-none absolute inset-0 overflow-hidden'
+      className='pointer-events-none absolute inset-0 overflow-hidden [container-type:size]'
     >
       <AnimatePresence>
         {flights.map((f) => {
-          const reverse = f.from === 'right'
+          const fromRight = f.from === 'right'
+          const scaleX = fromRight ? -1 : 1
           return (
             <motion.div
               key={f.id}
               initial={{
-                x: reverse ? '110vw' : '-15vw',
-                y: reverse ? '20vh' : '60vh',
-                rotate: reverse ? 200 : 20,
-                opacity: 0
+                x: fromRight ? '108cqw' : '-8cqw',
+                y: `${f.entryY}cqh`,
+                rotate: f.pitch,
+                scaleX,
+                opacity: 0.7
               }}
               animate={{
-                x: reverse ? '-15vw' : '110vw',
-                y: reverse ? '60vh' : '20vh',
-                rotate: reverse ? 200 : 20,
-                opacity: [0, 1, 1, 0]
+                x: fromRight ? '-8cqw' : '108cqw',
+                y: `${f.exitY}cqh`,
+                rotate: f.pitch,
+                scaleX,
+                opacity: [0.7, 0.7, 0.7, 0]
               }}
               transition={{
-                duration: 1.6,
-                ease: [0.4, 0, 0.6, 1],
-                opacity: { times: [0, 0.15, 0.85, 1], duration: 1.6 }
+                duration: 1.4,
+                ease: 'linear',
+                opacity: { times: [0, 0.85, 0.92, 1], duration: 1.4 }
               }}
-              className='font-display text-ink/70 absolute text-3xl'
+              onAnimationComplete={() => onFlightDone(f.id)}
+              className='absolute h-9 w-9'
             >
-              ✈
+              <Image
+                src='/flying-airplane-light.png'
+                alt=''
+                aria-hidden
+                width={64}
+                height={64}
+                unoptimized
+                className='theme-light-only h-full w-full select-none'
+                draggable={false}
+              />
+              <Image
+                src='/flying-airplane-dark.png'
+                alt=''
+                aria-hidden
+                width={64}
+                height={64}
+                unoptimized
+                className='theme-dark-only h-full w-full select-none'
+                draggable={false}
+              />
             </motion.div>
           )
         })}

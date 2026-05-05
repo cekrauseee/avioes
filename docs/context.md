@@ -20,6 +20,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-05 — Favicon + flying-airplane icon swap
+
+Browser favicon now uses `public/favicon-{light,dark}.png` via `metadata.icons` in `src/app/layout.tsx` with `prefers-color-scheme` media queries; the old `src/app/favicon.ico` was deleted because the app-folder convention takes precedence over metadata and would have shadowed the new PNGs. The counter's tap fly-by in `src/components/plane-arc.tsx` swapped the Unicode `✈` glyph for `flying-airplane-{light,dark}.png` rendered with `next/image` (`unoptimized`) and the existing `theme-light-only` / `theme-dark-only` pair. Apple touch icon points at the existing `/icons/icon-1024.png`. Prompts for all six (favicon + flying airplane + PWA `icon-1024` + maskable) live in `docs/illustrations.md`. PWA icons in `public/icons/` haven't been regenerated yet — the old May-1 files are still in place; manifest already references the right paths, so dropping new files in is enough.
+
 ### 2026-05-05 — Desktop horizontal page navigation
 
 Route swipe navigation now also listens for dominant horizontal wheel gestures and unmodified Left/Right arrow keys, so desktop users can move between `/`, `/diary`, `/scoreboard`, and `/settings` without click-dragging. The wheel handler runs in capture phase, accumulates `deltaX` per gesture, accepts a little vertical noise, prevents browser horizontal overscroll inside the app frame, and locks until wheel input settles so one trackpad gesture only advances one page. Wheel swipes use a lower threshold than drag swipes, so they feel closer to native trackpad paging. This lets horizontal swipes work even when the cursor is over a vertical `.scroll-area`. Settings tab content uses the same wheel/key path and still spills left from the first tab back to `/scoreboard`.
