@@ -47,10 +47,7 @@ export type PalettePreview = {
   clay: string
 }
 
-export const PALETTES: Record<
-  Palette,
-  { label: string; light: PalettePreview; dark: PalettePreview }
-> = {
+export const PALETTES: Record<Palette, { label: string; light: PalettePreview; dark: PalettePreview }> = {
   default: { label: 'Caderno', light: { bg: '#F6F1E7', sage: '#7C9A82', clay: '#C97B5C' }, dark: { bg: '#15191B', sage: '#9CB6A1', clay: '#E59A7E' } },
   ocean: { label: 'Oceano', light: { bg: '#ECF2F6', sage: '#4E8FA8', clay: '#C8754E' }, dark: { bg: '#101A20', sage: '#68A8C0', clay: '#DA886A' } },
   lavender: { label: 'Lavanda', light: { bg: '#F0EBF6', sage: '#7B6EAA', clay: '#C07488' }, dark: { bg: '#161220', sage: '#988AC5', clay: '#D08A9C' } },

@@ -90,10 +90,7 @@ export async function leaveGroup(groupId: string, userId: string): Promise<void>
 }
 
 export async function addGroupMember(groupId: string, userId: string): Promise<void> {
-  await db
-    .insert(groupMembers)
-    .values({ groupId, userId, role: 'member', joinedAt: Date.now() })
-    .onConflictDoNothing()
+  await db.insert(groupMembers).values({ groupId, userId, role: 'member', joinedAt: Date.now() }).onConflictDoNothing()
 }
 
 export async function removeGroupMember(groupId: string, userId: string): Promise<void> {

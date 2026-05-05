@@ -28,7 +28,10 @@ export function ToolbarTabs<Id extends string>({
   onSelect: (id: Id) => void
 }) {
   const reduceMotion = useReducedMotion()
-  const currentIndex = Math.max(0, items.findIndex((item) => item.id === activeId))
+  const currentIndex = Math.max(
+    0,
+    items.findIndex((item) => item.id === activeId)
+  )
   const [scrubbing, setScrubbing] = useState(false)
   const [scrubIndex, setScrubIndex] = useState(currentIndex)
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
@@ -149,7 +152,7 @@ export function ToolbarTabs<Id extends string>({
       )}
 
       <motion.div
-        className='absolute inset-0 z-10 touch-none cursor-pointer active:cursor-grabbing'
+        className='absolute inset-0 z-10 cursor-pointer touch-none active:cursor-grabbing'
         drag='x'
         dragElastic={0}
         dragConstraints={{ left: 0, right: 0 }}

@@ -146,7 +146,14 @@ function isTheme(value: unknown): value is Theme {
 function isEvent(value: unknown): value is AirplaneEvent {
   if (typeof value !== 'object' || value === null) return false
   const item = value as Partial<AirplaneEvent>
-  return typeof item.id === 'string' && typeof item.who === 'string' && item.who.length > 0 && typeof item.ts === 'number' && Number.isFinite(item.ts) && item.ts > 0
+  return (
+    typeof item.id === 'string' &&
+    typeof item.who === 'string' &&
+    item.who.length > 0 &&
+    typeof item.ts === 'number' &&
+    Number.isFinite(item.ts) &&
+    item.ts > 0
+  )
 }
 
 function isPalette(value: unknown): value is Palette {
@@ -166,10 +173,7 @@ function isGroupMember(value: unknown): boolean {
   if (typeof value !== 'object' || value === null) return false
   const item = value as Record<string, unknown>
   return (
-    typeof item.userId === 'string' &&
-    typeof item.name === 'string' &&
-    typeof item.email === 'string' &&
-    (item.role === 'owner' || item.role === 'member')
+    typeof item.userId === 'string' && typeof item.name === 'string' && typeof item.email === 'string' && (item.role === 'owner' || item.role === 'member')
   )
 }
 

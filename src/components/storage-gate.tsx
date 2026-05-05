@@ -26,9 +26,7 @@ export function StorageGate() {
           <br />
           <span className='text-clay italic'>{t(locale, 'storage.titleItalic')}</span>.
         </h1>
-        <p className='font-display text-ink-soft mt-3 max-w-[28ch] text-sm italic'>
-          {t(locale, 'storage.body')}
-        </p>
+        <p className='font-display text-ink-soft mt-3 max-w-[28ch] text-sm italic'>{t(locale, 'storage.body')}</p>
       </div>
     </main>
   )

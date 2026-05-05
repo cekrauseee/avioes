@@ -39,7 +39,10 @@ export type OfflineStoreState = OfflineSnapshot & {
   localeFading: boolean
 }
 
-type BroadcastState = Pick<OfflineStoreState, 'identity' | 'activeGroupId' | 'groupMembers' | 'baseEvents' | 'baseTheme' | 'basePalette' | 'baseLocale' | 'lastSyncOk'>
+type BroadcastState = Pick<
+  OfflineStoreState,
+  'identity' | 'activeGroupId' | 'groupMembers' | 'baseEvents' | 'baseTheme' | 'basePalette' | 'baseLocale' | 'lastSyncOk'
+>
 
 const EMPTY_EVENTS: AirplaneEvent[] = []
 const EMPTY_OPS: PendingOp[] = []
@@ -382,7 +385,13 @@ function commit(patch: Partial<OfflineStoreState>): void {
     baseLocale: state.baseLocale,
     pendingOps: state.pendingOps
   }
-  writeBootState({ userId: state.identity, activeGroupId: state.activeGroupId, theme: selectTheme(state), palette: selectPalette(state), locale: selectLocale(state) })
+  writeBootState({
+    userId: state.identity,
+    activeGroupId: state.activeGroupId,
+    theme: selectTheme(state),
+    palette: selectPalette(state),
+    locale: selectLocale(state)
+  })
   void writePersistedState(persisted).catch(() => updateState({ storageError: true }))
 }
 
@@ -452,5 +461,12 @@ function isLocale(value: unknown): value is Locale {
 function isEvent(value: unknown): value is AirplaneEvent {
   if (typeof value !== 'object' || value === null) return false
   const item = value as Partial<AirplaneEvent>
-  return typeof item.id === 'string' && typeof item.who === 'string' && item.who.length > 0 && typeof item.ts === 'number' && Number.isFinite(item.ts) && item.ts > 0
+  return (
+    typeof item.id === 'string' &&
+    typeof item.who === 'string' &&
+    item.who.length > 0 &&
+    typeof item.ts === 'number' &&
+    Number.isFinite(item.ts) &&
+    item.ts > 0
+  )
 }

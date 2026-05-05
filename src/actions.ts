@@ -143,10 +143,7 @@ export async function updateGroup(groupId: string, updates: { name?: string }): 
   return { success: true }
 }
 
-export async function lookupUserToAdd(
-  groupId: string,
-  email: string
-): Promise<{ ok: true; name: string; email: string } | { ok: false; error: string }> {
+export async function lookupUserToAdd(groupId: string, email: string): Promise<{ ok: true; name: string; email: string } | { ok: false; error: string }> {
   const user = await getSessionUser()
   if (!user) return { ok: false, error: 'Não autenticado' }
 
@@ -280,7 +277,14 @@ function isPendingOp(op: unknown, userId: string): boolean {
   if (item.kind === 'delete-event') return typeof item.eventId === 'string'
   if (item.kind === 'set-theme') return item.theme === 'light' || item.theme === 'dark' || item.theme === 'system'
   if (item.kind === 'set-palette')
-    return item.palette === 'default' || item.palette === 'ocean' || item.palette === 'lavender' || item.palette === 'earth' || item.palette === 'blossom' || item.palette === 'sky'
+    return (
+      item.palette === 'default' ||
+      item.palette === 'ocean' ||
+      item.palette === 'lavender' ||
+      item.palette === 'earth' ||
+      item.palette === 'blossom' ||
+      item.palette === 'sky'
+    )
   if (item.kind === 'set-locale') return item.locale === 'pt' || item.locale === 'en'
   return false
 }

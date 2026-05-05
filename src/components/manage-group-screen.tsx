@@ -7,15 +7,9 @@ import { addMemberByEmail, getGroupDetails, lookupUserToAdd, removeMember } from
 import type { GroupMember } from '../lib/types'
 import { MEMBER_COLORS } from '../lib/types'
 
-type LookupResult =
-  | { email: string; ok: true; name: string }
-  | { email: string; ok: false; error: string }
+type LookupResult = { email: string; ok: true; name: string } | { email: string; ok: false; error: string }
 
-type LookupState =
-  | { kind: 'idle' }
-  | { kind: 'checking' }
-  | { kind: 'ready'; name: string; email: string }
-  | { kind: 'error'; message: string }
+type LookupState = { kind: 'idle' } | { kind: 'checking' } | { kind: 'ready'; name: string; email: string } | { kind: 'error'; message: string }
 
 const LOOKUP_DEBOUNCE_MS = 400
 
@@ -39,13 +33,11 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
   const validFormat = trimmedEmail.length > 0 && trimmedEmail.includes('@')
   const resultMatches = lookupResult?.email === trimmedEmail
 
-  const lookup: LookupState = !validFormat
-    ? { kind: 'idle' }
-    : !resultMatches || !lookupResult
-      ? { kind: 'checking' }
-      : lookupResult.ok
-        ? { kind: 'ready', name: lookupResult.name, email: lookupResult.email }
-        : { kind: 'error', message: lookupResult.error }
+  const lookup: LookupState =
+    !validFormat ? { kind: 'idle' }
+    : !resultMatches || !lookupResult ? { kind: 'checking' }
+    : lookupResult.ok ? { kind: 'ready', name: lookupResult.name, email: lookupResult.email }
+    : { kind: 'error', message: lookupResult.error }
 
   useEffect(() => {
     getGroupDetails(groupId).then((data) => {
@@ -114,150 +106,152 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
 
   return (
     <div className='flex h-full flex-col overflow-hidden'>
-        <div className='flex flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)]'>
-          <motion.header
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className='flex items-center justify-between gap-3'
+      <div className='flex flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)]'>
+        <motion.header
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className='flex items-center justify-between gap-3'
+        >
+          <span className='text-ink-faint font-display text-sm italic'>aviões</span>
+          <button
+            type='button'
+            onClick={() => router.back()}
+            className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
           >
-            <span className='text-ink-faint font-display text-sm italic'>aviões</span>
-            <button
-              type='button'
-              onClick={() => router.back()}
-              className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm transition-all active:scale-[0.99] focus-visible:ring-2 focus-visible:outline-none'
-            >
-              <span aria-hidden>←</span>
-              <span>voltar</span>
-            </button>
-          </motion.header>
+            <span aria-hidden>←</span>
+            <span>voltar</span>
+          </button>
+        </motion.header>
 
-          <motion.div
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+          className='mt-10'
+        >
+          <h1 className='font-display text-[34px] leading-[0.93] tracking-tight'>
+            membros do
+            <br />
+            <span className='text-clay italic'>grupo</span>
+          </h1>
+        </motion.div>
+
+        {/* Add member form (owner only) */}
+        {isOwner && (
+          <motion.form
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-            className='mt-10'
+            transition={{ duration: 0.6, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
+            onSubmit={handleAdd}
+            className='mt-8 flex flex-col gap-2'
           >
-            <h1 className='font-display text-[34px] leading-[0.93] tracking-tight'>
-              membros do
-              <br />
-              <span className='text-clay italic'>grupo</span>
-            </h1>
-          </motion.div>
+            <label className='text-ink-faint text-xs'>adicionar por e-mail</label>
+            <div className='flex gap-2'>
+              <input
+                ref={inputRef}
+                type='email'
+                value={addEmail}
+                onChange={(e) => {
+                  setAddEmail(e.target.value)
+                  setAddSuccess(false)
+                }}
+                placeholder='alguém@exemplo.com'
+                className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 min-h-12 min-w-0 flex-1 rounded-xl border px-4 text-sm transition-all outline-none focus:ring-2'
+              />
+              <button
+                type='submit'
+                disabled={addPending || lookup.kind !== 'ready'}
+                className='bg-sage text-bg focus-visible:ring-sage/40 min-h-12 shrink-0 rounded-xl px-4 text-sm font-medium transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.97] disabled:opacity-50'
+              >
+                {addPending ?
+                  <motion.span
+                    animate={{ opacity: [1, 0.4, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  >
+                    …
+                  </motion.span>
+                : 'adicionar'}
+              </button>
+            </div>
+            {lookup.kind === 'checking' && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className='text-ink-faint text-xs'
+              >
+                procurando…
+              </motion.p>
+            )}
+            {lookup.kind === 'ready' && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className='text-sage text-xs'
+              >
+                encontrado: <span className='text-ink-soft'>{lookup.name}</span>
+              </motion.p>
+            )}
+            {lookup.kind === 'error' && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className='text-clay text-xs'
+              >
+                {lookup.message}
+              </motion.p>
+            )}
+            {addSuccess && lookup.kind === 'idle' && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className='text-sage text-xs'
+              >
+                membro adicionado ✓
+              </motion.p>
+            )}
+          </motion.form>
+        )}
+      </div>
 
-          {/* Add member form (owner only) */}
-          {isOwner && (
-            <motion.form
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-              onSubmit={handleAdd}
-              className='mt-8 flex flex-col gap-2'
-            >
-              <label className='text-ink-faint text-xs'>adicionar por e-mail</label>
-              <div className='flex gap-2'>
-                <input
-                  ref={inputRef}
-                  type='email'
-                  value={addEmail}
-                  onChange={(e) => { setAddEmail(e.target.value); setAddSuccess(false) }}
-                  placeholder='alguém@exemplo.com'
-                  className='border-line bg-paper text-ink placeholder:text-ink-faint min-h-12 min-w-0 flex-1 rounded-xl border px-4 text-sm outline-none ring-sage/40 transition-all focus:ring-2'
+      {/* Members list */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.25 }}
+        className='scroll-area mt-6 flex-1 overflow-y-auto px-6 pb-[max(env(safe-area-inset-bottom),2rem)]'
+      >
+        {!loaded ?
+          <div className='flex flex-col gap-3'>
+            <SkeletonMember />
+            <SkeletonMember />
+          </div>
+        : <div className='flex flex-col gap-2'>
+            {members.map((member, index) => (
+              <motion.div
+                key={member.userId}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.3 + index * 0.05, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <MemberRow
+                  member={member}
+                  colorIndex={index}
+                  isOwner={isOwner}
+                  expanded={expandedId === member.userId}
+                  confirming={confirmingRemove === member.userId}
+                  isRemoving={removingId === member.userId}
+                  pending={removePending}
+                  onToggle={() => toggleExpanded(member.userId)}
+                  onAskRemove={() => setConfirmingRemove(member.userId)}
+                  onCancelRemove={() => setConfirmingRemove(null)}
+                  onConfirmRemove={() => handleRemove(member.userId)}
                 />
-                <button
-                  type='submit'
-                  disabled={addPending || lookup.kind !== 'ready'}
-                  className='bg-sage text-bg focus-visible:ring-sage/40 min-h-12 shrink-0 rounded-xl px-4 text-sm font-medium transition-all active:scale-[0.97] focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50'
-                >
-                  {addPending ?
-                    <motion.span
-                      animate={{ opacity: [1, 0.4, 1] }}
-                      transition={{ duration: 1, repeat: Infinity }}
-                    >
-                      …
-                    </motion.span>
-                  : 'adicionar'
-                  }
-                </button>
-              </div>
-              {lookup.kind === 'checking' && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className='text-ink-faint text-xs'
-                >
-                  procurando…
-                </motion.p>
-              )}
-              {lookup.kind === 'ready' && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className='text-sage text-xs'
-                >
-                  encontrado: <span className='text-ink-soft'>{lookup.name}</span>
-                </motion.p>
-              )}
-              {lookup.kind === 'error' && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className='text-clay text-xs'
-                >
-                  {lookup.message}
-                </motion.p>
-              )}
-              {addSuccess && lookup.kind === 'idle' && (
-                <motion.p
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className='text-sage text-xs'
-                >
-                  membro adicionado ✓
-                </motion.p>
-              )}
-            </motion.form>
-          )}
-        </div>
-
-        {/* Members list */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.25 }}
-          className='scroll-area mt-6 flex-1 overflow-y-auto px-6 pb-[max(env(safe-area-inset-bottom),2rem)]'
-        >
-          {!loaded ?
-            <div className='flex flex-col gap-3'>
-              <SkeletonMember />
-              <SkeletonMember />
-            </div>
-          : <div className='flex flex-col gap-2'>
-              {members.map((member, index) => (
-                <motion.div
-                  key={member.userId}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.4, delay: 0.3 + index * 0.05, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <MemberRow
-                    member={member}
-                    colorIndex={index}
-                    isOwner={isOwner}
-                    expanded={expandedId === member.userId}
-                    confirming={confirmingRemove === member.userId}
-                    isRemoving={removingId === member.userId}
-                    pending={removePending}
-                    onToggle={() => toggleExpanded(member.userId)}
-                    onAskRemove={() => setConfirmingRemove(member.userId)}
-                    onCancelRemove={() => setConfirmingRemove(null)}
-                    onConfirmRemove={() => handleRemove(member.userId)}
-                  />
-                </motion.div>
-              ))}
-            </div>
-          }
-        </motion.div>
+              </motion.div>
+            ))}
+          </div>
+        }
+      </motion.div>
     </div>
   )
 }
@@ -301,9 +295,7 @@ function MemberRow({
             <p className='text-ink truncate text-sm font-medium'>{member.name}</p>
             <p className='text-ink-faint truncate text-xs'>{member.email}</p>
           </div>
-          <span className={`text-xs ${color.text} shrink-0`}>
-            {member.role === 'owner' ? 'dono' : 'membro'}
-          </span>
+          <span className={`text-xs ${color.text} shrink-0`}>{member.role === 'owner' ? 'dono' : 'membro'}</span>
         </div>
         {canRemove && (
           <button
@@ -328,7 +320,7 @@ function MemberRow({
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
             className='border-line border-t'
           >
-            {confirming ? (
+            {confirming ?
               <ConfirmRow
                 label='remover do grupo?'
                 busy={isRemoving}
@@ -336,8 +328,7 @@ function MemberRow({
                 onCancel={onCancelRemove}
                 onConfirm={onConfirmRemove}
               />
-            ) : (
-              <button
+            : <button
                 type='button'
                 disabled={pending}
                 onClick={onAskRemove}
@@ -346,7 +337,7 @@ function MemberRow({
                 <span>remover do grupo</span>
                 <span>×</span>
               </button>
-            )}
+            }
           </motion.div>
         )}
       </AnimatePresence>
@@ -391,7 +382,12 @@ function ConfirmRow({
           className='bg-clay text-bg border-line min-h-16 border-l text-sm font-medium transition-colors disabled:opacity-60'
         >
           {busy ?
-            <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1, repeat: Infinity }}>…</motion.span>
+            <motion.span
+              animate={{ opacity: [1, 0.4, 1] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            >
+              …
+            </motion.span>
           : 'confirmar'}
         </button>
       </div>
@@ -401,9 +397,9 @@ function ConfirmRow({
 
 function SkeletonMember() {
   return (
-    <div className='border-line animate-pulse flex items-center gap-3 rounded-xl border px-4 py-3'>
+    <div className='border-line flex animate-pulse items-center gap-3 rounded-xl border px-4 py-3'>
       <div className='bg-line h-7 w-7 rounded-full' />
-      <div className='flex flex-col gap-1.5 flex-1'>
+      <div className='flex flex-1 flex-col gap-1.5'>
         <div className='bg-line h-4 w-28 rounded' />
         <div className='bg-line h-3 w-40 rounded' />
       </div>

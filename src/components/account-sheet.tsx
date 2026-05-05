@@ -104,10 +104,9 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
             <div className='px-6 pt-4 pb-2'>
               <p className='text-ink-faint mb-2 text-[11px]'>outros grupos</p>
 
-              {displayed.length === 0 ? (
+              {displayed.length === 0 ?
                 <p className='text-ink-faint text-sm italic'>você só faz parte deste grupo.</p>
-              ) : (
-                <div className='flex flex-col gap-2'>
+              : <div className='flex flex-col gap-2'>
                   {displayed.map((group) => (
                     <button
                       key={group.id}
@@ -123,19 +122,22 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
                         </span>
                       </div>
                       <span className='text-sage text-base leading-none'>
-                        {switchingId === group.id ? (
-                          <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1, repeat: Infinity }}>…</motion.span>
-                        ) : (
-                          '→'
-                        )}
+                        {switchingId === group.id ?
+                          <motion.span
+                            animate={{ opacity: [1, 0.4, 1] }}
+                            transition={{ duration: 1, repeat: Infinity }}
+                          >
+                            …
+                          </motion.span>
+                        : '→'}
                       </span>
                     </button>
                   ))}
                 </div>
-              )}
+              }
 
               <div className='mt-3'>
-                {hasMore ? (
+                {hasMore ?
                   <Link
                     href='/groups'
                     onClick={onClose}
@@ -144,8 +146,7 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
                     <span>ver todos os grupos</span>
                     <span className='text-ink-faint text-base leading-none'>→</span>
                   </Link>
-                ) : (
-                  <Link
+                : <Link
                     href='/groups/new'
                     onClick={onClose}
                     className='border-line bg-paper text-sage hover:bg-sage-soft focus-visible:bg-sage-soft focus-visible:ring-sage/40 flex min-h-12 w-full items-center justify-between rounded-xl border px-4 py-3.5 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
@@ -153,7 +154,7 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
                     <span>criar grupo</span>
                     <span className='text-base leading-none'>+</span>
                   </Link>
-                )}
+                }
               </div>
             </div>
 

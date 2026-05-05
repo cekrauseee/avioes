@@ -199,9 +199,7 @@ export function Intro({ onDone, locale }: { onDone: () => void; locale: Locale }
                 className='group relative h-6 px-1'
               >
                 <span
-                  className={`block h-[3px] rounded-full transition-all duration-300 ${
-                    active ? 'bg-sage w-7' : 'bg-line group-hover:bg-ink-faint w-3'
-                  }`}
+                  className={`block h-[3px] rounded-full transition-all duration-300 ${active ? 'bg-sage w-7' : 'bg-line group-hover:bg-ink-faint w-3'}`}
                 />
               </button>
             )
