@@ -1,6 +1,7 @@
 'use client'
 
 import { AnimatePresence, motion } from 'motion/react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
@@ -8,7 +9,7 @@ import { createPortal } from 'react-dom'
 import { getUserGroups, setActiveGroup } from '../actions'
 import { authClient } from '../lib/auth-client'
 import { applyLocalIdentity, applyServerSnapshot, useOfflineState } from '../lib/offline-store'
-import { getMemberColor, getMemberName } from '../lib/types'
+import { getMemberColor, getMemberFirstName, getMemberFullName } from '../lib/types'
 
 type GroupEntry = { id: string; name: string; ownerId: string; memberCount: number }
 
@@ -19,8 +20,11 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
   const state = useOfflineState()
   const who = state.identity!
   const me = getMemberColor(who, state.groupMembers)
-  const myName = getMemberName(who, state.groupMembers)
-  const myEmail = state.groupMembers.find((m) => m.userId === who)?.email ?? ''
+  const myFirstName = getMemberFirstName(who, state.groupMembers)
+  const myFullName = getMemberFullName(who, state.groupMembers)
+  const myMember = state.groupMembers.find((m) => m.userId === who)
+  const myEmail = myMember?.email ?? ''
+  const myImage = myMember?.image ?? null
 
   const [groups, setGroups] = useState<GroupEntry[]>([])
   const [switchingId, setSwitchingId] = useState<string | null>(null)
@@ -89,11 +93,22 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
 
             {/* user identity */}
             <div className='flex items-center gap-4 px-6 pt-3 pb-5'>
-              <div className={`h-11 w-11 shrink-0 rounded-full ${me.bg} flex items-center justify-center`}>
-                <span className='text-bg text-base font-medium'>{myName.slice(0, 1).toUpperCase()}</span>
-              </div>
+              {myImage ?
+                <Image
+                  src={myImage}
+                  alt=''
+                  width={44}
+                  height={44}
+                  unoptimized
+                  referrerPolicy='no-referrer'
+                  className='h-11 w-11 shrink-0 rounded-full object-cover'
+                />
+              : <div className={`h-11 w-11 shrink-0 rounded-full ${me.bg} flex items-center justify-center`}>
+                  <span className='text-bg text-base font-medium'>{myFirstName.slice(0, 1).toUpperCase()}</span>
+                </div>
+              }
               <div className='min-w-0'>
-                <p className='text-ink font-display text-lg leading-tight'>{myName}</p>
+                <p className='text-ink font-display text-lg leading-tight'>{myFullName}</p>
                 <p className='text-ink-faint truncate text-xs'>{myEmail}</p>
               </div>
             </div>

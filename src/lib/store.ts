@@ -47,8 +47,11 @@ export async function readGroupMembersForMember(groupId: string, userId: string)
   const rows = await db
     .select({
       userId: groupMembers.userId,
+      firstName: users.firstName,
+      lastName: users.lastName,
       name: users.name,
       email: users.email,
+      image: users.image,
       role: groupMembers.role
     })
     .from(groupMembers)
@@ -56,7 +59,18 @@ export async function readGroupMembersForMember(groupId: string, userId: string)
     .innerJoin(users, eq(users.id, groupMembers.userId))
     .where(eq(groupMembers.groupId, groupId))
     .orderBy(groupMembers.joinedAt)
-  return rows
+  return rows.map(({ name, firstName, ...rest }) => ({
+    ...rest,
+    firstName: firstName ?? name.split(' ')[0] ?? name,
+    lastName: rest.lastName ?? deriveLastName(name, firstName)
+  }))
+}
+
+function deriveLastName(name: string, firstName: string | null): string | null {
+  if (firstName && name.startsWith(firstName + ' ')) return name.slice(firstName.length + 1)
+  const parts = name.split(' ')
+  if (parts.length < 2) return null
+  return parts.slice(1).join(' ')
 }
 
 export async function createGroup(id: string, name: string, ownerId: string): Promise<void> {
@@ -103,9 +117,20 @@ export async function removeGroupMember(groupId: string, userId: string): Promis
   })
 }
 
-export async function findUserByEmail(email: string): Promise<{ id: string; name: string; email: string } | null> {
-  const row = await db.select({ id: users.id, name: users.name, email: users.email }).from(users).where(eq(users.email, email)).limit(1)
-  return row[0] ?? null
+export async function findUserByEmail(email: string): Promise<{ id: string; firstName: string; lastName: string | null; email: string } | null> {
+  const row = await db
+    .select({ id: users.id, firstName: users.firstName, lastName: users.lastName, name: users.name, email: users.email })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1)
+  const found = row[0]
+  if (!found) return null
+  return {
+    id: found.id,
+    firstName: found.firstName ?? found.name.split(' ')[0] ?? found.name,
+    lastName: found.lastName ?? deriveLastName(found.name, found.firstName),
+    email: found.email
+  }
 }
 
 export async function readEventsForMember(groupId: string, userId: string): Promise<AirplaneEvent[]> {

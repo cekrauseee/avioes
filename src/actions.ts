@@ -143,7 +143,10 @@ export async function updateGroup(groupId: string, updates: { name?: string }): 
   return { success: true }
 }
 
-export async function lookupUserToAdd(groupId: string, email: string): Promise<{ ok: true; name: string; email: string } | { ok: false; error: string }> {
+export async function lookupUserToAdd(
+  groupId: string,
+  email: string
+): Promise<{ ok: true; firstName: string; lastName: string | null; email: string } | { ok: false; error: string }> {
   const user = await getSessionUser()
   if (!user) return { ok: false, error: 'Não autenticado' }
 
@@ -158,7 +161,7 @@ export async function lookupUserToAdd(groupId: string, email: string): Promise<{
 
   if (await readGroupMembership(groupId, target.id)) return { ok: false, error: 'Usuário já está no grupo' }
 
-  return { ok: true, name: target.name, email: target.email }
+  return { ok: true, firstName: target.firstName, lastName: target.lastName, email: target.email }
 }
 
 export async function addMemberByEmail(groupId: string, email: string): Promise<{ success: true } | { error: string }> {

@@ -2,7 +2,7 @@ import type { OfflineSnapshot } from './offline-model'
 import type { AirplaneEvent, Locale, Palette, PendingOp, Theme } from './types'
 
 export type PersistedOfflineState = OfflineSnapshot & {
-  version: 2
+  version: 3
 }
 
 export type BootState = {
@@ -15,7 +15,7 @@ export type BootState = {
 
 const DB_NAME = 'airplanes-offline'
 const STORE_NAME = 'state'
-const DB_VERSION = 2
+const DB_VERSION = 3
 const SNAPSHOT_KEY = 'snapshot'
 const BOOT_KEY = 'ap_boot'
 const LEGACY_QUEUE_KEY = 'ap_queue'
@@ -61,7 +61,7 @@ export async function readPersistedState(): Promise<PersistedOfflineState | null
 
 export async function writePersistedState(snapshot: OfflineSnapshot): Promise<void> {
   const db = await openDb()
-  const value: PersistedOfflineState = { version: 2, ...snapshot }
+  const value: PersistedOfflineState = { version: 3, ...snapshot }
   await request(db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME).put(value, SNAPSHOT_KEY))
 }
 
@@ -121,7 +121,7 @@ function request<T>(req: IDBRequest<T>): Promise<T> {
 function isPersistedState(value: unknown): value is PersistedOfflineState {
   if (typeof value !== 'object' || value === null) return false
   const item = value as Record<string, unknown>
-  if (item.version !== 2) return false
+  if (item.version !== 3) return false
   if (!isStringOrNull(item.identity)) return false
   if (!isStringOrNull(item.activeGroupId)) return false
   if (!isTheme(item.baseTheme)) return false
@@ -173,7 +173,12 @@ function isGroupMember(value: unknown): boolean {
   if (typeof value !== 'object' || value === null) return false
   const item = value as Record<string, unknown>
   return (
-    typeof item.userId === 'string' && typeof item.name === 'string' && typeof item.email === 'string' && (item.role === 'owner' || item.role === 'member')
+    typeof item.userId === 'string' &&
+    typeof item.firstName === 'string' &&
+    (item.lastName === null || typeof item.lastName === 'string') &&
+    typeof item.email === 'string' &&
+    (item.image === null || typeof item.image === 'string') &&
+    (item.role === 'owner' || item.role === 'member')
   )
 }
 

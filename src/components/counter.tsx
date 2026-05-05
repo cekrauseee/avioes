@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { t } from '../lib/i18n'
 import { addAirplane, isOffline, selectEvents, selectLocale, selectOfflineSyncing, undoAirplane, useOfflineState } from '../lib/offline-store'
 import { totals } from '../lib/streaks'
-import { getMemberColor, getMemberName } from '../lib/types'
+import { getMemberColor, getMemberFirstName } from '../lib/types'
 import { AccountSheet } from './account-sheet'
 import { AppShell } from './app-shell'
 import { Onboarding } from './onboarding'
@@ -31,7 +31,7 @@ export function Counter() {
 
 function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineState>; who: NonNullable<ReturnType<typeof useOfflineState>['identity']> }) {
   const me = getMemberColor(who, state.groupMembers)
-  const myName = getMemberName(who, state.groupMembers)
+  const myName = getMemberFirstName(who, state.groupMembers)
   const locale = selectLocale(state)
 
   const events = selectEvents(state)
@@ -83,7 +83,7 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
   // Show other members for the footer
   const otherMembers = state.groupMembers.filter((m) => m.userId !== who)
   const partnerLabel =
-    otherMembers.length === 1 ? getMemberName(otherMembers[0].userId, state.groupMembers)
+    otherMembers.length === 1 ? getMemberFirstName(otherMembers[0].userId, state.groupMembers)
     : otherMembers.length > 1 ? t(locale, 'counter.others')
     : ''
 

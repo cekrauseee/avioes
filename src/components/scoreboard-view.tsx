@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { DATE_LOCALE, t } from '../lib/i18n'
 import { selectEvents, selectLocale, useOfflineState } from '../lib/offline-store'
 import { computeStreaks, totals } from '../lib/streaks'
-import { getMemberColor, getMemberName, MEMBER_COLORS, type Locale } from '../lib/types'
+import { getMemberColor, getMemberFirstName, MEMBER_COLORS, type Locale } from '../lib/types'
 import { AppShell } from './app-shell'
 import { Onboarding } from './onboarding'
 import { SyncStatus } from './sync-status'
@@ -52,7 +52,7 @@ export function ScoreboardView() {
             </div>
           </div>
           <p className='font-display text-ink-soft mt-1 text-sm italic'>
-            {leader ? `${getMemberName(leader.member.userId, state.groupMembers)} ${t(locale, 'scoreboard.isAhead')}` : t(locale, 'scoreboard.tied')}
+            {leader ? `${getMemberFirstName(leader.member.userId, state.groupMembers)} ${t(locale, 'scoreboard.isAhead')}` : t(locale, 'scoreboard.tied')}
           </p>
 
           {/* Scores: show up to 2 members side by side, more as list */}
@@ -60,7 +60,8 @@ export function ScoreboardView() {
             <section className='relative mt-7 grid grid-cols-[1fr_auto_1fr] items-center gap-2'>
               {memberEntries[0] && (
                 <Score
-                  name={getMemberName(memberEntries[0].member.userId, state.groupMembers)}
+                  name={getMemberFirstName(memberEntries[0].member.userId, state.groupMembers)}
+                  image={memberEntries[0].member.image}
                   count={memberEntries[0].count}
                   longest={memberEntries[0].longest}
                   highlight={leader?.member.userId === memberEntries[0].member.userId}
@@ -73,7 +74,8 @@ export function ScoreboardView() {
                 <>
                   <span className='font-display text-ink-faint rotate-[-8deg] text-2xl italic'>vs</span>
                   <Score
-                    name={getMemberName(memberEntries[1].member.userId, state.groupMembers)}
+                    name={getMemberFirstName(memberEntries[1].member.userId, state.groupMembers)}
+                    image={memberEntries[1].member.image}
                     count={memberEntries[1].count}
                     longest={memberEntries[1].longest}
                     highlight={leader?.member.userId === memberEntries[1].member.userId}
@@ -97,7 +99,7 @@ export function ScoreboardView() {
                         className={`h-2 w-2 rounded-full ${color.bg}`}
                         aria-hidden
                       />
-                      <span className={`font-display text-base ${color.text}`}>{getMemberName(entry.member.userId, state.groupMembers)}</span>
+                      <span className={`font-display text-base ${color.text}`}>{getMemberFirstName(entry.member.userId, state.groupMembers)}</span>
                     </div>
                     <span className='font-display text-2xl'>{entry.count}</span>
                   </div>
@@ -121,7 +123,7 @@ export function ScoreboardView() {
                     className='flex items-baseline justify-between py-2.5'
                   >
                     <span className='font-display text-sm'>
-                      <span className={color.text}>{getMemberName(s.who, state.groupMembers)}</span> · {s.count}
+                      <span className={color.text}>{getMemberFirstName(s.who, state.groupMembers)}</span> · {s.count}
                     </span>
                     <span className='text-ink-faint font-mono text-[11px]'>{timeFmt.format(new Date(s.endTs))}</span>
                   </li>
@@ -137,6 +139,7 @@ export function ScoreboardView() {
 
 function Score({
   name,
+  image,
   count,
   longest,
   highlight,
@@ -145,6 +148,7 @@ function Score({
   locale
 }: {
   name: string
+  image: string | null
   count: number
   longest: number
   highlight: boolean
@@ -155,9 +159,20 @@ function Score({
   const color = MEMBER_COLORS[colorIndex % MEMBER_COLORS.length]
   return (
     <div className={`flex flex-col gap-2 ${align === 'right' ? 'items-end text-right' : 'items-start text-left'}`}>
-      <div className={`flex h-12 w-12 items-center justify-center rounded-full ${color.bgSoft}`}>
-        <span className={`font-display text-2xl ${color.text}`}>{name.slice(0, 1).toUpperCase()}</span>
-      </div>
+      {image ?
+        <Image
+          src={image}
+          alt=''
+          width={48}
+          height={48}
+          unoptimized
+          referrerPolicy='no-referrer'
+          className='h-12 w-12 rounded-full object-cover'
+        />
+      : <div className={`flex h-12 w-12 items-center justify-center rounded-full ${color.bgSoft}`}>
+          <span className={`font-display text-2xl ${color.text}`}>{name.slice(0, 1).toUpperCase()}</span>
+        </div>
+      }
       <span className='text-ink-faint text-xs'>{name}</span>
       <span className={`font-display text-[44px] leading-none tracking-tight ${highlight ? color.text : 'text-ink'}`}>{count}</span>
       <span className='text-ink-faint text-xs'>

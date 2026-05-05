@@ -1,6 +1,7 @@
 'use client'
 
 import { AnimatePresence, motion, useReducedMotion, type PanInfo } from 'motion/react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, useSyncExternalStore, useTransition } from 'react'
@@ -9,7 +10,7 @@ import { authClient } from '../lib/auth-client'
 import { t, type TKey } from '../lib/i18n'
 import { useNavDirection } from '../lib/nav-direction'
 import { applyLocalIdentity, queuePalette, queueTheme, selectLocale, selectPalette, selectTheme, switchLocale, useOfflineState } from '../lib/offline-store'
-import { getMemberColor, getMemberName, PALETTES, type Locale, type Palette, type Theme } from '../lib/types'
+import { getMemberColor, getMemberFirstName, getMemberFullName, PALETTES, type Locale, type Palette, type Theme } from '../lib/types'
 import { AppShell } from './app-shell'
 import { Onboarding } from './onboarding'
 import { Skel } from './skeleton'
@@ -353,8 +354,11 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
   const router = useRouter()
   const state = useOfflineState()
   const me = getMemberColor(who, state.groupMembers)
-  const myName = getMemberName(who, state.groupMembers)
-  const myEmail = state.groupMembers.find((m) => m.userId === who)?.email ?? ''
+  const myFirstName = getMemberFirstName(who, state.groupMembers)
+  const myFullName = getMemberFullName(who, state.groupMembers)
+  const myMember = state.groupMembers.find((m) => m.userId === who)
+  const myEmail = myMember?.email ?? ''
+  const myImage = myMember?.image ?? null
   const [, startSignOut] = useTransition()
 
   const handleSignOut = () => {
@@ -370,11 +374,22 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
     <div className='flex flex-col gap-4 pb-[max(env(safe-area-inset-bottom),1rem)]'>
       {/* user card */}
       <div className='border-line flex items-center gap-4 rounded-2xl border px-5 py-4'>
-        <div className={`h-12 w-12 shrink-0 rounded-full ${me.bg} flex items-center justify-center`}>
-          <span className='text-bg text-lg font-medium'>{myName.slice(0, 1).toUpperCase()}</span>
-        </div>
+        {myImage ?
+          <Image
+            src={myImage}
+            alt=''
+            width={48}
+            height={48}
+            unoptimized
+            referrerPolicy='no-referrer'
+            className='h-12 w-12 shrink-0 rounded-full object-cover'
+          />
+        : <div className={`h-12 w-12 shrink-0 rounded-full ${me.bg} flex items-center justify-center`}>
+            <span className='text-bg text-lg font-medium'>{myFirstName.slice(0, 1).toUpperCase()}</span>
+          </div>
+        }
         <div className='min-w-0'>
-          <p className='text-ink font-display text-lg leading-tight'>{myName}</p>
+          <p className='text-ink font-display text-lg leading-tight'>{myFullName}</p>
           <p className='text-ink-faint mt-0.5 truncate text-xs'>{myEmail}</p>
         </div>
       </div>

@@ -23,8 +23,10 @@ export type GroupRole = 'owner' | 'member'
 
 export type GroupMember = {
   userId: string
-  name: string
+  firstName: string
+  lastName: string | null
   email: string
+  image: string | null
   role: GroupRole
 }
 
@@ -69,6 +71,12 @@ export function getMemberColor(userId: string, members: GroupMember[]): MemberCo
   return MEMBER_COLORS[Math.max(0, index) % MEMBER_COLORS.length]
 }
 
-export function getMemberName(userId: string, members: GroupMember[]): string {
-  return members.find((m) => m.userId === userId)?.name ?? 'Alguém'
+export function getMemberFirstName(userId: string, members: GroupMember[]): string {
+  return members.find((m) => m.userId === userId)?.firstName ?? 'Alguém'
+}
+
+export function getMemberFullName(userId: string, members: GroupMember[]): string {
+  const m = members.find((m) => m.userId === userId)
+  if (!m) return 'Alguém'
+  return m.lastName ? `${m.firstName} ${m.lastName}` : m.firstName
 }

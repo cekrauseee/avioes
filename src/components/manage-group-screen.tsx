@@ -1,15 +1,22 @@
 'use client'
 
 import { AnimatePresence, motion } from 'motion/react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { addMemberByEmail, getGroupDetails, lookupUserToAdd, removeMember } from '../actions'
 import type { GroupMember } from '../lib/types'
 import { MEMBER_COLORS } from '../lib/types'
 
-type LookupResult = { email: string; ok: true; name: string } | { email: string; ok: false; error: string }
+type LookupResult =
+  | { email: string; ok: true; firstName: string; lastName: string | null }
+  | { email: string; ok: false; error: string }
 
-type LookupState = { kind: 'idle' } | { kind: 'checking' } | { kind: 'ready'; name: string; email: string } | { kind: 'error'; message: string }
+type LookupState =
+  | { kind: 'idle' }
+  | { kind: 'checking' }
+  | { kind: 'ready'; firstName: string; lastName: string | null; email: string }
+  | { kind: 'error'; message: string }
 
 const LOOKUP_DEBOUNCE_MS = 400
 
@@ -36,7 +43,8 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
   const lookup: LookupState =
     !validFormat ? { kind: 'idle' }
     : !resultMatches || !lookupResult ? { kind: 'checking' }
-    : lookupResult.ok ? { kind: 'ready', name: lookupResult.name, email: lookupResult.email }
+    : lookupResult.ok ?
+      { kind: 'ready', firstName: lookupResult.firstName, lastName: lookupResult.lastName, email: lookupResult.email }
     : { kind: 'error', message: lookupResult.error }
 
   useEffect(() => {
@@ -57,7 +65,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
     const timer = setTimeout(async () => {
       const result = await lookupUserToAdd(groupId, trimmedEmail)
       if (token !== lookupTokenRef.current) return
-      if (result.ok) setLookupResult({ email: trimmedEmail, ok: true, name: result.name })
+      if (result.ok) setLookupResult({ email: trimmedEmail, ok: true, firstName: result.firstName, lastName: result.lastName })
       else setLookupResult({ email: trimmedEmail, ok: false, error: result.error })
     }, LOOKUP_DEBOUNCE_MS)
 
@@ -189,7 +197,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
                 animate={{ opacity: 1, y: 0 }}
                 className='text-sage text-xs'
               >
-                encontrado: <span className='text-ink-soft'>{lookup.name}</span>
+                encontrado: <span className='text-ink-soft'>{lookup.lastName ? `${lookup.firstName} ${lookup.lastName}` : lookup.firstName}</span>
               </motion.p>
             )}
             {lookup.kind === 'error' && (
@@ -288,11 +296,22 @@ function MemberRow({
     <div className='border-line bg-paper overflow-hidden rounded-xl border'>
       <div className='flex items-stretch'>
         <div className='flex flex-1 items-center gap-3 px-4 py-3'>
-          <div className={`h-7 w-7 shrink-0 rounded-full ${color.bg} flex items-center justify-center`}>
-            <span className='text-bg text-xs font-medium'>{member.name.slice(0, 1).toUpperCase()}</span>
-          </div>
+          {member.image ?
+            <Image
+              src={member.image}
+              alt=''
+              width={28}
+              height={28}
+              unoptimized
+              referrerPolicy='no-referrer'
+              className='h-7 w-7 shrink-0 rounded-full object-cover'
+            />
+          : <div className={`h-7 w-7 shrink-0 rounded-full ${color.bg} flex items-center justify-center`}>
+              <span className='text-bg text-xs font-medium'>{member.firstName.slice(0, 1).toUpperCase()}</span>
+            </div>
+          }
           <div className='min-w-0 flex-1'>
-            <p className='text-ink truncate text-sm font-medium'>{member.name}</p>
+            <p className='text-ink truncate text-sm font-medium'>{member.lastName ? `${member.firstName} ${member.lastName}` : member.firstName}</p>
             <p className='text-ink-faint truncate text-xs'>{member.email}</p>
           </div>
           <span className={`text-xs ${color.text} shrink-0`}>{member.role === 'owner' ? 'dono' : 'membro'}</span>

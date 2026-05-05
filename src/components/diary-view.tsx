@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { DATE_LOCALE, t } from '../lib/i18n'
 import { selectEvents, selectLocale, useOfflineState } from '../lib/offline-store'
 import { computeStreaks } from '../lib/streaks'
-import { getMemberColor, getMemberName, type Locale } from '../lib/types'
+import { getMemberColor, getMemberFirstName, type Locale } from '../lib/types'
 import { AppShell } from './app-shell'
 import { Onboarding } from './onboarding'
 import { SyncStatus } from './sync-status'
@@ -55,7 +55,7 @@ export function DiaryView() {
               />
               {streaks.map((s, i) => {
                 const color = getMemberColor(s.who, state.groupMembers)
-                const label = getMemberName(s.who, state.groupMembers)
+                const label = getMemberFirstName(s.who, state.groupMembers)
                 return (
                   <li
                     key={`${s.who}-${s.startTs}-${i}`}
