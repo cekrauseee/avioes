@@ -25,7 +25,7 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: {
     default: 'Airplanes',
-    template: '%s \\ Airplanes',
+    template: '%s \\ Airplanes'
   },
   description: 'O diário de aviões da gente.',
   manifest: '/manifest.webmanifest',
@@ -58,7 +58,7 @@ export default async function RootLayout({
       lang='pt-BR'
       data-theme='system'
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased select-none`}
     >
       <body className='bg-bg text-ink flex min-h-full flex-col overflow-hidden'>
         <script
