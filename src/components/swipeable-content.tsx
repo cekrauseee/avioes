@@ -33,6 +33,7 @@ export function SwipeableContent({ children, disabled }: { children: React.React
     <motion.div
       className='flex min-h-0 flex-1 touch-pan-y flex-col'
       drag='x'
+      dragDirectionLock
       dragElastic={0.15}
       dragConstraints={{ left: 0, right: 0 }}
       onDragEnd={onDragEnd}

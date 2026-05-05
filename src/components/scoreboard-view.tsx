@@ -18,6 +18,7 @@ export function ScoreboardView() {
   const merged = selectEvents(state)
   const tt = totals(merged)
   const streaks = computeStreaks(merged)
+  const orderedStreaks = [...streaks].reverse()
 
   const memberEntries = state.groupMembers.map((m, index) => ({
     member: m,
@@ -38,20 +39,20 @@ export function ScoreboardView() {
 
   return (
     <AppShell>
-      <div className='flex h-full flex-col'>
+      <div className='flex min-h-0 flex-1 flex-col'>
         <header className='px-5 pt-[max(env(safe-area-inset-top),1.25rem)] pb-2'>
           <div className='flex items-center justify-between'>
             <h1 className='font-display text-3xl tracking-tight'>{t(locale, 'scoreboard.title')}</h1>
             <div className='flex items-center gap-2'>
               <SyncStatus />
-              <span className='text-ink-faint text-xs'>{merged.length} {t(locale, 'scoreboard.total')}</span>
+              <span className='text-ink-faint text-xs'>
+                {merged.length} {t(locale, 'scoreboard.total')}
+              </span>
               <ThemeToggle />
             </div>
           </div>
           <p className='font-display text-ink-soft mt-1 text-sm italic'>
-            {leader ?
-              `${getMemberName(leader.member.userId, state.groupMembers)} ${t(locale, 'scoreboard.isAhead')}`
-            : t(locale, 'scoreboard.tied')}
+            {leader ? `${getMemberName(leader.member.userId, state.groupMembers)} ${t(locale, 'scoreboard.isAhead')}` : t(locale, 'scoreboard.tied')}
           </p>
 
           {/* Scores: show up to 2 members side by side, more as list */}
@@ -92,10 +93,11 @@ export function ScoreboardView() {
                     className='border-line flex items-center justify-between rounded-xl border px-4 py-2.5'
                   >
                     <div className='flex items-center gap-3'>
-                      <span className={`h-2 w-2 rounded-full ${color.bg}`} aria-hidden />
-                      <span className={`font-display text-base ${color.text}`}>
-                        {getMemberName(entry.member.userId, state.groupMembers)}
-                      </span>
+                      <span
+                        className={`h-2 w-2 rounded-full ${color.bg}`}
+                        aria-hidden
+                      />
+                      <span className={`font-display text-base ${color.text}`}>{getMemberName(entry.member.userId, state.groupMembers)}</span>
                     </div>
                     <span className='font-display text-2xl'>{entry.count}</span>
                   </div>
@@ -107,27 +109,24 @@ export function ScoreboardView() {
           <h2 className='text-ink-faint mt-8 text-xs'>{t(locale, 'scoreboard.lastStreaks')}</h2>
         </header>
 
-        <div className='scroll-area fade-scroll flex-1 overflow-y-auto px-5 pb-8'>
+        <div className='scroll-area fade-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-8'>
           {streaks.length === 0 ?
             <ScoreboardEmpty locale={locale} />
           : <ul className='divide-line divide-y'>
-              {streaks
-                .slice(-8)
-                .reverse()
-                .map((s, i) => {
-                  const color = getMemberColor(s.who, state.groupMembers)
-                  return (
-                    <li
-                      key={`${s.who}-${s.startTs}-${i}`}
-                      className='flex items-baseline justify-between py-2.5'
-                    >
-                      <span className='font-display text-sm'>
-                        <span className={color.text}>{getMemberName(s.who, state.groupMembers)}</span> · {s.count}
-                      </span>
-                      <span className='text-ink-faint font-mono text-[11px]'>{timeFmt.format(new Date(s.endTs))}</span>
-                    </li>
-                  )
-                })}
+              {orderedStreaks.map((s, i) => {
+                const color = getMemberColor(s.who, state.groupMembers)
+                return (
+                  <li
+                    key={`${s.who}-${s.startTs}-${i}`}
+                    className='flex items-baseline justify-between py-2.5'
+                  >
+                    <span className='font-display text-sm'>
+                      <span className={color.text}>{getMemberName(s.who, state.groupMembers)}</span> · {s.count}
+                    </span>
+                    <span className='text-ink-faint font-mono text-[11px]'>{timeFmt.format(new Date(s.endTs))}</span>
+                  </li>
+                )
+              })}
             </ul>
           }
         </div>
@@ -161,7 +160,9 @@ function Score({
       </div>
       <span className='text-ink-faint text-xs'>{name}</span>
       <span className={`font-display text-[44px] leading-none tracking-tight ${highlight ? color.text : 'text-ink'}`}>{count}</span>
-      <span className='text-ink-faint text-xs'>{t(locale, 'scoreboard.longest')} · {longest}</span>
+      <span className='text-ink-faint text-xs'>
+        {t(locale, 'scoreboard.longest')} · {longest}
+      </span>
     </div>
   )
 }

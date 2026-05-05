@@ -30,20 +30,22 @@ export function DiaryView() {
 
   return (
     <AppShell>
-      <div className='flex h-full flex-col'>
+      <div className='flex min-h-0 flex-1 flex-col'>
         <header className='px-5 pt-[max(env(safe-area-inset-top),1.25rem)] pb-3'>
           <div className='flex items-center justify-between'>
             <h1 className='font-display text-3xl tracking-tight'>{t(locale, 'diary.title')}</h1>
             <div className='flex items-center gap-2'>
               <SyncStatus />
-              <span className='text-ink-faint text-xs'>{merged.length} {t(locale, 'diary.airplanes')}</span>
+              <span className='text-ink-faint text-xs'>
+                {merged.length} {t(locale, 'diary.airplanes')}
+              </span>
               <ThemeToggle />
             </div>
           </div>
           <p className='font-display text-ink-soft mt-1 text-sm italic'>{t(locale, 'diary.subtitle')}</p>
         </header>
 
-        <div className='scroll-area fade-scroll flex-1 overflow-y-auto px-5 pt-2 pb-8'>
+        <div className='scroll-area fade-scroll min-h-0 flex-1 overflow-y-auto px-5 pt-2 pb-8'>
           {streaks.length === 0 ?
             <Empty locale={locale} />
           : <ol className='relative space-y-4 pl-5'>
@@ -55,7 +57,10 @@ export function DiaryView() {
                 const color = getMemberColor(s.who, state.groupMembers)
                 const label = getMemberName(s.who, state.groupMembers)
                 return (
-                  <li key={`${s.who}-${s.startTs}-${i}`} className='relative'>
+                  <li
+                    key={`${s.who}-${s.startTs}-${i}`}
+                    className='relative'
+                  >
                     <span
                       aria-hidden
                       className={`absolute top-2 -left-[18px] h-2 w-2 rounded-full ${color.bg}`}

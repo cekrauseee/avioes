@@ -20,6 +20,14 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-05 — Auth screen hero illustration
+
+`AuthScreen` now renders the existing onboarding hero illustration between the header and the heading, sized at 68% of the column (`max-w-64`), following the same `theme-light-only` / `theme-dark-only` paired-PNG pattern used by onboarding and empty states.
+
+### 2026-05-05 — Diary scroll and route swipe coexist
+
+The app frame and route shells need `min-h-0` at each flex boundary so long inner lists shrink into their `.scroll-area` instead of growing past the fixed body and getting clipped. Route/tab swipe wrappers use Motion `dragDirectionLock` so vertical list movement and horizontal navigation can coexist. Scoreboard now renders the full streak sequence, not just the last eight.
+
 ### 2026-05-04 — Tenant boundary hardening
 
 Group reads now go through membership-scoped store queries (`readGroupMembership`, `readGroupMembersForMember`, `readEventsForMember`) before returning group names, member lists, or events. Route guards and sync both re-check membership so stale `activeGroupId` values clear instead of leaking or writing into groups the user no longer belongs to.

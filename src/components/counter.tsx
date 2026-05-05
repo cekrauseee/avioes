@@ -21,16 +21,15 @@ export function Counter() {
 
   if (!who || !hasGroup) return <Onboarding />
 
-  return <CounterContent state={state} who={who} />
+  return (
+    <CounterContent
+      state={state}
+      who={who}
+    />
+  )
 }
 
-function CounterContent({
-  state,
-  who
-}: {
-  state: ReturnType<typeof useOfflineState>
-  who: NonNullable<ReturnType<typeof useOfflineState>['identity']>
-}) {
+function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineState>; who: NonNullable<ReturnType<typeof useOfflineState>['identity']> }) {
   const me = getMemberColor(who, state.groupMembers)
   const myName = getMemberName(who, state.groupMembers)
   const locale = selectLocale(state)
@@ -47,7 +46,9 @@ function CounterContent({
   const tokenTransition = { duration: 0.15, ease: [0.22, 1, 0.36, 1] as const }
 
   const display = tt[who] ?? 0
-  const othersTotal = Object.entries(tt).filter(([id]) => id !== who).reduce((sum, [, n]) => sum + n, 0)
+  const othersTotal = Object.entries(tt)
+    .filter(([id]) => id !== who)
+    .reduce((sum, [, n]) => sum + n, 0)
   const totalDisplay = Object.values(tt).reduce((sum, n) => sum + n, 0)
   const canUndo = display > 0
 
@@ -88,7 +89,7 @@ function CounterContent({
 
   return (
     <AppShell>
-      <main className='relative flex h-full w-full flex-col px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.25rem)]'>
+      <main className='relative flex min-h-0 w-full flex-1 flex-col px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.25rem)]'>
         <PlaneArc flights={flights} />
 
         <header className='relative z-10 flex items-center justify-between'>
@@ -118,11 +119,19 @@ function CounterContent({
           <div className='flex items-center gap-2'>
             <SyncStatus />
             {syncVisible && (
-              <span aria-hidden className='text-ink-faint text-xs'>·</span>
+              <span
+                aria-hidden
+                className='text-ink-faint text-xs'
+              >
+                ·
+              </span>
             )}
             <span className='text-ink-faint inline-flex items-baseline gap-[0.25em] text-xs whitespace-nowrap'>
               {hydrated ?
-                <AnimatePresence mode='wait' initial={false}>
+                <AnimatePresence
+                  mode='wait'
+                  initial={false}
+                >
                   <motion.span
                     key={totalDisplay}
                     initial={tokenInitial}
@@ -212,7 +221,10 @@ function CounterContent({
           </button>
         </footer>
       </main>
-      <AccountSheet open={accountOpen} onClose={() => setAccountOpen(false)} />
+      <AccountSheet
+        open={accountOpen}
+        onClose={() => setAccountOpen(false)}
+      />
     </AppShell>
   )
 }

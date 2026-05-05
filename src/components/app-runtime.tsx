@@ -35,10 +35,10 @@ export function AppRuntime({ children }: { children: React.ReactNode }) {
   return (
     <NavDirectionProvider>
       <div
-        className='flex flex-1 flex-col transition-opacity duration-180 ease-out'
+        className='flex min-h-0 flex-1 flex-col transition-opacity duration-180 ease-out'
         style={{ opacity: state.localeFading ? 0 : 1 }}
       >
-        <div className='mx-auto flex w-full max-w-[420px] flex-1 flex-col overflow-hidden'>
+        <div className='mx-auto flex min-h-0 w-full max-w-[420px] flex-1 flex-col overflow-hidden'>
           {state.storageError ?
             <StorageGate />
           : <SwipeableContent disabled={!showAppNav || pathname === '/settings'}>{children}</SwipeableContent>}

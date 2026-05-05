@@ -30,7 +30,7 @@ const pt = {
   'scoreboard.isAhead': 'está na frente.',
   'scoreboard.tied': 'Empate técnico no céu.',
   'scoreboard.total': 'no total',
-  'scoreboard.lastStreaks': 'últimas sequências',
+  'scoreboard.lastStreaks': 'sequências',
   'scoreboard.empty': 'Nada por aqui ainda.',
   'scoreboard.longest': 'maior',
 
@@ -163,7 +163,7 @@ const pt = {
 
   'counter.group': 'grupo',
   'counter.others': 'outros',
-  'counter.changeGroup': 'trocar grupo',
+  'counter.changeGroup': 'trocar grupo'
 } as const
 
 type TranslationKey = keyof typeof pt
@@ -198,7 +198,7 @@ const en: Record<TranslationKey, string> = {
   'scoreboard.isAhead': 'is ahead.',
   'scoreboard.tied': 'All tied up in the sky.',
   'scoreboard.total': 'total',
-  'scoreboard.lastStreaks': 'last streaks',
+  'scoreboard.lastStreaks': 'streaks',
   'scoreboard.empty': 'Nothing here yet.',
   'scoreboard.longest': 'longest',
 
@@ -246,7 +246,7 @@ const en: Record<TranslationKey, string> = {
   'intro.page1.italic': 'open sky',
   'intro.page1.body': 'Airplanes is a tiny diary for two people who look up together.',
   'intro.page1.artLabel': 'person looking at the sky',
-  'intro.page2.title': 'Tap, and it\'s',
+  'intro.page2.title': "Tap, and it's",
   'intro.page2.italic': 'recorded',
   'intro.page2.body': 'When a plane appears, whoever sees it first taps the screen. Count one.',
   'intro.page2.artLabel': 'finger touching cloud',
@@ -259,7 +259,7 @@ const en: Record<TranslationKey, string> = {
   'offline.delayed': 'landing delayed',
   'offline.titleLine1': 'No network,',
   'offline.titleItalic': 'no heading',
-  'offline.body': 'We need to know who\'s watching the sky before counting offline. Come back when the plane lands — just a moment of internet.',
+  'offline.body': "We need to know who's watching the sky before counting offline. Come back when the plane lands — just a moment of internet.",
   'offline.retry': 'try again',
   'offline.savedOnDevice': 'identity saved on this device · no login',
 
@@ -305,10 +305,10 @@ const en: Record<TranslationKey, string> = {
   'auth.loading': 'signing in…',
 
   'groups.title': 'Groups',
-  'groups.subtitle': 'Choose who you\'re counting with today.',
+  'groups.subtitle': "Choose who you're counting with today.",
   'groups.new': 'create group',
   'groups.join': 'join',
-  'groups.empty': 'You\'re not in any group yet.',
+  'groups.empty': "You're not in any group yet.",
   'groups.emptyHint': 'create one or ask someone to add you',
   'groups.memberCount': 'member',
   'groups.memberCountPlural': 'members',
@@ -331,7 +331,7 @@ const en: Record<TranslationKey, string> = {
 
   'counter.group': 'group',
   'counter.others': 'others',
-  'counter.changeGroup': 'change group',
+  'counter.changeGroup': 'change group'
 }
 
 const translations: Record<Locale, Record<TranslationKey, string>> = { pt, en }
@@ -344,5 +344,5 @@ export function t(locale: Locale, key: TranslationKey): string {
 
 export const DATE_LOCALE: Record<Locale, string> = {
   pt: 'pt-BR',
-  en: 'en',
+  en: 'en'
 }

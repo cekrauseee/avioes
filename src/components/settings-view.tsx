@@ -20,7 +20,7 @@ type Tab = 'visual' | 'group' | 'account'
 const TABS = [
   { id: 'visual', labelKey: 'settings.tab.visual' },
   { id: 'group', labelKey: 'settings.tab.group' },
-  { id: 'account', labelKey: 'settings.tab.account' },
+  { id: 'account', labelKey: 'settings.tab.account' }
 ] satisfies ToolbarTabItem<Tab>[]
 
 const SETTINGS_PREV_ROUTE = '/scoreboard'
@@ -36,7 +36,7 @@ const THEME_MODES: { id: Theme; labelKey: TKey; glyph: string }[] = [
 
 const LOCALE_OPTIONS: { id: Locale; label: string }[] = [
   { id: 'pt', label: 'Português' },
-  { id: 'en', label: 'English' },
+  { id: 'en', label: 'English' }
 ]
 
 function subscribeSystemDark(cb: () => void) {
@@ -99,8 +99,7 @@ export function SettingsView() {
 
   return (
     <AppShell>
-      <div className='flex h-full flex-col pt-[max(env(safe-area-inset-top),1.25rem)]'>
-
+      <div className='flex min-h-0 flex-1 flex-col pt-[max(env(safe-area-inset-top),1.25rem)]'>
         {/* header */}
         <div className='px-5 pb-1'>
           <h1 className='font-display text-2xl tracking-tight'>{t(locale, 'settings.title')}</h1>
@@ -120,29 +119,48 @@ export function SettingsView() {
 
         {/* tab content */}
         <motion.div
-          className='relative flex-1 touch-pan-y overflow-hidden'
+          className='relative min-h-0 flex-1 touch-pan-y overflow-hidden'
           drag={reduce ? false : 'x'}
+          dragDirectionLock
           dragElastic={0.15}
           dragConstraints={{ left: 0, right: 0 }}
           onDragEnd={onDragEnd}
           whileDrag={{ cursor: 'grabbing' }}
         >
-          <AnimatePresence mode='sync' initial={false}>
+          <AnimatePresence
+            mode='sync'
+            initial={false}
+          >
             <motion.div
               key={tab}
               initial={reduce ? { opacity: 0 } : { opacity: 0, x: direction * 32, filter: 'blur(4px)' }}
               animate={reduce ? { opacity: 1 } : { opacity: 1, x: 0, filter: 'blur(0px)' }}
               exit={reduce ? { opacity: 0 } : { opacity: 0, x: -direction * 32, filter: 'blur(4px)' }}
               transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-              className='absolute inset-0 overflow-y-auto px-5 py-5'
+              className='scroll-area absolute inset-0 overflow-y-auto px-5 py-5'
             >
-              {tab === 'visual' && <VisualTab locale={locale} reduce={reduce} />}
-              {tab === 'group' && <GroupTab locale={locale} activeGroupId={state.activeGroupId} isOwner={state.groupMembers.find(m => m.userId === who)?.role === 'owner'} />}
-              {tab === 'account' && <AccountTab locale={locale} who={who} />}
+              {tab === 'visual' && (
+                <VisualTab
+                  locale={locale}
+                  reduce={reduce}
+                />
+              )}
+              {tab === 'group' && (
+                <GroupTab
+                  locale={locale}
+                  activeGroupId={state.activeGroupId}
+                  isOwner={state.groupMembers.find((m) => m.userId === who)?.role === 'owner'}
+                />
+              )}
+              {tab === 'account' && (
+                <AccountTab
+                  locale={locale}
+                  who={who}
+                />
+              )}
             </motion.div>
           </AnimatePresence>
         </motion.div>
-
       </div>
     </AppShell>
   )
@@ -186,9 +204,7 @@ function VisualTab({ locale, reduce }: { locale: Locale; reduce: boolean | null 
                   </motion.span>
                 )}
                 <span className='text-xl leading-none'>{mode.glyph}</span>
-                <span className={`text-xs transition-colors ${active ? 'text-ink' : 'text-ink-faint'}`}>
-                  {t(locale, mode.labelKey)}
-                </span>
+                <span className={`text-xs transition-colors ${active ? 'text-ink' : 'text-ink-faint'}`}>{t(locale, mode.labelKey)}</span>
               </button>
             )
           })}
@@ -212,13 +228,19 @@ function VisualTab({ locale, reduce }: { locale: Locale; reduce: boolean | null 
               >
                 <div
                   className={`relative flex aspect-[3/2] w-full items-end rounded-xl border-2 p-2 transition-all ${
-                    active ? 'border-ink scale-[1.02]' : 'border-transparent hover:border-line'
+                    active ? 'border-ink scale-[1.02]' : 'hover:border-line border-transparent'
                   }`}
                   style={{ background: preview.bg }}
                 >
                   <div className='flex gap-1'>
-                    <span className='h-2.5 w-2.5 rounded-full' style={{ background: preview.sage }} />
-                    <span className='h-2.5 w-2.5 rounded-full' style={{ background: preview.clay }} />
+                    <span
+                      className='h-2.5 w-2.5 rounded-full'
+                      style={{ background: preview.sage }}
+                    />
+                    <span
+                      className='h-2.5 w-2.5 rounded-full'
+                      style={{ background: preview.clay }}
+                    />
                   </div>
                   {active && (
                     <motion.span
@@ -231,9 +253,7 @@ function VisualTab({ locale, reduce }: { locale: Locale; reduce: boolean | null 
                     </motion.span>
                   )}
                 </div>
-                <span className={`text-xs transition-colors ${active ? 'text-ink' : 'text-ink-faint'}`}>
-                  {t(locale, `palette.${id}` as TKey)}
-                </span>
+                <span className={`text-xs transition-colors ${active ? 'text-ink' : 'text-ink-faint'}`}>{t(locale, `palette.${id}` as TKey)}</span>
               </button>
             )
           })}
@@ -264,9 +284,7 @@ function VisualTab({ locale, reduce }: { locale: Locale; reduce: boolean | null 
                     ✓
                   </motion.span>
                 )}
-                <span className={`font-display text-sm transition-colors ${active ? 'text-ink' : 'text-ink-faint'}`}>
-                  {opt.label}
-                </span>
+                <span className={`font-display text-sm transition-colors ${active ? 'text-ink' : 'text-ink-faint'}`}>{opt.label}</span>
               </button>
             )
           })}
@@ -293,17 +311,16 @@ function GroupTab({ locale, activeGroupId, isOwner }: { locale: Locale; activeGr
       {/* group name display */}
       <div className='border-line rounded-2xl border px-5 py-4'>
         <p className='text-ink-faint text-xs'>{t(locale, 'settings.currentGroup')}</p>
-        {groupName !== null
-          ? <p className='font-display mt-1 text-xl'>{groupName}</p>
-          : <Skel className='mt-2 h-6 w-36' />
-        }
+        {groupName !== null ?
+          <p className='font-display mt-1 text-xl'>{groupName}</p>
+        : <Skel className='mt-2 h-6 w-36' />}
       </div>
 
-      <div className='flex flex-col gap-2 mt-1'>
+      <div className='mt-1 flex flex-col gap-2'>
         {isOwner && (
           <Link
             href={`/groups/${activeGroupId}/edit`}
-            className='border-line flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors hover:bg-paper'
+            className='border-line hover:bg-paper flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors'
           >
             <span className='text-ink-soft text-sm'>{t(locale, 'settings.editGroup')}</span>
             <span className='text-ink-faint text-xs'>→</span>
@@ -312,7 +329,7 @@ function GroupTab({ locale, activeGroupId, isOwner }: { locale: Locale; activeGr
         {isOwner && (
           <Link
             href={`/groups/${activeGroupId}/manage`}
-            className='border-line flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors hover:bg-paper'
+            className='border-line hover:bg-paper flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors'
           >
             <span className='text-ink-soft text-sm'>{t(locale, 'settings.manageMembers')}</span>
             <span className='text-ink-faint text-xs'>→</span>
@@ -320,7 +337,7 @@ function GroupTab({ locale, activeGroupId, isOwner }: { locale: Locale; activeGr
         )}
         <Link
           href='/groups'
-          className='border-line flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors hover:bg-paper'
+          className='border-line hover:bg-paper flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors'
         >
           <span className='text-ink-soft text-sm'>{t(locale, 'settings.manageGroups')}</span>
           <span className='text-ink-faint text-xs'>→</span>
