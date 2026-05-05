@@ -15,7 +15,7 @@ export function PlaneArc({ flights, onFlightDone }: { flights: ArcKey[]; onFligh
   return (
     <div
       aria-hidden
-      className='pointer-events-none absolute inset-0 overflow-hidden [container-type:size]'
+      className='[container-type:size] pointer-events-none absolute inset-0 overflow-hidden'
     >
       <AnimatePresence>
         {flights.map((f) => {
