@@ -309,219 +309,219 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
           </div>
         </motion.div>
       : <div className='mt-12 flex flex-1 flex-col'>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-          className='relative'
-        >
-          <AnimatePresence
-            mode='wait'
-            custom={direction}
-            initial={false}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+            className='relative'
           >
-            <motion.div
-              key={`heading-${step}-${accountExists ?? 'pending'}`}
+            <AnimatePresence
+              mode='wait'
               custom={direction}
-              variants={slideVariants}
-              initial='enter'
-              animate='center'
-              exit='exit'
-              transition={slideTransition}
+              initial={false}
             >
-              <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
-                {step === 'name' ?
-                  <>
-                    escolha um
-                    <br />
-                    <span className='text-sage italic'>nome</span>
-                  </>
-                : step === 'password' && accountExists ?
-                  <>
-                    bem-vindo
-                    <br />
-                    <span className='text-sage italic'>de volta</span>
-                  </>
-                : step === 'password' && accountExists === false ?
-                  <>
-                    crie sua
-                    <br />
-                    <span className='text-sage italic'>conta</span>
-                  </>
-                : <>
-                    entre ou
-                    <br />
-                    <span className='text-sage italic'>crie sua conta</span>
-                  </>
-                }
-              </h1>
-              <p className='text-ink-faint mt-3 truncate text-sm'>
-                {step === 'email' && 'para não perder nenhum.'}
-                {step === 'password' && email}
-                {step === 'name' && 'como seus amigos devem te ver no grupo?'}
-              </p>
-            </motion.div>
-          </AnimatePresence>
-        </motion.div>
+              <motion.div
+                key={`heading-${step}-${accountExists ?? 'pending'}`}
+                custom={direction}
+                variants={slideVariants}
+                initial='enter'
+                animate='center'
+                exit='exit'
+                transition={slideTransition}
+              >
+                <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
+                  {step === 'name' ?
+                    <>
+                      escolha um
+                      <br />
+                      <span className='text-sage italic'>nome</span>
+                    </>
+                  : step === 'password' && accountExists ?
+                    <>
+                      bem-vindo
+                      <br />
+                      <span className='text-sage italic'>de volta</span>
+                    </>
+                  : step === 'password' && accountExists === false ?
+                    <>
+                      crie sua
+                      <br />
+                      <span className='text-sage italic'>conta</span>
+                    </>
+                  : <>
+                      entre ou
+                      <br />
+                      <span className='text-sage italic'>crie sua conta</span>
+                    </>
+                  }
+                </h1>
+                <p className='text-ink-faint mt-3 truncate text-sm'>
+                  {step === 'email' && 'para não perder nenhum.'}
+                  {step === 'password' && email}
+                  {step === 'name' && 'como seus amigos devem te ver no grupo?'}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+          </motion.div>
 
-        <motion.form
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-          onSubmit={
-            step === 'email' ? goToPassword
-            : step === 'name' ?
-              handleSignUpWithName
-            : handlePassword
-          }
-          className='mt-10 flex flex-col gap-4'
-        >
-          <AnimatePresence
-            mode='wait'
-            custom={direction}
-            initial={false}
+          <motion.form
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            onSubmit={
+              step === 'email' ? goToPassword
+              : step === 'name' ?
+                handleSignUpWithName
+              : handlePassword
+            }
+            className='mt-10 flex flex-col gap-4'
           >
-            <motion.div
-              key={`fields-${step}`}
+            <AnimatePresence
+              mode='wait'
               custom={direction}
-              variants={slideVariants}
-              initial='enter'
-              animate='center'
-              exit='exit'
-              transition={slideTransition}
-              className='flex flex-col gap-4'
+              initial={false}
             >
-              {step === 'email' && (
-                <>
-                  <Field
-                    label='e-mail'
-                    type='text'
-                    value={email}
-                    onChange={setEmail}
-                    placeholder='você@exemplo.com'
-                    autoFocus
-                    autoComplete='email'
-                  />
-                  <button
-                    type='button'
-                    onClick={() => {
-                      advanceTo('welcome')
-                      setError(null)
-                    }}
-                    className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
-                  >
-                    <span aria-hidden>←</span>
-                    <span>voltar</span>
-                  </button>
-                </>
-              )}
-
-              {step === 'password' && (
-                <>
-                  <Field
-                    label={accountExists === false ? 'crie uma senha' : 'senha'}
-                    type='password'
-                    value={password}
-                    onChange={setPassword}
-                    placeholder='••••••••'
-                    autoFocus
-                    autoComplete={accountExists ? 'current-password' : 'new-password'}
-                  />
-                  <button
-                    type='button'
-                    onClick={() => {
-                      advanceTo('email')
-                      setError(null)
-                      setAccountExists(null)
-                      setPassword('')
-                    }}
-                    className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
-                  >
-                    <span aria-hidden>←</span>
-                    <span>trocar e-mail</span>
-                  </button>
-                </>
-              )}
-
-              {step === 'name' && (
-                <>
-                  <Field
-                    label='nome'
-                    type='text'
-                    value={firstName}
-                    onChange={setFirstName}
-                    placeholder='como te chamam?'
-                    autoFocus
-                    autoComplete='given-name'
-                  />
-                  <Field
-                    label='sobrenome (opcional)'
-                    type='text'
-                    value={lastName}
-                    onChange={setLastName}
-                    placeholder='família, clã, etc.'
-                    autoComplete='family-name'
-                  />
-                  <button
-                    type='button'
-                    onClick={() => {
-                      advanceTo('password')
-                      setError(null)
-                    }}
-                    className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
-                  >
-                    <span aria-hidden>←</span>
-                    <span>voltar</span>
-                  </button>
-                </>
-              )}
-            </motion.div>
-          </AnimatePresence>
-
-          <AnimatePresence
-            mode='wait'
-            initial={false}
-          >
-            {error && (
-              <motion.p
-                key={error}
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.18 }}
-                className='text-clay text-sm'
+              <motion.div
+                key={`fields-${step}`}
+                custom={direction}
+                variants={slideVariants}
+                initial='enter'
+                animate='center'
+                exit='exit'
+                transition={slideTransition}
+                className='flex flex-col gap-4'
               >
-                {error}
-              </motion.p>
-            )}
-          </AnimatePresence>
+                {step === 'email' && (
+                  <>
+                    <Field
+                      label='e-mail'
+                      type='text'
+                      value={email}
+                      onChange={setEmail}
+                      placeholder='você@exemplo.com'
+                      autoFocus
+                      autoComplete='email'
+                    />
+                    <button
+                      type='button'
+                      onClick={() => {
+                        advanceTo('welcome')
+                        setError(null)
+                      }}
+                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                    >
+                      <span aria-hidden>←</span>
+                      <span>voltar</span>
+                    </button>
+                  </>
+                )}
 
-          <button
-            type='submit'
-            disabled={loading}
-            className='bg-sage text-bg mt-2 flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
-          >
-            {loading ?
-              <motion.span
-                animate={{ opacity: [1, 0.4, 1] }}
-                transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                {step === 'name' ?
-                  'criando conta…'
-                : step === 'password' && accountExists ?
-                  'entrando…'
-                : 'aguarde…'}
-              </motion.span>
-            : step === 'email' ?
-              'continuar →'
-            : step === 'name' ?
-              'criar conta →'
-            : accountExists ?
-              'entrar →'
-            : 'continuar →'}
-          </button>
-        </motion.form>
-      </div>
+                {step === 'password' && (
+                  <>
+                    <Field
+                      label={accountExists === false ? 'crie uma senha' : 'senha'}
+                      type='password'
+                      value={password}
+                      onChange={setPassword}
+                      placeholder='••••••••'
+                      autoFocus
+                      autoComplete={accountExists ? 'current-password' : 'new-password'}
+                    />
+                    <button
+                      type='button'
+                      onClick={() => {
+                        advanceTo('email')
+                        setError(null)
+                        setAccountExists(null)
+                        setPassword('')
+                      }}
+                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                    >
+                      <span aria-hidden>←</span>
+                      <span>trocar e-mail</span>
+                    </button>
+                  </>
+                )}
+
+                {step === 'name' && (
+                  <>
+                    <Field
+                      label='nome'
+                      type='text'
+                      value={firstName}
+                      onChange={setFirstName}
+                      placeholder='como te chamam?'
+                      autoFocus
+                      autoComplete='given-name'
+                    />
+                    <Field
+                      label='sobrenome (opcional)'
+                      type='text'
+                      value={lastName}
+                      onChange={setLastName}
+                      placeholder='família, clã, etc.'
+                      autoComplete='family-name'
+                    />
+                    <button
+                      type='button'
+                      onClick={() => {
+                        advanceTo('password')
+                        setError(null)
+                      }}
+                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                    >
+                      <span aria-hidden>←</span>
+                      <span>voltar</span>
+                    </button>
+                  </>
+                )}
+              </motion.div>
+            </AnimatePresence>
+
+            <AnimatePresence
+              mode='wait'
+              initial={false}
+            >
+              {error && (
+                <motion.p
+                  key={error}
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.18 }}
+                  className='text-clay text-sm'
+                >
+                  {error}
+                </motion.p>
+              )}
+            </AnimatePresence>
+
+            <button
+              type='submit'
+              disabled={loading}
+              className='bg-sage text-bg mt-2 flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
+            >
+              {loading ?
+                <motion.span
+                  animate={{ opacity: [1, 0.4, 1] }}
+                  transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  {step === 'name' ?
+                    'criando conta…'
+                  : step === 'password' && accountExists ?
+                    'entrando…'
+                  : 'aguarde…'}
+                </motion.span>
+              : step === 'email' ?
+                'continuar →'
+              : step === 'name' ?
+                'criar conta →'
+              : accountExists ?
+                'entrar →'
+              : 'continuar →'}
+            </button>
+          </motion.form>
+        </div>
       }
     </div>
   )

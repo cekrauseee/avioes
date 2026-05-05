@@ -8,9 +8,7 @@ import { addMemberByEmail, getGroupDetails, lookupUserToAdd, removeMember } from
 import type { GroupMember } from '../lib/types'
 import { MEMBER_COLORS } from '../lib/types'
 
-type LookupResult =
-  | { email: string; ok: true; firstName: string; lastName: string | null }
-  | { email: string; ok: false; error: string }
+type LookupResult = { email: string; ok: true; firstName: string; lastName: string | null } | { email: string; ok: false; error: string }
 
 type LookupState =
   | { kind: 'idle' }
@@ -43,8 +41,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
   const lookup: LookupState =
     !validFormat ? { kind: 'idle' }
     : !resultMatches || !lookupResult ? { kind: 'checking' }
-    : lookupResult.ok ?
-      { kind: 'ready', firstName: lookupResult.firstName, lastName: lookupResult.lastName, email: lookupResult.email }
+    : lookupResult.ok ? { kind: 'ready', firstName: lookupResult.firstName, lastName: lookupResult.lastName, email: lookupResult.email }
     : { kind: 'error', message: lookupResult.error }
 
   useEffect(() => {
