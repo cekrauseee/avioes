@@ -2,8 +2,11 @@ import 'server-only'
 
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { emailOTP } from 'better-auth/plugins'
 import { db } from './db'
 import { accounts, sessions, users, verifications } from './db/auth-schema'
+import { sendOtpEmail } from './email'
+import { OTP_ALLOWED_ATTEMPTS, OTP_EXPIRES_IN_SECONDS, OTP_LENGTH } from './otp-constants'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -32,6 +35,19 @@ export const auth = betterAuth({
       updateUserInfoOnLink: true
     }
   },
+  plugins: [
+    emailOTP({
+      otpLength: OTP_LENGTH,
+      expiresIn: OTP_EXPIRES_IN_SECONDS,
+      allowedAttempts: OTP_ALLOWED_ATTEMPTS,
+      disableSignUp: true,
+      sendVerificationOnSignUp: false,
+      async sendVerificationOTP({ email, otp, type }) {
+        if (type !== 'sign-in') return
+        await sendOtpEmail(email, otp, Math.round(OTP_EXPIRES_IN_SECONDS / 60))
+      }
+    })
+  ],
   socialProviders:
     process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ?
       {

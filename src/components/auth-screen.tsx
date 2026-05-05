@@ -8,10 +8,13 @@ import { z } from 'zod'
 import { emailExists } from '../actions'
 import { authClient } from '../lib/auth-client'
 import { applyLocalIdentity } from '../lib/offline-store'
+import { OTP_ALLOWED_ATTEMPTS, OTP_LENGTH } from '../lib/otp-constants'
 
-type Step = 'welcome' | 'email' | 'password' | 'name' | 'error'
+type Step = 'welcome' | 'email' | 'method' | 'password' | 'otp' | 'name' | 'error'
 
-const STEP_ORDER: Record<Step, number> = { welcome: 0, error: 0, email: 1, password: 2, name: 3 }
+const STEP_ORDER: Record<Step, number> = { welcome: 0, error: 0, email: 1, method: 2, password: 3, otp: 3, name: 4 }
+
+const RESEND_COOLDOWN_MS = 30 * 1000
 
 const emailSchema = z.email({ message: 'E-mail inválido.' })
 const passwordSchema = z.string().min(8, 'Senha precisa ter pelo menos 8 caracteres.').max(128, 'Senha muito longa.')
@@ -41,6 +44,20 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
   const [accountExists, setAccountExists] = useState<boolean | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [otp, setOtp] = useState('')
+  const [otpSending, setOtpSending] = useState(false)
+  const [otpExhausted, setOtpExhausted] = useState(false)
+  const [otpAttemptsUsed, setOtpAttemptsUsed] = useState(0)
+  const [resendAt, setResendAt] = useState<number | null>(null)
+  const [now, setNow] = useState(() => Date.now())
+
+  useEffect(() => {
+    if (resendAt === null) return
+    const id = setInterval(() => setNow(Date.now()), 500)
+    return () => clearInterval(id)
+  }, [resendAt])
+
+  const resendSecondsLeft = resendAt === null ? 0 : Math.max(0, Math.ceil((resendAt - now) / 1000))
 
   useEffect(() => {
     applyLocalIdentity(null)
@@ -73,7 +90,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
     setStep(next)
   }
 
-  const goToPassword = async (e: React.FormEvent) => {
+  const submitEmail = async (e: React.FormEvent) => {
     e.preventDefault()
     const normalized = email.trim().toLowerCase()
     const emailError = firstError(emailSchema.safeParse(normalized))
@@ -86,7 +103,92 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
     const exists = await emailExists(normalized)
     setAccountExists(exists)
     setLoading(false)
-    advanceTo('password')
+    advanceTo(exists ? 'method' : 'password')
+  }
+
+  const sendOtp = async (): Promise<boolean> => {
+    setOtpSending(true)
+    setError(null)
+    const result = await authClient.emailOtp.sendVerificationOtp({
+      email: email.trim().toLowerCase(),
+      type: 'sign-in'
+    })
+    setOtpSending(false)
+    if (result.error) {
+      setError('Não foi possível enviar o código. Tente de novo.')
+      return false
+    }
+    setOtpAttemptsUsed(0)
+    setOtpExhausted(false)
+    const t = Date.now()
+    setNow(t)
+    setResendAt(t + RESEND_COOLDOWN_MS)
+    return true
+  }
+
+  const chooseOtp = async () => {
+    setOtp('')
+    setOtpAttemptsUsed(0)
+    setOtpExhausted(false)
+    advanceTo('otp')
+    await sendOtp()
+  }
+
+  const handleResend = async () => {
+    if (resendSecondsLeft > 0 && !otpExhausted) return
+    setOtp('')
+    await sendOtp()
+  }
+
+  const verifyOtp = async (otpCode: string) => {
+    setLoading(true)
+    setError(null)
+    const result = await authClient.signIn.emailOtp({
+      email: email.trim().toLowerCase(),
+      otp: otpCode
+    })
+    setLoading(false)
+    if (result.error) {
+      const code = result.error.code
+      setOtp('')
+      if (code === 'TOO_MANY_ATTEMPTS') {
+        setOtpAttemptsUsed(OTP_ALLOWED_ATTEMPTS)
+        setOtpExhausted(true)
+        setResendAt(null)
+        setError('Tentativas esgotadas · peça um novo código.')
+        return
+      }
+      if (code === 'OTP_EXPIRED') {
+        setOtpExhausted(true)
+        setResendAt(null)
+        setError('Código expirado · peça um novo.')
+        return
+      }
+      // INVALID_OTP (or unknown)
+      const used = otpAttemptsUsed + 1
+      setOtpAttemptsUsed(used)
+      const remaining = Math.max(0, OTP_ALLOWED_ATTEMPTS - used)
+      if (remaining <= 0) {
+        setOtpExhausted(true)
+        setResendAt(null)
+        setError('Tentativas esgotadas · peça um novo código.')
+      } else {
+        setError(`Código incorreto · ${remaining === 1 ? 'resta 1 tentativa' : `restam ${remaining} tentativas`}.`)
+      }
+      return
+    }
+    router.replace(nextPath)
+    router.refresh()
+  }
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (otpExhausted) return
+    if (otp.length !== OTP_LENGTH) {
+      setError(`Insira os ${OTP_LENGTH} dígitos.`)
+      return
+    }
+    await verifyOtp(otp)
   }
 
   const handlePassword = async (e: React.FormEvent) => {
@@ -336,6 +438,18 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                       <br />
                       <span className='text-sage italic'>nome</span>
                     </>
+                  : step === 'method' ?
+                    <>
+                      bem-vindo
+                      <br />
+                      <span className='text-sage italic'>de volta</span>
+                    </>
+                  : step === 'otp' ?
+                    <>
+                      digite o
+                      <br />
+                      <span className='text-sage italic'>código</span>
+                    </>
                   : step === 'password' && accountExists ?
                     <>
                       bem-vindo
@@ -357,6 +471,8 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 </h1>
                 <p className='text-ink-faint mt-3 truncate text-sm'>
                   {step === 'email' && 'para não perder nenhum.'}
+                  {step === 'method' && email}
+                  {step === 'otp' && `enviamos um código para ${email}`}
                   {step === 'password' && email}
                   {step === 'name' && 'como seus amigos devem te ver no grupo?'}
                 </p>
@@ -369,9 +485,10 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
             onSubmit={
-              step === 'email' ? goToPassword
-              : step === 'name' ?
-                handleSignUpWithName
+              step === 'email' ? submitEmail
+              : step === 'name' ? handleSignUpWithName
+              : step === 'otp' ? handleOtpSubmit
+              : step === 'method' ? (e) => e.preventDefault()
               : handlePassword
             }
             className='mt-10 flex flex-col gap-4'
@@ -430,15 +547,113 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                     <button
                       type='button'
                       onClick={() => {
-                        advanceTo('email')
+                        setError(null)
+                        setPassword('')
+                        if (accountExists) {
+                          advanceTo('method')
+                        } else {
+                          setAccountExists(null)
+                          advanceTo('email')
+                        }
+                      }}
+                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                    >
+                      <span aria-hidden>←</span>
+                      <span>{accountExists ? 'voltar' : 'trocar e-mail'}</span>
+                    </button>
+                  </>
+                )}
+
+                {step === 'method' && (
+                  <>
+                    <button
+                      type='button'
+                      onClick={chooseOtp}
+                      disabled={otpSending}
+                      className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
+                    >
+                      {otpSending ?
+                        <motion.span
+                          animate={{ opacity: [1, 0.4, 1] }}
+                          transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                        >
+                          enviando código…
+                        </motion.span>
+                      : 'enviar código por e-mail →'}
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => {
+                        setError(null)
+                        advanceTo('password')
+                      }}
+                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex h-12 items-center justify-center rounded-xl border text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98]'
+                    >
+                      continuar com senha
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => {
                         setError(null)
                         setAccountExists(null)
-                        setPassword('')
+                        advanceTo('email')
                       }}
                       className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
                     >
                       <span aria-hidden>←</span>
                       <span>trocar e-mail</span>
+                    </button>
+                  </>
+                )}
+
+                {step === 'otp' && (
+                  <>
+                    <div className='flex flex-col gap-1.5'>
+                      <label className='text-ink-faint text-xs'>código de {OTP_LENGTH} dígitos</label>
+                      <input
+                        type='text'
+                        inputMode='numeric'
+                        autoComplete='one-time-code'
+                        pattern='[0-9]*'
+                        maxLength={OTP_LENGTH}
+                        value={otp}
+                        disabled={otpExhausted}
+                        onChange={(e) => {
+                          const next = e.target.value.replace(/\D/g, '').slice(0, OTP_LENGTH)
+                          setOtp(next)
+                          if (error) setError(null)
+                          if (next.length === OTP_LENGTH && !loading && !otpExhausted) verifyOtp(next)
+                        }}
+                        autoFocus
+                        placeholder='••••••'
+                        className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 font-mono w-full rounded-xl border px-4 py-3 text-center text-2xl tracking-[0.4em] transition-all outline-none focus:ring-2 disabled:opacity-50'
+                      />
+                    </div>
+                    <button
+                      type='button'
+                      onClick={handleResend}
+                      disabled={(resendSecondsLeft > 0 && !otpExhausted) || otpSending}
+                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60'
+                    >
+                      {otpSending ? 'enviando…'
+                      : otpExhausted ? 'pedir um novo código'
+                      : resendSecondsLeft > 0 ? `reenviar em ${resendSecondsLeft}s`
+                      : 'reenviar código'}
+                    </button>
+                    <button
+                      type='button'
+                      onClick={() => {
+                        setError(null)
+                        setOtp('')
+                        setResendAt(null)
+                        setOtpAttemptsUsed(0)
+                        setOtpExhausted(false)
+                        advanceTo('method')
+                      }}
+                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                    >
+                      <span aria-hidden>←</span>
+                      <span>voltar</span>
                     </button>
                   </>
                 )}
@@ -496,30 +711,29 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
               )}
             </AnimatePresence>
 
-            <button
-              type='submit'
-              disabled={loading}
-              className='bg-sage text-bg mt-2 flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
-            >
-              {loading ?
-                <motion.span
-                  animate={{ opacity: [1, 0.4, 1] }}
-                  transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-                >
-                  {step === 'name' ?
-                    'criando conta…'
-                  : step === 'password' && accountExists ?
-                    'entrando…'
-                  : 'aguarde…'}
-                </motion.span>
-              : step === 'email' ?
-                'continuar →'
-              : step === 'name' ?
-                'criar conta →'
-              : accountExists ?
-                'entrar →'
-              : 'continuar →'}
-            </button>
+            {step !== 'method' && (
+              <button
+                type='submit'
+                disabled={loading || (step === 'otp' && otpExhausted)}
+                className='bg-sage text-bg mt-2 flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
+              >
+                {loading ?
+                  <motion.span
+                    animate={{ opacity: [1, 0.4, 1] }}
+                    transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    {step === 'name' ? 'criando conta…'
+                    : step === 'otp' ? 'verificando…'
+                    : step === 'password' && accountExists ? 'entrando…'
+                    : 'aguarde…'}
+                  </motion.span>
+                : step === 'email' ? 'continuar →'
+                : step === 'name' ? 'criar conta →'
+                : step === 'otp' ? 'entrar →'
+                : accountExists ? 'entrar →'
+                : 'continuar →'}
+              </button>
+            )}
           </motion.form>
         </div>
       }
