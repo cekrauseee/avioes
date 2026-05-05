@@ -4,10 +4,13 @@ import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { createNewGroup, setActiveGroup } from '../actions'
-import { applyServerSnapshot } from '../lib/offline-store'
+import { t } from '../lib/i18n'
+import { applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 
 export function NewGroupScreen() {
   const router = useRouter()
+  const state = useOfflineState()
+  const locale = selectLocale(state)
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
@@ -15,7 +18,7 @@ export function NewGroupScreen() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) {
-      setError('Insira um nome')
+      setError(t(locale, 'groups.new.nameRequired'))
       return
     }
     setError(null)
@@ -28,13 +31,13 @@ export function NewGroupScreen() {
         }
         const snapshot = await setActiveGroup(result.groupId)
         if (!snapshot.activeGroupId) {
-          setError('Algo deu errado. Tente de novo.')
+          setError(t(locale, 'groups.new.error'))
           return
         }
         applyServerSnapshot(snapshot)
         router.replace('/')
       } catch {
-        setError('Algo deu errado. Tente de novo.')
+        setError(t(locale, 'groups.new.error'))
       }
     })
   }
@@ -47,14 +50,14 @@ export function NewGroupScreen() {
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className='flex items-center justify-between gap-3'
       >
-        <span className='text-ink-faint font-display text-sm italic'>aviões</span>
+        <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
         <button
           type='button'
           onClick={() => router.back()}
           className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
         >
           <span aria-hidden>←</span>
-          <span>voltar</span>
+          <span>{t(locale, 'groups.new.back')}</span>
         </button>
       </motion.header>
 
@@ -65,11 +68,11 @@ export function NewGroupScreen() {
         className='mt-12'
       >
         <h1 className='font-display text-[36px] leading-[0.93] tracking-tight'>
-          novo
+          {t(locale, 'groups.new.line1')}
           <br />
-          <span className='text-sage italic'>grupo</span>
+          <span className='text-sage italic'>{t(locale, 'groups.new.italic')}</span>
         </h1>
-        <p className='text-ink-faint mt-3 text-sm'>você será o dono e poderá adicionar membros depois.</p>
+        <p className='text-ink-faint mt-3 text-sm'>{t(locale, 'groups.new.subtitle')}</p>
       </motion.div>
 
       <motion.form
@@ -80,12 +83,12 @@ export function NewGroupScreen() {
         className='mt-10 flex flex-col gap-4'
       >
         <div className='flex flex-col gap-1.5'>
-          <label className='text-ink-faint text-xs'>nome do grupo</label>
+          <label className='text-ink-faint text-xs'>{t(locale, 'groups.new.nameLabel')}</label>
           <input
             type='text'
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder='ex: família, amigos da escola…'
+            placeholder={t(locale, 'groups.new.namePlaceholder')}
             autoFocus
             maxLength={60}
             className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none focus:ring-2'
@@ -112,9 +115,9 @@ export function NewGroupScreen() {
               animate={{ opacity: [1, 0.4, 1] }}
               transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
             >
-              criando…
+              {t(locale, 'groups.new.creating')}
             </motion.span>
-          : 'criar grupo →'}
+          : t(locale, 'groups.new.createBtn')}
         </button>
       </motion.form>
     </div>

@@ -7,7 +7,8 @@ import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { emailExists } from '../actions'
 import { authClient } from '../lib/auth-client'
-import { applyLocalIdentity } from '../lib/offline-store'
+import { DATE_LOCALE, t, tf } from '../lib/i18n'
+import { applyLocalIdentity, selectLocale, useOfflineState } from '../lib/offline-store'
 import { OTP_ALLOWED_ATTEMPTS, OTP_LENGTH } from '../lib/otp-constants'
 
 type Step = 'welcome' | 'email' | 'method' | 'password' | 'otp' | 'name' | 'error'
@@ -15,15 +16,14 @@ type Step = 'welcome' | 'email' | 'method' | 'password' | 'otp' | 'name' | 'erro
 const STEP_ORDER: Record<Step, number> = { welcome: 0, error: 0, email: 1, method: 2, password: 3, otp: 3, name: 4 }
 
 const RESEND_COOLDOWN_MS = 30 * 1000
+const timestamp: () => number = Date.now
 
-const emailSchema = z.email({ message: 'E-mail inválido.' })
-const passwordSchema = z.string().min(8, 'Senha precisa ter pelo menos 8 caracteres.').max(128, 'Senha muito longa.')
-const firstNameSchema = z.string().trim().min(1, 'Insira seu nome.').max(60, 'Nome muito longo.')
-const lastNameSchema = z.string().trim().max(60, 'Sobrenome muito longo.')
-
-function firstError(result: { success: true } | { success: false; error: z.ZodError }): string | null {
-  return result.success ? null : (result.error.issues[0]?.message ?? 'Valor inválido')
-}
+const emailSchema = z.email()
+const passwordSchemaMin = z.string().min(8)
+const passwordSchemaMax = z.string().max(128)
+const firstNameSchemaMin = z.string().trim().min(1)
+const firstNameSchemaMax = z.string().trim().max(60)
+const lastNameSchema = z.string().trim().max(60)
 
 const slideVariants = {
   enter: (dir: number) => ({ x: dir * 24, opacity: 0 }),
@@ -35,6 +35,8 @@ const slideTransition = { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const }
 
 export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthError: string | null }) {
   const router = useRouter()
+  const state = useOfflineState()
+  const locale = selectLocale(state)
   const [step, setStep] = useState<Step>(oauthError ? 'error' : 'welcome')
   const [direction, setDirection] = useState(1)
   const [email, setEmail] = useState('')
@@ -81,7 +83,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
     })
     if (result.error) {
       setLoading(false)
-      setError('Não foi possível entrar com o Google.')
+      setError(t(locale, 'auth.googleFailed'))
     }
   }
 
@@ -93,9 +95,8 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
   const submitEmail = async (e: React.FormEvent) => {
     e.preventDefault()
     const normalized = email.trim().toLowerCase()
-    const emailError = firstError(emailSchema.safeParse(normalized))
-    if (emailError) {
-      setError(emailError)
+    if (!emailSchema.safeParse(normalized).success) {
+      setError(t(locale, 'auth.invalidEmail'))
       return
     }
     setLoading(true)
@@ -115,14 +116,14 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
     })
     setOtpSending(false)
     if (result.error) {
-      setError('Não foi possível enviar o código. Tente de novo.')
+      setError(t(locale, 'auth.otpSendFailed'))
       return false
     }
     setOtpAttemptsUsed(0)
     setOtpExhausted(false)
-    const t = Date.now()
-    setNow(t)
-    setResendAt(t + RESEND_COOLDOWN_MS)
+    const stamp = timestamp()
+    setNow(stamp)
+    setResendAt(stamp + RESEND_COOLDOWN_MS)
     return true
   }
 
@@ -155,25 +156,26 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
         setOtpAttemptsUsed(OTP_ALLOWED_ATTEMPTS)
         setOtpExhausted(true)
         setResendAt(null)
-        setError('Tentativas esgotadas · peça um novo código.')
+        setError(t(locale, 'auth.otpExhausted'))
         return
       }
       if (code === 'OTP_EXPIRED') {
         setOtpExhausted(true)
         setResendAt(null)
-        setError('Código expirado · peça um novo.')
+        setError(t(locale, 'auth.otpExpired'))
         return
       }
-      // INVALID_OTP (or unknown)
       const used = otpAttemptsUsed + 1
       setOtpAttemptsUsed(used)
       const remaining = Math.max(0, OTP_ALLOWED_ATTEMPTS - used)
       if (remaining <= 0) {
         setOtpExhausted(true)
         setResendAt(null)
-        setError('Tentativas esgotadas · peça um novo código.')
+        setError(t(locale, 'auth.otpExhausted'))
+      } else if (remaining === 1) {
+        setError(t(locale, 'auth.otpWrong1'))
       } else {
-        setError(`Código incorreto · ${remaining === 1 ? 'resta 1 tentativa' : `restam ${remaining} tentativas`}.`)
+        setError(tf(locale, 'auth.otpWrongN', { n: remaining }))
       }
       return
     }
@@ -185,7 +187,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
     e.preventDefault()
     if (otpExhausted) return
     if (otp.length !== OTP_LENGTH) {
-      setError(`Insira os ${OTP_LENGTH} dígitos.`)
+      setError(tf(locale, 'auth.otpEnterDigits', { n: OTP_LENGTH }))
       return
     }
     await verifyOtp(otp)
@@ -194,7 +196,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
   const handlePassword = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!password) {
-      setError('Insira uma senha.')
+      setError(t(locale, 'auth.passwordRequired'))
       return
     }
 
@@ -205,9 +207,9 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
       setLoading(false)
       if (result.error) {
         if (result.error.status === 401 || result.error.status === 400) {
-          setError('Senha incorreta.')
+          setError(t(locale, 'auth.wrongPassword'))
         } else {
-          setError('Algo deu errado. Tente de novo.')
+          setError(t(locale, 'auth.genericError'))
         }
         return
       }
@@ -216,10 +218,12 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
       return
     }
 
-    // New account → validate password before asking for name
-    const passwordError = firstError(passwordSchema.safeParse(password))
-    if (passwordError) {
-      setError(passwordError)
+    if (!passwordSchemaMin.safeParse(password).success) {
+      setError(t(locale, 'auth.passwordTooShort'))
+      return
+    }
+    if (!passwordSchemaMax.safeParse(password).success) {
+      setError(t(locale, 'auth.passwordTooLong'))
       return
     }
     setError(null)
@@ -230,14 +234,16 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
     e.preventDefault()
     const trimmedFirst = firstName.trim()
     const trimmedLast = lastName.trim()
-    const firstError_ = firstError(firstNameSchema.safeParse(trimmedFirst))
-    if (firstError_) {
-      setError(firstError_)
+    if (!firstNameSchemaMin.safeParse(trimmedFirst).success) {
+      setError(t(locale, 'auth.nameRequired'))
       return
     }
-    const lastError_ = firstError(lastNameSchema.safeParse(trimmedLast))
-    if (lastError_) {
-      setError(lastError_)
+    if (!firstNameSchemaMax.safeParse(trimmedFirst).success) {
+      setError(t(locale, 'auth.nameTooLong'))
+      return
+    }
+    if (!lastNameSchema.safeParse(trimmedLast).success) {
+      setError(t(locale, 'auth.lastNameTooLong'))
       return
     }
     setLoading(true)
@@ -259,15 +265,14 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
     }
 
     setLoading(false)
-    // Race: email got created between check and signup
     if (result.error.status === 422 || result.error.status === 409) {
       setAccountExists(true)
-      setError('Esta conta já existe. Tente entrar.')
+      setError(t(locale, 'auth.accountExists'))
       setDirection(-1)
       setStep('password')
       return
     }
-    setError('Algo deu errado. Tente de novo.')
+    setError(t(locale, 'auth.genericError'))
   }
 
   return (
@@ -279,8 +284,8 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className='flex items-baseline justify-between'
       >
-        <span className='text-ink-faint font-display text-sm italic'>aviões</span>
-        <span className='text-ink-faint text-xs'>{new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date())}</span>
+        <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
+        <span className='text-ink-faint text-xs'>{new Intl.DateTimeFormat(DATE_LOCALE[locale], { day: '2-digit', month: 'short' }).format(new Date())}</span>
       </motion.header>
 
       {/* Body — error screen, welcome screen, or auth form */}
@@ -293,11 +298,11 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
           className='mt-12 flex flex-1 flex-col'
         >
           <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
-            algo deu
+            {t(locale, 'auth.errorLine1')}
             <br />
-            <span className='text-clay italic'>errado</span>
+            <span className='text-clay italic'>{t(locale, 'auth.errorItalic')}</span>
           </h1>
-          <p className='text-ink-faint mt-3 text-sm'>não conseguimos completar seu login. tente de novo.</p>
+          <p className='text-ink-faint mt-3 text-sm'>{t(locale, 'auth.errorBody')}</p>
 
           <div className='relative mx-auto my-auto w-[60%] max-w-55'>
             <Image
@@ -332,14 +337,14 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
               className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex h-12 items-center justify-center gap-2.5 rounded-xl border text-sm font-medium transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50'
             >
               <GoogleMark />
-              <span>tentar com Google</span>
+              <span>{t(locale, 'auth.tryGoogle')}</span>
             </button>
             <button
               type='button'
               onClick={() => advanceTo('email')}
               className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98]'
             >
-              continuar com e-mail →
+              {t(locale, 'auth.continueEmail')}
             </button>
             <button
               type='button'
@@ -347,7 +352,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
               className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
             >
               <span aria-hidden>←</span>
-              <span>voltar</span>
+              <span>{t(locale, 'auth.back')}</span>
             </button>
           </div>
         </motion.div>
@@ -360,11 +365,11 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
           className='mt-12 flex flex-1 flex-col'
         >
           <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
-            anote o céu
+            {t(locale, 'auth.welcomeLine1')}
             <br />
-            <span className='text-sage italic'>juntos</span>
+            <span className='text-sage italic'>{t(locale, 'auth.welcomeItalic')}</span>
           </h1>
-          <p className='text-ink-faint mt-3 text-sm'>um diário de aviões para vocês.</p>
+          <p className='text-ink-faint mt-3 text-sm'>{t(locale, 'auth.welcomeBody')}</p>
 
           <div className='relative mx-auto my-auto w-[82%] max-w-72'>
             <Image
@@ -399,14 +404,14 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
               className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex h-12 items-center justify-center gap-2.5 rounded-xl border text-sm font-medium transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50'
             >
               <GoogleMark />
-              <span>continuar com Google</span>
+              <span>{t(locale, 'auth.continueGoogle')}</span>
             </button>
             <button
               type='button'
               onClick={() => advanceTo('email')}
               className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98]'
             >
-              continuar com e-mail →
+              {t(locale, 'auth.continueEmail')}
             </button>
           </div>
         </motion.div>
@@ -434,47 +439,47 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
                   {step === 'name' ?
                     <>
-                      escolha um
+                      {t(locale, 'auth.nameLine1')}
                       <br />
-                      <span className='text-sage italic'>nome</span>
+                      <span className='text-sage italic'>{t(locale, 'auth.nameItalic')}</span>
                     </>
                   : step === 'method' ?
                     <>
-                      bem-vindo
+                      {t(locale, 'auth.welcomeBackLine1')}
                       <br />
-                      <span className='text-sage italic'>de volta</span>
+                      <span className='text-sage italic'>{t(locale, 'auth.welcomeBackItalic')}</span>
                     </>
                   : step === 'otp' ?
                     <>
-                      digite o
+                      {t(locale, 'auth.otpLine1')}
                       <br />
-                      <span className='text-sage italic'>código</span>
+                      <span className='text-sage italic'>{t(locale, 'auth.otpItalic')}</span>
                     </>
                   : step === 'password' && accountExists ?
                     <>
-                      bem-vindo
+                      {t(locale, 'auth.welcomeBackLine1')}
                       <br />
-                      <span className='text-sage italic'>de volta</span>
+                      <span className='text-sage italic'>{t(locale, 'auth.welcomeBackItalic')}</span>
                     </>
                   : step === 'password' && accountExists === false ?
                     <>
-                      crie sua
+                      {t(locale, 'auth.signupLine1')}
                       <br />
-                      <span className='text-sage italic'>conta</span>
+                      <span className='text-sage italic'>{t(locale, 'auth.signupItalic')}</span>
                     </>
                   : <>
-                      entre ou
+                      {t(locale, 'auth.title')}
                       <br />
-                      <span className='text-sage italic'>crie sua conta</span>
+                      <span className='text-sage italic'>{t(locale, 'auth.titleItalic')}</span>
                     </>
                   }
                 </h1>
                 <p className='text-ink-faint mt-3 truncate text-sm'>
-                  {step === 'email' && 'para não perder nenhum.'}
+                  {step === 'email' && t(locale, 'auth.emailSubtitle')}
                   {step === 'method' && email}
-                  {step === 'otp' && `enviamos um código para ${email}`}
+                  {step === 'otp' && tf(locale, 'auth.otpSentTo', { email })}
                   {step === 'password' && email}
-                  {step === 'name' && 'como seus amigos devem te ver no grupo?'}
+                  {step === 'name' && t(locale, 'auth.nameSubtitle')}
                 </p>
               </motion.div>
             </AnimatePresence>
@@ -514,11 +519,11 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 {step === 'email' && (
                   <>
                     <Field
-                      label='e-mail'
+                      label={t(locale, 'auth.emailLabel')}
                       type='text'
                       value={email}
                       onChange={setEmail}
-                      placeholder='você@exemplo.com'
+                      placeholder={t(locale, 'auth.emailPlaceholder')}
                       autoFocus
                       autoComplete='email'
                     />
@@ -531,7 +536,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                       className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
                     >
                       <span aria-hidden>←</span>
-                      <span>voltar</span>
+                      <span>{t(locale, 'auth.back')}</span>
                     </button>
                   </>
                 )}
@@ -539,11 +544,11 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 {step === 'password' && (
                   <>
                     <Field
-                      label={accountExists === false ? 'crie uma senha' : 'senha'}
+                      label={accountExists === false ? t(locale, 'auth.createPassword') : t(locale, 'auth.passwordLabel')}
                       type='password'
                       value={password}
                       onChange={setPassword}
-                      placeholder='••••••••'
+                      placeholder={t(locale, 'auth.passwordPlaceholder')}
                       autoFocus
                       autoComplete={accountExists ? 'current-password' : 'new-password'}
                     />
@@ -562,7 +567,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                       className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
                     >
                       <span aria-hidden>←</span>
-                      <span>{accountExists ? 'voltar' : 'trocar e-mail'}</span>
+                      <span>{accountExists ? t(locale, 'auth.back') : t(locale, 'auth.changeEmail')}</span>
                     </button>
                   </>
                 )}
@@ -580,9 +585,9 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                           animate={{ opacity: [1, 0.4, 1] }}
                           transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
                         >
-                          enviando código…
+                          {t(locale, 'auth.sendingOtp')}
                         </motion.span>
-                      : 'enviar código por e-mail →'}
+                      : t(locale, 'auth.sendOtpEmail')}
                     </button>
                     <button
                       type='button'
@@ -592,7 +597,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                       }}
                       className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex h-12 items-center justify-center rounded-xl border text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98]'
                     >
-                      continuar com senha
+                      {t(locale, 'auth.continuePassword')}
                     </button>
                     <button
                       type='button'
@@ -604,7 +609,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                       className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
                     >
                       <span aria-hidden>←</span>
-                      <span>trocar e-mail</span>
+                      <span>{t(locale, 'auth.changeEmail')}</span>
                     </button>
                   </>
                 )}
@@ -612,7 +617,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 {step === 'otp' && (
                   <>
                     <div className='flex flex-col gap-1.5'>
-                      <label className='text-ink-faint text-xs'>código de {OTP_LENGTH} dígitos</label>
+                      <label className='text-ink-faint text-xs'>{tf(locale, 'auth.otpFieldLabel', { n: OTP_LENGTH })}</label>
                       <input
                         type='text'
                         inputMode='numeric'
@@ -639,12 +644,12 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                       className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60'
                     >
                       {otpSending ?
-                        'enviando…'
+                        t(locale, 'auth.sending')
                       : otpExhausted ?
-                        'pedir um novo código'
+                        t(locale, 'auth.otpRequestNew')
                       : resendSecondsLeft > 0 ?
-                        `reenviar em ${resendSecondsLeft}s`
-                      : 'reenviar código'}
+                        tf(locale, 'auth.otpResendIn', { n: resendSecondsLeft })
+                      : t(locale, 'auth.otpResend')}
                     </button>
                     <button
                       type='button'
@@ -659,7 +664,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                       className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
                     >
                       <span aria-hidden>←</span>
-                      <span>voltar</span>
+                      <span>{t(locale, 'auth.back')}</span>
                     </button>
                   </>
                 )}
@@ -667,20 +672,20 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 {step === 'name' && (
                   <>
                     <Field
-                      label='nome'
+                      label={t(locale, 'auth.nameLabel')}
                       type='text'
                       value={firstName}
                       onChange={setFirstName}
-                      placeholder='como te chamam?'
+                      placeholder={t(locale, 'auth.namePlaceholder')}
                       autoFocus
                       autoComplete='given-name'
                     />
                     <Field
-                      label='sobrenome (opcional)'
+                      label={t(locale, 'auth.lastNameLabel')}
                       type='text'
                       value={lastName}
                       onChange={setLastName}
-                      placeholder='família, clã, etc.'
+                      placeholder={t(locale, 'auth.lastNamePlaceholder')}
                       autoComplete='family-name'
                     />
                     <button
@@ -692,7 +697,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                       className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
                     >
                       <span aria-hidden>←</span>
-                      <span>voltar</span>
+                      <span>{t(locale, 'auth.back')}</span>
                     </button>
                   </>
                 )}
@@ -729,22 +734,22 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                     transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
                   >
                     {step === 'name' ?
-                      'criando conta…'
+                      t(locale, 'auth.creatingAccount')
                     : step === 'otp' ?
-                      'verificando…'
+                      t(locale, 'auth.verifying')
                     : step === 'password' && accountExists ?
-                      'entrando…'
-                    : 'aguarde…'}
+                      t(locale, 'auth.loading')
+                    : t(locale, 'auth.waiting')}
                   </motion.span>
                 : step === 'email' ?
-                  'continuar →'
+                  t(locale, 'auth.submitContinue')
                 : step === 'name' ?
-                  'criar conta →'
+                  t(locale, 'auth.submitCreate')
                 : step === 'otp' ?
-                  'entrar →'
+                  t(locale, 'auth.submitSignIn')
                 : accountExists ?
-                  'entrar →'
-                : 'continuar →'}
+                  t(locale, 'auth.submitSignIn')
+                : t(locale, 'auth.submitContinue')}
               </button>
             )}
           </motion.form>

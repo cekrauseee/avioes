@@ -7,6 +7,7 @@ import { db } from './db'
 import { accounts, sessions, users, verifications } from './db/auth-schema'
 import { sendOtpEmail } from './email'
 import { OTP_ALLOWED_ATTEMPTS, OTP_EXPIRES_IN_SECONDS, OTP_LENGTH } from './otp-constants'
+import { findUserByEmail, readLocale } from './store'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -44,7 +45,9 @@ export const auth = betterAuth({
       sendVerificationOnSignUp: false,
       async sendVerificationOTP({ email, otp, type }) {
         if (type !== 'sign-in') return
-        await sendOtpEmail(email, otp, Math.round(OTP_EXPIRES_IN_SECONDS / 60))
+        const user = await findUserByEmail(email)
+        const locale = await readLocale(user?.id ?? null)
+        await sendOtpEmail(email, otp, Math.round(OTP_EXPIRES_IN_SECONDS / 60), locale)
       }
     })
   ],

@@ -392,7 +392,7 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
     setUnlinkError(null)
     const res = await authClient.unlinkAccount({ providerId: 'google' })
     if (res.error) {
-      setUnlinkError(res.error.message ?? 'Erro')
+      setUnlinkError(res.error.message ?? t(locale, 'settings.unlinkError'))
       setUnlinking(false)
       return
     }

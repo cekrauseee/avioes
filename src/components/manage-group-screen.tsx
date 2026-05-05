@@ -5,7 +5,9 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { addMemberByEmail, getGroupDetails, lookupUserToAdd, removeMember } from '../actions'
-import type { GroupMember } from '../lib/types'
+import { t } from '../lib/i18n'
+import { selectLocale, useOfflineState } from '../lib/offline-store'
+import type { GroupMember, Locale } from '../lib/types'
 import { MEMBER_COLORS } from '../lib/types'
 
 type LookupResult = { email: string; ok: true; firstName: string; lastName: string | null } | { email: string; ok: false; error: string }
@@ -20,6 +22,8 @@ const LOOKUP_DEBOUNCE_MS = 400
 
 export function ManageGroupScreen({ groupId }: { groupId: string }) {
   const router = useRouter()
+  const state = useOfflineState()
+  const locale = selectLocale(state)
   const [members, setMembers] = useState<GroupMember[]>([])
   const [isOwner, setIsOwner] = useState(false)
   const [loaded, setLoaded] = useState(false)
@@ -118,14 +122,14 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
           transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className='flex items-center justify-between gap-3'
         >
-          <span className='text-ink-faint font-display text-sm italic'>aviões</span>
+          <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
           <button
             type='button'
             onClick={() => router.back()}
             className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
           >
             <span aria-hidden>←</span>
-            <span>voltar</span>
+            <span>{t(locale, 'groups.manage.back')}</span>
           </button>
         </motion.header>
 
@@ -136,13 +140,12 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
           className='mt-10'
         >
           <h1 className='font-display text-[34px] leading-[0.93] tracking-tight'>
-            membros do
+            {t(locale, 'groups.manage.membersOfLine1')}
             <br />
-            <span className='text-clay italic'>grupo</span>
+            <span className='text-clay italic'>{t(locale, 'groups.manage.membersOfItalic')}</span>
           </h1>
         </motion.div>
 
-        {/* Add member form (owner only) */}
         {isOwner && (
           <motion.form
             initial={{ opacity: 0, y: 16 }}
@@ -151,7 +154,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
             onSubmit={handleAdd}
             className='mt-8 flex flex-col gap-2'
           >
-            <label className='text-ink-faint text-xs'>adicionar por e-mail</label>
+            <label className='text-ink-faint text-xs'>{t(locale, 'groups.manage.addLabel')}</label>
             <div className='flex gap-2'>
               <input
                 ref={inputRef}
@@ -161,7 +164,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
                   setAddEmail(e.target.value)
                   setAddSuccess(false)
                 }}
-                placeholder='alguém@exemplo.com'
+                placeholder={t(locale, 'groups.manage.addPlaceholder')}
                 className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 min-h-12 min-w-0 flex-1 rounded-xl border px-4 text-sm transition-all outline-none focus:ring-2'
               />
               <button
@@ -176,7 +179,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
                   >
                     …
                   </motion.span>
-                : 'adicionar'}
+                : t(locale, 'groups.manage.add')}
               </button>
             </div>
             {lookup.kind === 'checking' && (
@@ -185,7 +188,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
                 animate={{ opacity: 1, y: 0 }}
                 className='text-ink-faint text-xs'
               >
-                procurando…
+                {t(locale, 'groups.manage.looking')}
               </motion.p>
             )}
             {lookup.kind === 'ready' && (
@@ -194,7 +197,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
                 animate={{ opacity: 1, y: 0 }}
                 className='text-sage text-xs'
               >
-                encontrado: <span className='text-ink-soft'>{lookup.lastName ? `${lookup.firstName} ${lookup.lastName}` : lookup.firstName}</span>
+                {t(locale, 'groups.manage.found')} <span className='text-ink-soft'>{lookup.lastName ? `${lookup.firstName} ${lookup.lastName}` : lookup.firstName}</span>
               </motion.p>
             )}
             {lookup.kind === 'error' && (
@@ -212,14 +215,13 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
                 animate={{ opacity: 1, y: 0 }}
                 className='text-sage text-xs'
               >
-                membro adicionado ✓
+                {t(locale, 'groups.manage.added')}
               </motion.p>
             )}
           </motion.form>
         )}
       </div>
 
-      {/* Members list */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -243,6 +245,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
                   member={member}
                   colorIndex={index}
                   isOwner={isOwner}
+                  locale={locale}
                   expanded={expandedId === member.userId}
                   confirming={confirmingRemove === member.userId}
                   isRemoving={removingId === member.userId}
@@ -265,6 +268,7 @@ function MemberRow({
   member,
   colorIndex,
   isOwner,
+  locale,
   expanded,
   confirming,
   isRemoving,
@@ -277,6 +281,7 @@ function MemberRow({
   member: GroupMember
   colorIndex: number
   isOwner: boolean
+  locale: Locale
   expanded: boolean
   confirming: boolean
   isRemoving: boolean
@@ -311,13 +316,13 @@ function MemberRow({
             <p className='text-ink truncate text-sm font-medium'>{member.lastName ? `${member.firstName} ${member.lastName}` : member.firstName}</p>
             <p className='text-ink-faint truncate text-xs'>{member.email}</p>
           </div>
-          <span className={`text-xs ${color.text} shrink-0`}>{member.role === 'owner' ? 'dono' : 'membro'}</span>
+          <span className={`text-xs ${color.text} shrink-0`}>{member.role === 'owner' ? t(locale, 'groups.manage.owner') : t(locale, 'groups.manage.member')}</span>
         </div>
         {canRemove && (
           <button
             type='button'
             onClick={onToggle}
-            aria-label='ações'
+            aria-label={t(locale, 'groups.manage.actions')}
             aria-expanded={expanded}
             className={`text-ink-faint hover:text-ink-soft border-line flex w-16 shrink-0 items-center justify-center border-l text-2xl leading-none transition-colors ${expanded ? 'bg-line/30' : ''}`}
           >
@@ -338,9 +343,10 @@ function MemberRow({
           >
             {confirming ?
               <ConfirmRow
-                label='remover do grupo?'
+                label={t(locale, 'groups.manage.confirmRemove')}
                 busy={isRemoving}
                 pending={pending}
+                locale={locale}
                 onCancel={onCancelRemove}
                 onConfirm={onConfirmRemove}
               />
@@ -350,7 +356,7 @@ function MemberRow({
                 onClick={onAskRemove}
                 className='text-clay hover:bg-clay/8 flex min-h-12 w-full items-center justify-between px-4 text-sm transition-colors disabled:opacity-50'
               >
-                <span>remover do grupo</span>
+                <span>{t(locale, 'groups.manage.removeFromGroup')}</span>
                 <span>×</span>
               </button>
             }
@@ -365,12 +371,14 @@ function ConfirmRow({
   label,
   busy,
   pending,
+  locale,
   onCancel,
   onConfirm
 }: {
   label: string
   busy: boolean
   pending: boolean
+  locale: Locale
   onCancel: () => void
   onConfirm: () => void
 }) {
@@ -389,7 +397,7 @@ function ConfirmRow({
           disabled={busy}
           className='text-ink-soft hover:bg-line/40 min-h-16 text-sm transition-colors disabled:opacity-50'
         >
-          cancelar
+          {t(locale, 'groups.manage.cancel')}
         </button>
         <button
           type='button'
@@ -404,7 +412,7 @@ function ConfirmRow({
             >
               …
             </motion.span>
-          : 'confirmar'}
+          : t(locale, 'groups.manage.confirm')}
         </button>
       </div>
     </motion.div>

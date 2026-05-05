@@ -104,7 +104,10 @@ export function PasswordScreen() {
   if (step === 'confirm-unlink') {
     return (
       <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
-        <Header onBack={goBackToAccount} locale={locale} />
+        <Header
+          onBack={goBackToAccount}
+          locale={locale}
+        />
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -164,7 +167,10 @@ export function PasswordScreen() {
     const doneIsUnlinked = isGoogleReason
     return (
       <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
-        <Header onBack={goBackToAccount} locale={locale} />
+        <Header
+          onBack={goBackToAccount}
+          locale={locale}
+        />
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -198,7 +204,10 @@ export function PasswordScreen() {
 
   return (
     <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
-      <Header onBack={goBackToAccount} locale={locale} />
+      <Header
+        onBack={goBackToAccount}
+        locale={locale}
+      />
 
       {mode === null ?
         <div className='mt-12 flex flex-col gap-10'>
@@ -321,7 +330,7 @@ function Header({ onBack, locale }: { onBack: () => void; locale: Locale }) {
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       className='flex items-center justify-between gap-3'
     >
-      <span className='text-ink-faint font-display text-sm italic'>aviões</span>
+      <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
       <button
         type='button'
         onClick={onBack}

@@ -3,12 +3,14 @@ import 'server-only'
 import { render } from '@react-email/render'
 import { Resend } from 'resend'
 import { OtpLoginEmail } from '../emails/otp-login'
+import { tf } from './i18n'
+import type { Locale } from './types'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 const FROM = process.env.EMAIL_FROM ?? 'Aviões <onboarding@resend.dev>'
 
-export async function sendOtpEmail(email: string, otp: string, expiresInMinutes: number): Promise<void> {
+export async function sendOtpEmail(email: string, otp: string, expiresInMinutes: number, locale: Locale = 'pt'): Promise<void> {
   if (!resend) {
     if (process.env.NODE_ENV === 'development') {
       console.warn(`[email] RESEND_API_KEY not set. OTP for ${email}: ${otp}`)
@@ -21,14 +23,16 @@ export async function sendOtpEmail(email: string, otp: string, expiresInMinutes:
     <OtpLoginEmail
       otp={otp}
       expiresInMinutes={expiresInMinutes}
+      locale={locale}
     />
   )
-  const text = `Seu código de acesso para Aviões: ${otp}\n\nEle expira em ${expiresInMinutes} minutos.`
+  const subject = tf(locale, 'email.otpSubject', { otp })
+  const text = tf(locale, 'email.otpPlainText', { otp, n: expiresInMinutes })
 
   const { error } = await resend.emails.send({
     from: FROM,
     to: email,
-    subject: `${otp} é seu código de acesso · Aviões`,
+    subject,
     html,
     text
   })

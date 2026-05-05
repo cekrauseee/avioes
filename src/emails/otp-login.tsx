@@ -1,4 +1,6 @@
 import { Body, Container, Font, Head, Heading, Hr, Html, Preview, Section, Text } from '@react-email/components'
+import { t, tf } from '../lib/i18n'
+import type { Locale } from '../lib/types'
 
 const COLORS = {
   bg: '#F6F1E7',
@@ -14,9 +16,11 @@ const FONT_DISPLAY = 'Fraunces, "Times New Roman", Georgia, serif'
 const FONT_BODY = '"Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
 const FONT_MONO = '"Geist Mono", "SF Mono", Menlo, Consolas, monospace'
 
-export function OtpLoginEmail({ otp, expiresInMinutes = 5 }: { otp: string; expiresInMinutes?: number }) {
+export function OtpLoginEmail({ otp, expiresInMinutes = 5, locale = 'pt' }: { otp: string; expiresInMinutes?: number; locale?: Locale }) {
+  const htmlLang = locale === 'pt' ? 'pt-BR' : 'en'
+
   return (
-    <Html lang='pt-BR'>
+    <Html lang={htmlLang}>
       <Head>
         <Font
           fontFamily='Fraunces'
@@ -29,7 +33,7 @@ export function OtpLoginEmail({ otp, expiresInMinutes = 5 }: { otp: string; expi
           fontStyle='italic'
         />
       </Head>
-      <Preview>seu código de acesso é {otp}</Preview>
+      <Preview>{tf(locale, 'email.otpPreview', { otp })}</Preview>
       <Body style={{ backgroundColor: COLORS.bg, margin: 0, padding: '32px 16px', fontFamily: FONT_BODY, color: COLORS.ink }}>
         <Container
           style={{
@@ -41,7 +45,7 @@ export function OtpLoginEmail({ otp, expiresInMinutes = 5 }: { otp: string; expi
             border: `1px solid ${COLORS.line}`
           }}
         >
-          <Text style={{ margin: 0, fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontSize: '14px', color: COLORS.inkFaint }}>aviões</Text>
+          <Text style={{ margin: 0, fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontSize: '14px', color: COLORS.inkFaint }}>{t(locale, 'email.otpBrand')}</Text>
 
           <Heading
             as='h1'
@@ -55,13 +59,13 @@ export function OtpLoginEmail({ otp, expiresInMinutes = 5 }: { otp: string; expi
               color: COLORS.ink
             }}
           >
-            seu código
+            {t(locale, 'email.otpHeadingLine1')}
             <br />
-            <span style={{ color: COLORS.sage, fontStyle: 'italic' }}>de acesso</span>
+            <span style={{ color: COLORS.sage, fontStyle: 'italic' }}>{t(locale, 'email.otpHeadingItalic')}</span>
           </Heading>
 
           <Text style={{ margin: '12px 0 0 0', fontSize: '14px', color: COLORS.inkFaint, lineHeight: '1.5' }}>
-            digite o código abaixo para entrar. ele expira em {expiresInMinutes} minutos.
+            {tf(locale, 'email.otpBody', { n: expiresInMinutes })}
           </Text>
 
           <Section
@@ -90,12 +94,12 @@ export function OtpLoginEmail({ otp, expiresInMinutes = 5 }: { otp: string; expi
           <Hr style={{ margin: '32px 0 20px 0', border: 'none', borderTop: `1px solid ${COLORS.line}` }} />
 
           <Text style={{ margin: 0, fontSize: '12px', color: COLORS.inkFaint, lineHeight: '1.6' }}>
-            se você não pediu este código, pode ignorar este e-mail. ninguém terá acesso à sua conta sem ele.
+            {t(locale, 'email.otpFooter')}
           </Text>
         </Container>
 
         <Text style={{ margin: '20px auto 0 auto', maxWidth: '420px', textAlign: 'center', fontSize: '11px', color: COLORS.inkFaint }}>
-          aviões · um diário de aviões para vocês
+          {t(locale, 'email.otpTagline')}
         </Text>
       </Body>
     </Html>

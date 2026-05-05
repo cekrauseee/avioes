@@ -6,13 +6,16 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
 import { deleteGroup, getUserGroups, leaveGroup, setActiveGroup } from '../actions'
 import { authClient } from '../lib/auth-client'
-import { applyLocalIdentity, applyServerSnapshot, useOfflineState } from '../lib/offline-store'
+import { t } from '../lib/i18n'
+import { applyLocalIdentity, applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
+import type { Locale } from '../lib/types'
 
 type GroupEntry = { id: string; name: string; ownerId: string; memberCount: number }
 
 export function GroupsScreen() {
   const router = useRouter()
   const state = useOfflineState()
+  const locale = selectLocale(state)
   const [groups, setGroups] = useState<GroupEntry[]>([])
   const [loaded, setLoaded] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -100,13 +103,13 @@ export function GroupsScreen() {
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className='flex items-center justify-between gap-3'
       >
-        <span className='text-ink-faint font-display text-sm italic'>aviões</span>
+        <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
         <Link
           href='/groups/new'
           className='border-line bg-paper text-sage hover:bg-sage-soft focus-visible:bg-sage-soft focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
         >
           <span aria-hidden>+</span>
-          <span>criar grupo</span>
+          <span>{t(locale, 'groups.new')}</span>
         </Link>
       </motion.header>
 
@@ -117,11 +120,11 @@ export function GroupsScreen() {
         className='mt-10'
       >
         <h1 className='font-display text-[34px] leading-[0.93] tracking-tight'>
-          seus
+          {t(locale, 'groups.yourLine1')}
           <br />
-          <span className='text-clay italic'>grupos</span>
+          <span className='text-clay italic'>{t(locale, 'groups.yourItalic')}</span>
         </h1>
-        <p className='text-ink-faint mt-3 text-sm'>troque, ajuste ou crie um novo.</p>
+        <p className='text-ink-faint mt-3 text-sm'>{t(locale, 'groups.subtitle')}</p>
       </motion.div>
 
       <motion.div
@@ -136,7 +139,7 @@ export function GroupsScreen() {
             <SkeletonCard />
           </>
         : groups.length === 0 ?
-          <EmptyState />
+          <EmptyState locale={locale} />
         : groups.map((group, i) => {
             const isActive = group.id === state.activeGroupId
             const isOwner = group.ownerId === state.identity
@@ -160,7 +163,7 @@ export function GroupsScreen() {
                     <div className='flex flex-col gap-0.5'>
                       <span className='font-display text-xl'>{group.name}</span>
                       <span className='text-ink-faint text-xs'>
-                        {group.memberCount} {group.memberCount === 1 ? 'membro' : 'membros'}
+                        {group.memberCount} {group.memberCount === 1 ? t(locale, 'groups.memberCount') : t(locale, 'groups.memberCountPlural')}
                       </span>
                     </div>
                     <span className='text-sm font-medium'>
@@ -173,14 +176,14 @@ export function GroupsScreen() {
                           …
                         </motion.span>
                       : isActive ?
-                        <span className='text-sage'>abrir →</span>
-                      : <span className='text-sage'>entrar →</span>}
+                        <span className='text-sage'>{t(locale, 'groups.open')}</span>
+                      : <span className='text-sage'>{t(locale, 'groups.enter')}</span>}
                     </span>
                   </button>
                   <button
                     type='button'
                     onClick={() => toggleExpanded(group.id)}
-                    aria-label='ações'
+                    aria-label={t(locale, 'groups.actions')}
                     aria-expanded={expanded}
                     className={`text-ink-faint hover:text-ink-soft border-line flex w-20 shrink-0 items-center justify-center border-l text-2xl leading-none transition-colors ${expanded ? 'bg-line/30' : ''}`}
                   >
@@ -205,21 +208,22 @@ export function GroupsScreen() {
                               href={`/groups/${group.id}/edit`}
                               className='text-ink-soft hover:bg-line/30 flex min-h-12 items-center justify-between px-5 text-sm transition-colors'
                             >
-                              <span>editar nome</span>
+                              <span>{t(locale, 'groups.editName')}</span>
                               <span className='text-ink-faint'>→</span>
                             </Link>
                             <Link
                               href={`/groups/${group.id}/manage`}
                               className='text-ink-soft hover:bg-line/30 border-line flex min-h-12 items-center justify-between border-t px-5 text-sm transition-colors'
                             >
-                              <span>gerenciar membros</span>
+                              <span>{t(locale, 'groups.manageMembers')}</span>
                               <span className='text-ink-faint'>→</span>
                             </Link>
                             {confirmingDelete === group.id ?
                               <ConfirmRow
-                                label='excluir grupo?'
+                                label={t(locale, 'groups.confirmDelete')}
                                 busy={isBusy}
                                 pending={pending}
+                                locale={locale}
                                 onCancel={() => setConfirmingDelete(null)}
                                 onConfirm={() => handleDelete(group.id)}
                                 bordered
@@ -233,16 +237,17 @@ export function GroupsScreen() {
                                 }}
                                 className='border-line text-clay hover:bg-clay/8 flex min-h-12 items-center justify-between border-t px-5 text-sm transition-colors disabled:opacity-50'
                               >
-                                <span>excluir grupo</span>
+                                <span>{t(locale, 'groups.deleteGroup')}</span>
                                 <span>×</span>
                               </button>
                             }
                           </>
                         : confirmingLeave === group.id ?
                           <ConfirmRow
-                            label='sair do grupo?'
+                            label={t(locale, 'groups.confirmLeave')}
                             busy={isBusy}
                             pending={pending}
+                            locale={locale}
                             onCancel={() => setConfirmingLeave(null)}
                             onConfirm={() => handleLeave(group.id)}
                           />
@@ -255,7 +260,7 @@ export function GroupsScreen() {
                             }}
                             className='text-clay hover:bg-clay/8 flex min-h-12 items-center justify-between px-5 text-sm transition-colors disabled:opacity-50'
                           >
-                            <span>sair do grupo</span>
+                            <span>{t(locale, 'groups.leaveGroup')}</span>
                             <span>↩</span>
                           </button>
                         }
@@ -276,6 +281,7 @@ function ConfirmRow({
   label,
   busy,
   pending,
+  locale,
   onCancel,
   onConfirm,
   bordered
@@ -283,6 +289,7 @@ function ConfirmRow({
   label: string
   busy: boolean
   pending: boolean
+  locale: Locale
   onCancel: () => void
   onConfirm: () => void
   bordered?: boolean
@@ -302,7 +309,7 @@ function ConfirmRow({
           disabled={busy}
           className='text-ink-soft hover:bg-line/40 min-h-16 text-sm transition-colors disabled:opacity-50'
         >
-          cancelar
+          {t(locale, 'groups.cancel')}
         </button>
         <button
           type='button'
@@ -317,14 +324,14 @@ function ConfirmRow({
             >
               …
             </motion.span>
-          : 'confirmar'}
+          : t(locale, 'groups.confirm')}
         </button>
       </div>
     </motion.div>
   )
 }
 
-function EmptyState() {
+function EmptyState({ locale }: { locale: Locale }) {
   const router = useRouter()
 
   const handleSignOut = async () => {
@@ -343,21 +350,21 @@ function EmptyState() {
         ✈
       </span>
       <div>
-        <p className='text-ink-soft text-sm'>Você ainda não faz parte de nenhum grupo.</p>
-        <p className='text-ink-faint mt-1 text-xs'>crie um ou peça pra alguém te adicionar</p>
+        <p className='text-ink-soft text-sm'>{t(locale, 'groups.empty')}</p>
+        <p className='text-ink-faint mt-1 text-xs'>{t(locale, 'groups.emptyHint')}</p>
       </div>
       <Link
         href='/groups/new'
         className='bg-sage text-bg focus-visible:ring-sage/40 mt-2 flex min-h-12 w-full max-w-56 items-center justify-center rounded-xl px-5 text-sm font-medium transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98]'
       >
-        criar um grupo →
+        {t(locale, 'groups.createArrow')}
       </Link>
       <button
         type='button'
         onClick={handleSignOut}
         className='border-clay/30 text-clay hover:bg-clay/8 mt-2 flex min-h-11 w-full max-w-56 items-center justify-center rounded-xl border px-5 text-sm transition-all active:scale-[0.98]'
       >
-        sair
+        {t(locale, 'groups.signOut')}
       </button>
     </div>
   )

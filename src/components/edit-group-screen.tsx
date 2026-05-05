@@ -4,9 +4,13 @@ import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
 import { getGroupDetails, updateGroup } from '../actions'
+import { t } from '../lib/i18n'
+import { selectLocale, useOfflineState } from '../lib/offline-store'
 
 export function EditGroupScreen({ groupId }: { groupId: string }) {
   const router = useRouter()
+  const state = useOfflineState()
+  const locale = selectLocale(state)
   const [name, setName] = useState('')
   const [originalName, setOriginalName] = useState('')
   const [isOwner, setIsOwner] = useState(false)
@@ -42,7 +46,7 @@ export function EditGroupScreen({ groupId }: { groupId: string }) {
         setOriginalName(trimmed)
         router.back()
       } catch {
-        setError('Algo deu errado. Tente de novo.')
+        setError(t(locale, 'groups.edit.error'))
       }
     })
   }
@@ -55,14 +59,14 @@ export function EditGroupScreen({ groupId }: { groupId: string }) {
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className='flex items-center justify-between gap-3'
       >
-        <span className='text-ink-faint font-display text-sm italic'>aviões</span>
+        <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
         <button
           type='button'
           onClick={() => router.back()}
           className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
         >
           <span aria-hidden>←</span>
-          <span>voltar</span>
+          <span>{t(locale, 'groups.edit.back')}</span>
         </button>
       </motion.header>
 
@@ -73,9 +77,9 @@ export function EditGroupScreen({ groupId }: { groupId: string }) {
         className='mt-12'
       >
         <h1 className='font-display text-[36px] leading-[0.93] tracking-tight'>
-          ajustar
+          {t(locale, 'groups.edit.line1')}
           <br />
-          <span className='text-sage italic'>grupo</span>
+          <span className='text-sage italic'>{t(locale, 'groups.edit.italic')}</span>
         </h1>
       </motion.div>
 
@@ -86,7 +90,7 @@ export function EditGroupScreen({ groupId }: { groupId: string }) {
           transition={{ duration: 0.5, delay: 0.15 }}
           className='text-ink-faint mt-10 text-sm'
         >
-          apenas o dono do grupo pode editar.
+          {t(locale, 'groups.edit.ownerOnly')}
         </motion.p>
       : <motion.form
           initial={{ opacity: 0, y: 20 }}
@@ -96,7 +100,7 @@ export function EditGroupScreen({ groupId }: { groupId: string }) {
           className='mt-10 flex flex-col gap-4'
         >
           <div className='flex flex-col gap-1.5'>
-            <label className='text-ink-faint text-xs'>nome do grupo</label>
+            <label className='text-ink-faint text-xs'>{t(locale, 'groups.edit.nameLabel')}</label>
             <input
               type='text'
               value={name}
@@ -104,7 +108,7 @@ export function EditGroupScreen({ groupId }: { groupId: string }) {
                 setName(e.target.value)
                 setError(null)
               }}
-              placeholder='ex: família, amigos da escola…'
+              placeholder={t(locale, 'groups.edit.placeholder')}
               disabled={!loaded}
               maxLength={60}
               className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none focus:ring-2 disabled:opacity-50'
@@ -131,9 +135,9 @@ export function EditGroupScreen({ groupId }: { groupId: string }) {
                 animate={{ opacity: [1, 0.4, 1] }}
                 transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
               >
-                salvando…
+                {t(locale, 'groups.edit.saving')}
               </motion.span>
-            : 'salvar →'}
+            : t(locale, 'groups.edit.save')}
           </button>
         </motion.form>
       }

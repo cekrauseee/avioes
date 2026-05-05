@@ -2,8 +2,10 @@ import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import type { Metadata, Viewport } from 'next'
 import { Fraunces, Geist, Geist_Mono } from 'next/font/google'
+import { headers } from 'next/headers'
 import { AppRuntime } from '../components/app-runtime'
 import { Noise } from '../components/noise'
+import { detectLocaleFromHeader } from '../lib/i18n'
 import './globals.css'
 
 const geistSans = Geist({
@@ -53,9 +55,13 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const h = await headers()
+  const detectedLocale = detectLocaleFromHeader(h.get('accept-language'))
+  const htmlLang = detectedLocale === 'pt' ? 'pt-BR' : 'en'
+
   return (
     <html
-      lang='pt-BR'
+      lang={htmlLang}
       data-theme='system'
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased select-none`}
