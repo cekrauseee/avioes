@@ -5,6 +5,7 @@ export const themeEnum = pgEnum('theme', ['light', 'dark', 'system'])
 export const paletteEnum = pgEnum('palette', ['default', 'ocean', 'lavender', 'earth', 'blossom', 'sky'])
 export const localeEnum = pgEnum('locale', ['pt', 'en'])
 export const groupRoleEnum = pgEnum('group_role', ['owner', 'member'])
+export const invitationStatusEnum = pgEnum('invitation_status', ['pending', 'accepted', 'rejected', 'cancelled'])
 
 export const groups = pgTable('groups', {
   id: text('id').primaryKey(),
@@ -29,6 +30,21 @@ export const groupMembers = pgTable(
   },
   (t) => [primaryKey({ columns: [t.groupId, t.userId] })]
 )
+
+export const groupInvitations = pgTable('group_invitations', {
+  id: text('id').primaryKey(),
+  token: text('token').notNull().unique(),
+  groupId: text('group_id')
+    .notNull()
+    .references(() => groups.id, { onDelete: 'cascade' }),
+  invitedEmail: text('invited_email').notNull(),
+  invitedByUserId: text('invited_by_user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  status: invitationStatusEnum('status').notNull().default('pending'),
+  createdAt: bigint('created_at', { mode: 'number' }).notNull(),
+  expiresAt: bigint('expires_at', { mode: 'number' }).notNull()
+})
 
 export const events = pgTable('events', {
   id: serial('id').primaryKey(),

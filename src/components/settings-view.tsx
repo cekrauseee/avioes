@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, useSyncExternalStore, useTransition } from 'react'
 import { getUserGroups } from '../actions'
 import { authClient } from '../lib/auth-client'
+import { useArrowKeyNavigation, useHorizontalWheelNavigation } from '../lib/horizontal-wheel-navigation'
 import { t, type TKey } from '../lib/i18n'
 import { useNavDirection } from '../lib/nav-direction'
 import { applyLocalIdentity, queuePalette, queueTheme, selectLocale, selectPalette, selectTheme, switchLocale, useOfflineState } from '../lib/offline-store'
@@ -26,6 +27,7 @@ const TABS = [
 
 const SETTINGS_PREV_ROUTE = '/scoreboard'
 const SWIPE_THRESHOLD = 60
+const WHEEL_SWIPE_THRESHOLD = 34
 
 const PALETTE_KEYS = Object.keys(PALETTES) as Palette[]
 
@@ -60,11 +62,7 @@ export function SettingsView() {
   const reduce = useReducedMotion()
   const { set: setNavDirection } = useNavDirection()
 
-  if (!state.identity || !state.activeGroupId) return <Onboarding />
-
   const currentIndex = TABS.findIndex((t) => t.id === tab)
-  const who = state.identity
-  const accent = getMemberColor(who, state.groupMembers)
 
   const goTo = (id: Tab) => {
     const nextIndex = TABS.findIndex((t) => t.id === id)
@@ -97,6 +95,13 @@ export function SettingsView() {
     if (info.offset.x < -SWIPE_THRESHOLD && info.velocity.x < 0) goByDirection(1)
     else if (info.offset.x > SWIPE_THRESHOLD && info.velocity.x > 0) goByDirection(-1)
   }
+  const onWheel = useHorizontalWheelNavigation(goByDirection, WHEEL_SWIPE_THRESHOLD)
+  useArrowKeyNavigation(goByDirection, Boolean(state.identity && state.activeGroupId))
+
+  if (!state.identity || !state.activeGroupId) return <Onboarding />
+
+  const who = state.identity
+  const accent = getMemberColor(who, state.groupMembers)
 
   return (
     <AppShell>
@@ -120,12 +125,13 @@ export function SettingsView() {
 
         {/* tab content */}
         <motion.div
-          className='relative min-h-0 flex-1 touch-pan-y overflow-hidden'
+          className='relative min-h-0 flex-1 touch-pan-y overflow-hidden overscroll-x-contain'
           drag={reduce ? false : 'x'}
           dragDirectionLock
           dragElastic={0.15}
           dragConstraints={{ left: 0, right: 0 }}
           onDragEnd={onDragEnd}
+          onWheelCapture={reduce ? undefined : onWheel}
           whileDrag={{ cursor: 'grabbing' }}
         >
           <AnimatePresence

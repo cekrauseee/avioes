@@ -31,6 +31,13 @@ export const metadata: Metadata = {
   },
   description: 'O diário de aviões da gente.',
   manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [
+      { url: '/favicon-light.png', type: 'image/png', media: '(prefers-color-scheme: light)' },
+      { url: '/favicon-dark.png', type: 'image/png', media: '(prefers-color-scheme: dark)' }
+    ],
+    apple: '/icons/icon-1024.png'
+  },
   appleWebApp: {
     capable: true,
     title: 'Airplanes',

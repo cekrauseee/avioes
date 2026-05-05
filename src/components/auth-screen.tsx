@@ -37,6 +37,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
   const router = useRouter()
   const state = useOfflineState()
   const locale = selectLocale(state)
+  const isInviteFlow = nextPath.startsWith('/invite/')
   const [step, setStep] = useState<Step>(oauthError ? 'error' : 'welcome')
   const [direction, setDirection] = useState(1)
   const [email, setEmail] = useState('')
@@ -285,7 +286,9 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
         className='flex items-baseline justify-between'
       >
         <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
-        <span className='text-ink-faint text-xs'>{new Intl.DateTimeFormat(DATE_LOCALE[locale], { day: '2-digit', month: 'short' }).format(new Date())}</span>
+        <span className='text-ink-faint text-xs'>
+          {new Intl.DateTimeFormat(DATE_LOCALE[locale], { day: '2-digit', month: 'short' }).format(new Date())}
+        </span>
       </motion.header>
 
       {/* Body — error screen, welcome screen, or auth form */}
@@ -365,15 +368,15 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
           className='mt-12 flex flex-1 flex-col'
         >
           <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
-            {t(locale, 'auth.welcomeLine1')}
+            {t(locale, isInviteFlow ? 'auth.inviteWelcomeLine1' : 'auth.welcomeLine1')}
             <br />
-            <span className='text-sage italic'>{t(locale, 'auth.welcomeItalic')}</span>
+            <span className='text-sage italic'>{t(locale, isInviteFlow ? 'auth.inviteWelcomeItalic' : 'auth.welcomeItalic')}</span>
           </h1>
-          <p className='text-ink-faint mt-3 text-sm'>{t(locale, 'auth.welcomeBody')}</p>
+          <p className='text-ink-faint mt-3 text-sm'>{t(locale, isInviteFlow ? 'auth.inviteWelcomeBody' : 'auth.welcomeBody')}</p>
 
           <div className='relative mx-auto my-auto w-[82%] max-w-72'>
             <Image
-              src='/onboarding-hero-light.png'
+              src={isInviteFlow ? '/invite-hero-light.png' : '/onboarding-hero-light.png'}
               alt=''
               aria-hidden
               width={1254}
@@ -384,7 +387,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
               draggable={false}
             />
             <Image
-              src='/onboarding-hero-dark.png'
+              src={isInviteFlow ? '/invite-hero-dark.png' : '/onboarding-hero-dark.png'}
               alt=''
               aria-hidden
               width={1254}
