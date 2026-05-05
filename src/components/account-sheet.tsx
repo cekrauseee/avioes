@@ -8,7 +8,8 @@ import { useEffect, useState, useTransition } from 'react'
 import { createPortal } from 'react-dom'
 import { getUserGroups, setActiveGroup } from '../actions'
 import { authClient } from '../lib/auth-client'
-import { applyLocalIdentity, applyServerSnapshot, useOfflineState } from '../lib/offline-store'
+import { t } from '../lib/i18n'
+import { applyLocalIdentity, applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import { getMemberColor, getMemberFirstName, getMemberFullName } from '../lib/types'
 
 type GroupEntry = { id: string; name: string; ownerId: string; memberCount: number }
@@ -18,6 +19,7 @@ const MAX_OTHERS = 2
 export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter()
   const state = useOfflineState()
+  const locale = selectLocale(state)
   const who = state.identity!
   const me = getMemberColor(who, state.groupMembers)
   const myFirstName = getMemberFirstName(who, state.groupMembers)
@@ -35,6 +37,8 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
     getUserGroups().then(setGroups)
   }, [open])
 
+  const activeGroup = groups.find((g) => g.id === state.activeGroupId)
+  const isOwner = activeGroup?.ownerId === who
   const others = groups.filter((g) => g.id !== state.activeGroupId)
   const displayed = others.slice(0, MAX_OTHERS)
   const hasMore = others.length > MAX_OTHERS
@@ -117,10 +121,10 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
 
             {/* other groups quick switch */}
             <div className='px-6 pt-4 pb-2'>
-              <p className='text-ink-faint mb-2 text-[11px]'>outros grupos</p>
+              <p className='text-ink-faint mb-2 text-[11px]'>{t(locale, 'groups.sheet.otherGroups')}</p>
 
               {displayed.length === 0 ?
-                <p className='text-ink-faint text-sm italic'>você só faz parte deste grupo.</p>
+                <p className='text-ink-faint text-sm italic'>{t(locale, 'groups.sheet.onlyGroup')}</p>
               : <div className='flex flex-col gap-2'>
                   {displayed.map((group) => (
                     <button
@@ -133,7 +137,7 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
                       <div className='flex min-w-0 flex-col items-start gap-0.5'>
                         <span className='font-display truncate text-base'>{group.name}</span>
                         <span className='text-ink-faint text-[11px]'>
-                          {group.memberCount} {group.memberCount === 1 ? 'membro' : 'membros'}
+                          {group.memberCount} {t(locale, group.memberCount === 1 ? 'groups.memberCount' : 'groups.memberCountPlural')}
                         </span>
                       </div>
                       <span className='text-sage text-base leading-none'>
@@ -158,7 +162,7 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
                     onClick={onClose}
                     className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex min-h-12 w-full items-center justify-between rounded-xl border px-4 py-3.5 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
                   >
-                    <span>ver todos os grupos</span>
+                    <span>{t(locale, 'groups.sheet.viewAll')}</span>
                     <span className='text-ink-faint text-base leading-none'>→</span>
                   </Link>
                 : <Link
@@ -166,12 +170,28 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
                     onClick={onClose}
                     className='border-line bg-paper text-sage hover:bg-sage-soft focus-visible:bg-sage-soft focus-visible:ring-sage/40 flex min-h-12 w-full items-center justify-between rounded-xl border px-4 py-3.5 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
                   >
-                    <span>criar grupo</span>
+                    <span>{t(locale, 'groups.sheet.create')}</span>
                     <span className='text-base leading-none'>+</span>
                   </Link>
                 }
               </div>
             </div>
+
+            {isOwner && state.activeGroupId && (
+              <>
+                <div className='border-line mx-6 mt-3 border-t' />
+                <div className='px-6 pt-3'>
+                  <Link
+                    href={`/groups/${state.activeGroupId}/manage`}
+                    onClick={onClose}
+                    className='border-line bg-paper text-sage hover:bg-sage-soft focus-visible:bg-sage-soft focus-visible:ring-sage/40 flex min-h-12 w-full items-center justify-between rounded-xl border px-4 py-3.5 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                  >
+                    <span>{t(locale, 'groups.sheet.invite')}</span>
+                    <span className='text-base leading-none'>+</span>
+                  </Link>
+                </div>
+              </>
+            )}
 
             <div className='border-line mx-6 mt-3 border-t' />
 
@@ -182,7 +202,7 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
                 onClick={handleSignOut}
                 className='border-clay/30 text-clay hover:bg-clay/8 focus-visible:bg-clay/8 focus-visible:ring-clay/30 flex min-h-12 w-full items-center justify-between rounded-xl border px-4 py-3.5 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
               >
-                <span>sair da conta</span>
+                <span>{t(locale, 'groups.sheet.signOut')}</span>
                 <span className='text-base leading-none opacity-70'>→</span>
               </button>
             </div>

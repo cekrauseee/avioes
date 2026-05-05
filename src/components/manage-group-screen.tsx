@@ -4,91 +4,68 @@ import { AnimatePresence, motion } from 'motion/react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { addMemberByEmail, getGroupDetails, lookupUserToAdd, removeMember } from '../actions'
+import { cancelInvitation, createInvitation, getGroupDetailsWithInvites, removeMember } from '../actions'
 import { t } from '../lib/i18n'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 import type { GroupMember, Locale } from '../lib/types'
 import { MEMBER_COLORS } from '../lib/types'
+import { InviteShareSheet } from './invite-share-sheet'
 
-type LookupResult = { email: string; ok: true; firstName: string; lastName: string | null } | { email: string; ok: false; error: string }
-
-type LookupState =
-  | { kind: 'idle' }
-  | { kind: 'checking' }
-  | { kind: 'ready'; firstName: string; lastName: string | null; email: string }
-  | { kind: 'error'; message: string }
-
-const LOOKUP_DEBOUNCE_MS = 400
+type PendingInvite = { id: string; invitedEmail: string; createdAt: number; expiresAt: number }
 
 export function ManageGroupScreen({ groupId }: { groupId: string }) {
   const router = useRouter()
   const state = useOfflineState()
   const locale = selectLocale(state)
   const [members, setMembers] = useState<GroupMember[]>([])
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([])
   const [isOwner, setIsOwner] = useState(false)
   const [loaded, setLoaded] = useState(false)
-  const [addEmail, setAddEmail] = useState('')
-  const [addSuccess, setAddSuccess] = useState(false)
-  const [addPending, startAdd] = useTransition()
-  const [lookupResult, setLookupResult] = useState<LookupResult | null>(null)
-  const lookupTokenRef = useRef(0)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteError, setInviteError] = useState<string | null>(null)
+  const [invitePending, startInvite] = useTransition()
   const [removePending, startRemove] = useTransition()
   const [removingId, setRemovingId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null)
+  const [confirmingCancelInvite, setConfirmingCancelInvite] = useState<string | null>(null)
+  const [cancellingInviteId, setCancellingInviteId] = useState<string | null>(null)
+  const [cancelPending, startCancel] = useTransition()
+  const [shareSheet, setShareSheet] = useState<{ open: boolean; url: string; email: string }>({ open: false, url: '', email: '' })
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const trimmedEmail = addEmail.trim().toLowerCase()
+  const trimmedEmail = inviteEmail.trim().toLowerCase()
   const validFormat = trimmedEmail.length > 0 && trimmedEmail.includes('@')
-  const resultMatches = lookupResult?.email === trimmedEmail
-
-  const lookup: LookupState =
-    !validFormat ? { kind: 'idle' }
-    : !resultMatches || !lookupResult ? { kind: 'checking' }
-    : lookupResult.ok ? { kind: 'ready', firstName: lookupResult.firstName, lastName: lookupResult.lastName, email: lookupResult.email }
-    : { kind: 'error', message: lookupResult.error }
 
   useEffect(() => {
-    getGroupDetails(groupId).then((data) => {
+    getGroupDetailsWithInvites(groupId).then((data) => {
       if (data) {
         setMembers(data.members)
         setIsOwner(data.isOwner)
+        setPendingInvites(data.pendingInvitations)
       }
       setLoaded(true)
     })
   }, [groupId])
 
-  useEffect(() => {
-    if (!validFormat) return
-    if (lookupResult?.email === trimmedEmail) return
-
-    const token = ++lookupTokenRef.current
-    const timer = setTimeout(async () => {
-      const result = await lookupUserToAdd(groupId, trimmedEmail)
-      if (token !== lookupTokenRef.current) return
-      if (result.ok) setLookupResult({ email: trimmedEmail, ok: true, firstName: result.firstName, lastName: result.lastName })
-      else setLookupResult({ email: trimmedEmail, ok: false, error: result.error })
-    }, LOOKUP_DEBOUNCE_MS)
-
-    return () => clearTimeout(timer)
-  }, [trimmedEmail, validFormat, groupId, lookupResult])
-
-  const handleAdd = (e: React.FormEvent) => {
+  const handleInvite = (e: React.FormEvent) => {
     e.preventDefault()
-    if (lookup.kind !== 'ready') return
-    setAddSuccess(false)
-    startAdd(async () => {
-      const result = await addMemberByEmail(groupId, lookup.email)
-      if ('error' in result) {
-        setLookupResult({ email: lookup.email, ok: false, error: result.error })
+    if (!validFormat) return
+    setInviteError(null)
+    startInvite(async () => {
+      const result = await createInvitation(groupId, trimmedEmail)
+      if (!result.ok) {
+        if (result.error === 'already_member') setInviteError(t(locale, 'groups.manage.alreadyMember'))
+        else setInviteError(t(locale, 'groups.manage.inviteError'))
         return
       }
-      setAddSuccess(true)
-      setAddEmail('')
-      lookupTokenRef.current++
-      setLookupResult(null)
-      const refreshed = await getGroupDetails(groupId)
-      if (refreshed) setMembers(refreshed.members)
+      setInviteEmail('')
+      setShareSheet({ open: true, url: result.inviteUrl, email: trimmedEmail })
+      const refreshed = await getGroupDetailsWithInvites(groupId)
+      if (refreshed) {
+        setMembers(refreshed.members)
+        setPendingInvites(refreshed.pendingInvitations)
+      }
     })
   }
 
@@ -98,8 +75,11 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
       try {
         const result = await removeMember(groupId, userId)
         if ('error' in result) return
-        const refreshed = await getGroupDetails(groupId)
-        if (refreshed) setMembers(refreshed.members)
+        const refreshed = await getGroupDetailsWithInvites(groupId)
+        if (refreshed) {
+          setMembers(refreshed.members)
+          setPendingInvites(refreshed.pendingInvitations)
+        }
       } finally {
         setRemovingId(null)
         setExpandedId(null)
@@ -108,9 +88,25 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
     })
   }
 
-  const toggleExpanded = (userId: string) => {
-    setExpandedId((prev) => (prev === userId ? null : userId))
+  const handleCancelInvite = (inviteId: string) => {
+    setCancellingInviteId(inviteId)
+    startCancel(async () => {
+      try {
+        await cancelInvitation(groupId, inviteId)
+        const refreshed = await getGroupDetailsWithInvites(groupId)
+        if (refreshed) setPendingInvites(refreshed.pendingInvitations)
+      } finally {
+        setCancellingInviteId(null)
+        setExpandedId(null)
+        setConfirmingCancelInvite(null)
+      }
+    })
+  }
+
+  const toggleExpanded = (id: string) => {
+    setExpandedId((prev) => (prev === id ? null : id))
     setConfirmingRemove(null)
+    setConfirmingCancelInvite(null)
   }
 
   return (
@@ -151,71 +147,44 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            onSubmit={handleAdd}
+            onSubmit={handleInvite}
             className='mt-8 flex flex-col gap-2'
           >
-            <label className='text-ink-faint text-xs'>{t(locale, 'groups.manage.addLabel')}</label>
+            <label className='text-ink-faint text-xs'>{t(locale, 'groups.manage.inviteLabel')}</label>
             <div className='flex gap-2'>
               <input
                 ref={inputRef}
                 type='email'
-                value={addEmail}
+                value={inviteEmail}
                 onChange={(e) => {
-                  setAddEmail(e.target.value)
-                  setAddSuccess(false)
+                  setInviteEmail(e.target.value)
+                  setInviteError(null)
                 }}
-                placeholder={t(locale, 'groups.manage.addPlaceholder')}
+                placeholder={t(locale, 'groups.manage.invitePlaceholder')}
                 className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 min-h-12 min-w-0 flex-1 rounded-xl border px-4 text-sm transition-all outline-none focus:ring-2'
               />
               <button
                 type='submit'
-                disabled={addPending || lookup.kind !== 'ready'}
+                disabled={invitePending || !validFormat}
                 className='bg-sage text-bg focus-visible:ring-sage/40 min-h-12 shrink-0 rounded-xl px-4 text-sm font-medium transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.97] disabled:opacity-50'
               >
-                {addPending ?
+                {invitePending ?
                   <motion.span
                     animate={{ opacity: [1, 0.4, 1] }}
                     transition={{ duration: 1, repeat: Infinity }}
                   >
                     …
                   </motion.span>
-                : t(locale, 'groups.manage.add')}
+                : t(locale, 'groups.manage.invite')}
               </button>
             </div>
-            {lookup.kind === 'checking' && (
-              <motion.p
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className='text-ink-faint text-xs'
-              >
-                {t(locale, 'groups.manage.looking')}
-              </motion.p>
-            )}
-            {lookup.kind === 'ready' && (
-              <motion.p
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className='text-sage text-xs'
-              >
-                {t(locale, 'groups.manage.found')} <span className='text-ink-soft'>{lookup.lastName ? `${lookup.firstName} ${lookup.lastName}` : lookup.firstName}</span>
-              </motion.p>
-            )}
-            {lookup.kind === 'error' && (
+            {inviteError && (
               <motion.p
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 className='text-clay text-xs'
               >
-                {lookup.message}
-              </motion.p>
-            )}
-            {addSuccess && lookup.kind === 'idle' && (
-              <motion.p
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className='text-sage text-xs'
-              >
-                {t(locale, 'groups.manage.added')}
+                {inviteError}
               </motion.p>
             )}
           </motion.form>
@@ -257,9 +226,37 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
                 />
               </motion.div>
             ))}
+            {pendingInvites.map((invite, index) => (
+              <motion.div
+                key={`invite-${invite.id}`}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.3 + (members.length + index) * 0.05, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <InviteRow
+                  invite={invite}
+                  locale={locale}
+                  expanded={expandedId === `invite-${invite.id}`}
+                  confirming={confirmingCancelInvite === invite.id}
+                  isCancelling={cancellingInviteId === invite.id}
+                  pending={cancelPending}
+                  onToggle={() => toggleExpanded(`invite-${invite.id}`)}
+                  onAskCancel={() => setConfirmingCancelInvite(invite.id)}
+                  onCancelCancel={() => setConfirmingCancelInvite(null)}
+                  onConfirmCancel={() => handleCancelInvite(invite.id)}
+                />
+              </motion.div>
+            ))}
           </div>
         }
       </motion.div>
+
+      <InviteShareSheet
+        open={shareSheet.open}
+        onClose={() => setShareSheet((s) => ({ ...s, open: false }))}
+        inviteUrl={shareSheet.url}
+        email={shareSheet.email}
+      />
     </div>
   )
 }
@@ -316,7 +313,9 @@ function MemberRow({
             <p className='text-ink truncate text-sm font-medium'>{member.lastName ? `${member.firstName} ${member.lastName}` : member.firstName}</p>
             <p className='text-ink-faint truncate text-xs'>{member.email}</p>
           </div>
-          <span className={`text-xs ${color.text} shrink-0`}>{member.role === 'owner' ? t(locale, 'groups.manage.owner') : t(locale, 'groups.manage.member')}</span>
+          <span className={`text-xs ${color.text} shrink-0`}>
+            {member.role === 'owner' ? t(locale, 'groups.manage.owner') : t(locale, 'groups.manage.member')}
+          </span>
         </div>
         {canRemove && (
           <button
@@ -357,6 +356,88 @@ function MemberRow({
                 className='text-clay hover:bg-clay/8 flex min-h-12 w-full items-center justify-between px-4 text-sm transition-colors disabled:opacity-50'
               >
                 <span>{t(locale, 'groups.manage.removeFromGroup')}</span>
+                <span>×</span>
+              </button>
+            }
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function InviteRow({
+  invite,
+  locale,
+  expanded,
+  confirming,
+  isCancelling,
+  pending,
+  onToggle,
+  onAskCancel,
+  onCancelCancel,
+  onConfirmCancel
+}: {
+  invite: PendingInvite
+  locale: Locale
+  expanded: boolean
+  confirming: boolean
+  isCancelling: boolean
+  pending: boolean
+  onToggle: () => void
+  onAskCancel: () => void
+  onCancelCancel: () => void
+  onConfirmCancel: () => void
+}) {
+  return (
+    <div className='border-line bg-paper overflow-hidden rounded-xl border opacity-70'>
+      <div className='flex items-stretch'>
+        <div className='flex flex-1 items-center gap-3 px-4 py-3'>
+          <div className='bg-line flex h-7 w-7 shrink-0 items-center justify-center rounded-full'>
+            <span className='text-ink-faint text-xs'>✉</span>
+          </div>
+          <div className='min-w-0 flex-1'>
+            <p className='text-ink truncate text-sm'>{invite.invitedEmail}</p>
+          </div>
+          <span className='text-ink-faint shrink-0 text-xs'>{t(locale, 'groups.manage.invited')}</span>
+        </div>
+        <button
+          type='button'
+          onClick={onToggle}
+          aria-label={t(locale, 'groups.manage.actions')}
+          aria-expanded={expanded}
+          className={`text-ink-faint hover:text-ink-soft border-line flex w-16 shrink-0 items-center justify-center border-l text-2xl leading-none transition-colors ${expanded ? 'bg-line/30' : ''}`}
+        >
+          ⋯
+        </button>
+      </div>
+
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            key='actions'
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className='border-line border-t'
+          >
+            {confirming ?
+              <ConfirmRow
+                label={t(locale, 'groups.manage.confirmCancelInvite')}
+                busy={isCancelling}
+                pending={pending}
+                locale={locale}
+                onCancel={onCancelCancel}
+                onConfirm={onConfirmCancel}
+              />
+            : <button
+                type='button'
+                disabled={pending}
+                onClick={onAskCancel}
+                className='text-clay hover:bg-clay/8 flex min-h-12 w-full items-center justify-between px-4 text-sm transition-colors disabled:opacity-50'
+              >
+                <span>{t(locale, 'groups.manage.cancelInvite')}</span>
                 <span>×</span>
               </button>
             }

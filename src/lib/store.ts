@@ -2,7 +2,7 @@ import 'server-only'
 
 import { and, eq, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
-import { db, events, groupMembers, groups, preferences, processedOps, users } from './db'
+import { db, events, groupInvitations, groupMembers, groups, preferences, processedOps, users } from './db'
 import type { AirplaneEvent, Group, GroupMember, GroupRole, Locale, Palette, PendingOp, Theme } from './types'
 
 const groupMembersForCount = alias(groupMembers, 'group_members_for_count')
@@ -115,6 +115,177 @@ export async function removeGroupMember(groupId: string, userId: string): Promis
       .set({ activeGroupId: null })
       .where(and(eq(preferences.userId, userId), eq(preferences.activeGroupId, groupId)))
   })
+}
+
+// --- Invitations ---
+
+export async function createInvitation(params: {
+  id: string
+  token: string
+  groupId: string
+  invitedEmail: string
+  invitedByUserId: string
+  expiresAt: number
+}): Promise<void> {
+  await db.insert(groupInvitations).values({
+    ...params,
+    status: 'pending',
+    createdAt: Date.now()
+  })
+}
+
+export type InvitationDetails = {
+  id: string
+  token: string
+  groupId: string
+  groupName: string
+  invitedEmail: string
+  invitedByFirstName: string
+  invitedByImage: string | null
+  status: 'pending' | 'accepted' | 'rejected' | 'cancelled'
+  createdAt: number
+  expiresAt: number
+}
+
+export async function readInvitationByToken(token: string): Promise<InvitationDetails | null> {
+  const row = await db
+    .select({
+      id: groupInvitations.id,
+      token: groupInvitations.token,
+      groupId: groupInvitations.groupId,
+      groupName: groups.name,
+      invitedEmail: groupInvitations.invitedEmail,
+      invitedByFirstName: users.firstName,
+      invitedByName: users.name,
+      invitedByImage: users.image,
+      status: groupInvitations.status,
+      createdAt: groupInvitations.createdAt,
+      expiresAt: groupInvitations.expiresAt
+    })
+    .from(groupInvitations)
+    .innerJoin(groups, eq(groups.id, groupInvitations.groupId))
+    .innerJoin(users, eq(users.id, groupInvitations.invitedByUserId))
+    .where(eq(groupInvitations.token, token))
+    .limit(1)
+  const found = row[0]
+  if (!found) return null
+  return {
+    id: found.id,
+    token: found.token,
+    groupId: found.groupId,
+    groupName: found.groupName,
+    invitedEmail: found.invitedEmail,
+    invitedByFirstName: found.invitedByFirstName ?? found.invitedByName.split(' ')[0] ?? found.invitedByName,
+    invitedByImage: found.invitedByImage,
+    status: found.status,
+    createdAt: found.createdAt,
+    expiresAt: found.expiresAt
+  }
+}
+
+export type PendingInvitation = {
+  id: string
+  invitedEmail: string
+  createdAt: number
+  expiresAt: number
+}
+
+export async function readPendingInvitationsForGroup(groupId: string): Promise<PendingInvitation[]> {
+  return db
+    .select({
+      id: groupInvitations.id,
+      invitedEmail: groupInvitations.invitedEmail,
+      createdAt: groupInvitations.createdAt,
+      expiresAt: groupInvitations.expiresAt
+    })
+    .from(groupInvitations)
+    .where(and(eq(groupInvitations.groupId, groupId), eq(groupInvitations.status, 'pending'), sql`${groupInvitations.expiresAt} > ${Date.now()}`))
+    .orderBy(groupInvitations.createdAt)
+}
+
+export async function acceptInvitation(
+  token: string,
+  userId: string
+): Promise<
+  { ok: true; groupId: string; groupName: string } | { ok: false; error: 'not_found' | 'expired' | 'already_used' | 'cancelled' | 'already_member' }
+> {
+  return db.transaction(async (tx) => {
+    const row = await tx
+      .select({
+        id: groupInvitations.id,
+        groupId: groupInvitations.groupId,
+        groupName: groups.name,
+        status: groupInvitations.status,
+        expiresAt: groupInvitations.expiresAt
+      })
+      .from(groupInvitations)
+      .innerJoin(groups, eq(groups.id, groupInvitations.groupId))
+      .where(eq(groupInvitations.token, token))
+      .limit(1)
+
+    const inv = row[0]
+    if (!inv) return { ok: false as const, error: 'not_found' as const }
+    if (inv.status === 'cancelled') return { ok: false as const, error: 'cancelled' as const }
+    if (inv.status !== 'pending') return { ok: false as const, error: 'already_used' as const }
+    if (inv.expiresAt <= Date.now()) return { ok: false as const, error: 'expired' as const }
+
+    const existing = await tx
+      .select({ userId: groupMembers.userId })
+      .from(groupMembers)
+      .where(and(eq(groupMembers.groupId, inv.groupId), eq(groupMembers.userId, userId)))
+      .limit(1)
+    if (existing.length > 0) return { ok: false as const, error: 'already_member' as const }
+
+    await tx.update(groupInvitations).set({ status: 'accepted' }).where(eq(groupInvitations.id, inv.id))
+    await tx.insert(groupMembers).values({ groupId: inv.groupId, userId, role: 'member', joinedAt: Date.now() })
+    await tx
+      .insert(preferences)
+      .values({ userId, activeGroupId: inv.groupId })
+      .onConflictDoUpdate({ target: preferences.userId, set: { activeGroupId: inv.groupId } })
+
+    return { ok: true as const, groupId: inv.groupId, groupName: inv.groupName }
+  })
+}
+
+export async function rejectInvitation(
+  token: string
+): Promise<{ ok: true } | { ok: false; error: 'not_found' | 'expired' | 'already_used' | 'cancelled' }> {
+  return db.transaction(async (tx) => {
+    const row = await tx
+      .select({ id: groupInvitations.id, status: groupInvitations.status, expiresAt: groupInvitations.expiresAt })
+      .from(groupInvitations)
+      .where(eq(groupInvitations.token, token))
+      .limit(1)
+
+    const inv = row[0]
+    if (!inv) return { ok: false as const, error: 'not_found' as const }
+    if (inv.status === 'cancelled') return { ok: false as const, error: 'cancelled' as const }
+    if (inv.status !== 'pending') return { ok: false as const, error: 'already_used' as const }
+    if (inv.expiresAt <= Date.now()) return { ok: false as const, error: 'expired' as const }
+
+    await tx.update(groupInvitations).set({ status: 'rejected' }).where(eq(groupInvitations.id, inv.id))
+    return { ok: true as const }
+  })
+}
+
+export async function cancelInvitation(invitationId: string): Promise<void> {
+  await db.update(groupInvitations).set({ status: 'cancelled' }).where(eq(groupInvitations.id, invitationId))
+}
+
+export async function readExistingPendingInvitation(groupId: string, email: string): Promise<{ id: string; token: string } | null> {
+  const row = await db
+    .select({ id: groupInvitations.id, token: groupInvitations.token })
+    .from(groupInvitations)
+    .where(
+      and(
+        eq(groupInvitations.groupId, groupId),
+        eq(groupInvitations.invitedEmail, email),
+        eq(groupInvitations.status, 'pending'),
+        sql`${groupInvitations.expiresAt} > ${Date.now()}`
+      )
+    )
+    .limit(1)
+  return row[0] ?? null
 }
 
 export async function findUserByEmail(email: string): Promise<{ id: string; firstName: string; lastName: string | null; email: string } | null> {

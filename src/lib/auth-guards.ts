@@ -67,6 +67,7 @@ export async function redirectAuthenticatedUser(nextPathValue: unknown): Promise
   if (!user) return
 
   const nextPath = safeNextPath(nextPathValue)
+  if (nextPath.startsWith('/invite/')) redirect(nextPath)
   if (nextPath === '/groups') redirect('/groups')
 
   const activeGroupId = await readActiveGroupId(user.id)

@@ -2,29 +2,37 @@
 
 import { headers } from 'next/headers'
 import { auth } from './lib/auth'
+import { sendInviteEmail } from './lib/email'
 import type { SyncSnapshot } from './lib/offline-model'
 import {
-  addGroupMember,
+  acceptInvitation as acceptInvitationInStore,
   applyOps,
+  cancelInvitation as cancelInvitationInStore,
   createGroup,
+  createInvitation as createInvitationInStore,
   deleteGroup as deleteGroupInStore,
   findUserByEmail,
   leaveGroup as leaveGroupInStore,
   readActiveGroupId,
   readEventsForMember,
+  readExistingPendingInvitation,
   readGroupForMember,
   readGroupMembersForMember,
   readGroupMembership,
   readGroupsForUser,
+  readInvitationByToken,
   readLocale,
   readPalette,
+  readPendingInvitationsForGroup,
   readTheme,
+  rejectInvitation as rejectInvitationInStore,
   removeGroupMember,
   updateGroup as updateGroupInStore,
   writeActiveGroupId
 } from './lib/store'
 import type { Group, GroupMember, PendingOp } from './lib/types'
 
+const INVITE_EXPIRY_MS = 24 * 60 * 60 * 1000
 const MAX_SYNC_OPS = 250
 const MAX_FUTURE_TS_MS = 5 * 60 * 1000
 const MAX_PAST_TS_MS = 7 * 24 * 60 * 60 * 1000
@@ -143,10 +151,12 @@ export async function updateGroup(groupId: string, updates: { name?: string }): 
   return { success: true }
 }
 
-export async function lookupUserToAdd(
+// --- Invitations ---
+
+export async function createInvitation(
   groupId: string,
   email: string
-): Promise<{ ok: true; firstName: string; lastName: string | null; email: string } | { ok: false; error: string }> {
+): Promise<{ ok: true; token: string; inviteUrl: string } | { ok: false; error: string }> {
   const user = await getSessionUser()
   if (!user) return { ok: false, error: 'Não autenticado' }
 
@@ -154,30 +164,112 @@ export async function lookupUserToAdd(
   if (!trimmed || !trimmed.includes('@')) return { ok: false, error: 'E-mail inválido' }
 
   const membership = await readGroupMembership(groupId, user.id)
-  if (membership?.role !== 'owner') return { ok: false, error: 'Apenas o dono pode adicionar membros' }
+  if (membership?.role !== 'owner') return { ok: false, error: 'Apenas o dono pode convidar' }
 
-  const target = await findUserByEmail(trimmed)
-  if (!target) return { ok: false, error: 'Usuário não encontrado' }
+  const existingMember = await findUserByEmail(trimmed)
+  if (existingMember && (await readGroupMembership(groupId, existingMember.id))) {
+    return { ok: false, error: 'already_member' }
+  }
 
-  if (await readGroupMembership(groupId, target.id)) return { ok: false, error: 'Usuário já está no grupo' }
+  const existing = await readExistingPendingInvitation(groupId, trimmed)
+  if (existing) {
+    const baseUrl = process.env.BETTER_AUTH_URL ?? 'http://localhost:3000'
+    return { ok: true, token: existing.token, inviteUrl: `${baseUrl}/invite/${existing.token}` }
+  }
 
-  return { ok: true, firstName: target.firstName, lastName: target.lastName, email: target.email }
+  const group = await readGroupForMember(groupId, user.id)
+  if (!group) return { ok: false, error: 'Grupo não encontrado' }
+
+  const id = crypto.randomUUID()
+  const token = crypto.randomUUID()
+  const expiresAt = Date.now() + INVITE_EXPIRY_MS
+  const baseUrl = process.env.BETTER_AUTH_URL ?? 'http://localhost:3000'
+  const inviteUrl = `${baseUrl}/invite/${token}`
+
+  await createInvitationInStore({ id, token, groupId, invitedEmail: trimmed, invitedByUserId: user.id, expiresAt })
+
+  const inviterName = user.firstName ?? user.name.split(' ')[0] ?? user.name
+  try {
+    await sendInviteEmail(trimmed, inviterName, group.name, inviteUrl)
+  } catch {
+    // email send failure is not fatal — user can share the link manually
+  }
+
+  return { ok: true, token, inviteUrl }
 }
 
-export async function addMemberByEmail(groupId: string, email: string): Promise<{ success: true } | { error: string }> {
+export async function getInvitationDetails(token: string) {
+  const inv = await readInvitationByToken(token)
+  if (!inv) return { ok: false as const, error: 'not_found' as const }
+  const expired = inv.status === 'pending' && inv.expiresAt <= Date.now()
+  return {
+    ok: true as const,
+    groupName: inv.groupName,
+    invitedByFirstName: inv.invitedByFirstName,
+    invitedByImage: inv.invitedByImage,
+    invitedEmail: inv.invitedEmail,
+    status: inv.status,
+    expired
+  }
+}
+
+export async function acceptInvitation(token: string): Promise<{ ok: true; groupId: string; groupName: string } | { ok: false; error: string }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false, error: 'Não autenticado' }
+
+  const inv = await readInvitationByToken(token)
+  if (!inv) return { ok: false, error: 'not_found' }
+  if (user.email.toLowerCase() !== inv.invitedEmail.toLowerCase()) {
+    return { ok: false, error: 'email_mismatch' }
+  }
+
+  const result = await acceptInvitationInStore(token, user.id)
+  return result
+}
+
+export async function rejectInvitation(token: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false, error: 'Não autenticado' }
+
+  const inv = await readInvitationByToken(token)
+  if (!inv) return { ok: false, error: 'not_found' }
+  if (user.email.toLowerCase() !== inv.invitedEmail.toLowerCase()) {
+    return { ok: false, error: 'email_mismatch' }
+  }
+
+  return rejectInvitationInStore(token)
+}
+
+export async function cancelInvitation(groupId: string, invitationId: string): Promise<{ success: true } | { error: string }> {
   const user = await getSessionUser()
   if (!user) return { error: 'Não autenticado' }
 
   const membership = await readGroupMembership(groupId, user.id)
-  if (membership?.role !== 'owner') return { error: 'Apenas o dono pode adicionar membros' }
+  if (membership?.role !== 'owner') return { error: 'Apenas o dono pode cancelar convites' }
 
-  const target = await findUserByEmail(email.trim().toLowerCase())
-  if (!target) return { error: 'Usuário não encontrado' }
-
-  if (await readGroupMembership(groupId, target.id)) return { error: 'Usuário já está no grupo' }
-
-  await addGroupMember(groupId, target.id)
+  await cancelInvitationInStore(invitationId)
   return { success: true }
+}
+
+export async function getGroupDetailsWithInvites(groupId: string): Promise<{
+  name: string
+  members: GroupMember[]
+  isOwner: boolean
+  pendingInvitations: { id: string; invitedEmail: string; createdAt: number; expiresAt: number }[]
+} | null> {
+  const user = await getSessionUser()
+  if (!user) return null
+
+  const membership = await readGroupMembership(groupId, user.id)
+  if (!membership) return null
+
+  const [group, members] = await Promise.all([readGroupForMember(groupId, user.id), readGroupMembersForMember(groupId, user.id)])
+  if (!group) return null
+
+  const isOwner = membership.role === 'owner'
+  const pendingInvitations = isOwner ? await readPendingInvitationsForGroup(groupId) : []
+
+  return { name: group.name, members, isOwner, pendingInvitations }
 }
 
 export async function deleteGroup(groupId: string): Promise<{ success: true } | { error: string }> {

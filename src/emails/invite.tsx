@@ -1,4 +1,4 @@
-import { Body, Container, Font, Head, Heading, Hr, Html, Preview, Section, Text } from '@react-email/components'
+import { Body, Button, Container, Font, Head, Heading, Hr, Html, Preview, Text } from '@react-email/components'
 import { t, tf } from '../lib/i18n'
 import type { Locale } from '../lib/types'
 
@@ -14,9 +14,18 @@ const COLORS = {
 
 const FONT_DISPLAY = 'Fraunces, "Times New Roman", Georgia, serif'
 const FONT_BODY = '"Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
-const FONT_MONO = '"Geist Mono", "SF Mono", Menlo, Consolas, monospace'
 
-export function OtpLoginEmail({ otp, expiresInMinutes = 5, locale = 'pt' }: { otp: string; expiresInMinutes?: number; locale?: Locale }) {
+export function InviteEmail({
+  inviterName,
+  groupName,
+  inviteUrl,
+  locale = 'pt'
+}: {
+  inviterName: string
+  groupName: string
+  inviteUrl: string
+  locale?: Locale
+}) {
   const htmlLang = locale === 'pt' ? 'pt-BR' : 'en'
 
   return (
@@ -33,7 +42,7 @@ export function OtpLoginEmail({ otp, expiresInMinutes = 5, locale = 'pt' }: { ot
           fontStyle='italic'
         />
       </Head>
-      <Preview>{tf(locale, 'email.otpPreview', { otp })}</Preview>
+      <Preview>{tf(locale, 'email.invitePreview', { name: inviterName, group: groupName })}</Preview>
       <Body style={{ backgroundColor: COLORS.bg, margin: 0, padding: '32px 16px', fontFamily: FONT_BODY, color: COLORS.ink }}>
         <Container
           style={{
@@ -46,7 +55,7 @@ export function OtpLoginEmail({ otp, expiresInMinutes = 5, locale = 'pt' }: { ot
           }}
         >
           <Text style={{ margin: 0, fontFamily: FONT_DISPLAY, fontStyle: 'italic', fontSize: '14px', color: COLORS.inkFaint }}>
-            {t(locale, 'email.otpBrand')}
+            {t(locale, 'email.inviteBrand')}
           </Text>
 
           <Heading
@@ -61,49 +70,45 @@ export function OtpLoginEmail({ otp, expiresInMinutes = 5, locale = 'pt' }: { ot
               color: COLORS.ink
             }}
           >
-            {t(locale, 'email.otpHeadingLine1')}
+            {t(locale, 'email.inviteHeadingLine1')}
             <br />
-            <span style={{ color: COLORS.sage, fontStyle: 'italic' }}>{t(locale, 'email.otpHeadingItalic')}</span>
+            <span style={{ color: COLORS.sage, fontStyle: 'italic' }}>{t(locale, 'email.inviteHeadingItalic')}</span>
           </Heading>
 
           <Text style={{ margin: '12px 0 0 0', fontSize: '14px', color: COLORS.inkFaint, lineHeight: '1.5' }}>
-            {tf(locale, 'email.otpBody', { n: expiresInMinutes })}
+            {tf(locale, 'email.inviteBody', { name: inviterName, group: groupName })}
           </Text>
 
-          <Section
+          <Button
+            href={inviteUrl}
             style={{
-              margin: '32px 0 0 0',
-              padding: '24px',
-              backgroundColor: COLORS.bg,
-              borderRadius: '14px',
-              textAlign: 'center'
+              display: 'block',
+              margin: '28px 0 0 0',
+              padding: '14px 28px',
+              backgroundColor: COLORS.ink,
+              color: COLORS.paper,
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontFamily: FONT_BODY,
+              fontWeight: 500,
+              textAlign: 'center',
+              textDecoration: 'none'
             }}
           >
-            <Text
-              style={{
-                margin: 0,
-                fontFamily: FONT_MONO,
-                fontSize: '34px',
-                letterSpacing: '0.4em',
-                color: COLORS.ink,
-                fontWeight: 500
-              }}
-            >
-              {otp}
-            </Text>
-          </Section>
+            {t(locale, 'email.inviteButton')}
+          </Button>
 
           <Hr style={{ margin: '32px 0 20px 0', border: 'none', borderTop: `1px solid ${COLORS.line}` }} />
 
-          <Text style={{ margin: 0, fontSize: '12px', color: COLORS.inkFaint, lineHeight: '1.6' }}>{t(locale, 'email.otpFooter')}</Text>
+          <Text style={{ margin: 0, fontSize: '12px', color: COLORS.inkFaint, lineHeight: '1.6' }}>{t(locale, 'email.inviteFooter')}</Text>
         </Container>
 
         <Text style={{ margin: '20px auto 0 auto', maxWidth: '420px', textAlign: 'center', fontSize: '11px', color: COLORS.inkFaint }}>
-          {t(locale, 'email.otpTagline')}
+          {t(locale, 'email.inviteTagline')}
         </Text>
       </Body>
     </Html>
   )
 }
 
-export default OtpLoginEmail
+export default InviteEmail
