@@ -176,14 +176,52 @@ function broadcastState(state: AppState): void {
   } satisfies BroadcastPayload)
 }
 
-function isValidBroadcast(value: unknown): value is BroadcastPayload {
-  if (typeof value !== 'object' || value === null) return false
-  const v = value as Record<string, unknown>
-  if (v.identity !== null && typeof v.identity !== 'string') return false
-  if (v.activeGroupId !== null && typeof v.activeGroupId !== 'string') return false
-  if (!Array.isArray(v.baseEvents)) return false
-  if (!Array.isArray(v.groupMembers)) return false
-  return true
+function parseBroadcast(value: unknown): BroadcastPayload | null {
+  if (typeof value !== 'object' || value === null) return null
+  const v = value as Partial<BroadcastPayload>
+  if (v.identity !== null && typeof v.identity !== 'string') return null
+  if (v.activeGroupId !== null && typeof v.activeGroupId !== 'string') return null
+  if (!isTheme(v.baseTheme)) return null
+  if (!isPalette(v.basePalette)) return null
+  if (!isLocale(v.baseLocale) && v.baseLocale !== undefined) return null
+  if (v.lastSyncOk !== true && v.lastSyncOk !== false && v.lastSyncOk !== null) return null
+  if (!Array.isArray(v.baseEvents) || !v.baseEvents.every(isEvent)) return null
+  if (!Array.isArray(v.groupMembers)) return null
+  return {
+    identity: v.identity ?? null,
+    activeGroupId: v.activeGroupId ?? null,
+    groupMembers: v.groupMembers,
+    baseEvents: v.baseEvents,
+    baseTheme: v.baseTheme,
+    basePalette: v.basePalette,
+    baseLocale: isLocale(v.baseLocale) ? v.baseLocale : 'pt',
+    lastSyncOk: v.lastSyncOk ?? null
+  }
+}
+
+function isTheme(v: unknown): v is Theme {
+  return v === 'light' || v === 'dark' || v === 'system'
+}
+
+function isPalette(v: unknown): v is Palette {
+  return v === 'default' || v === 'ocean' || v === 'lavender' || v === 'earth' || v === 'blossom' || v === 'sky'
+}
+
+function isLocale(v: unknown): v is Locale {
+  return v === 'pt' || v === 'en'
+}
+
+function isEvent(v: unknown): v is AirplaneEvent {
+  if (typeof v !== 'object' || v === null) return false
+  const e = v as Partial<AirplaneEvent>
+  return (
+    typeof e.id === 'string' &&
+    typeof e.who === 'string' &&
+    e.who.length > 0 &&
+    typeof e.ts === 'number' &&
+    Number.isFinite(e.ts) &&
+    e.ts > 0
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -411,8 +449,9 @@ function createAppStore() {
         if (typeof BroadcastChannel !== 'undefined') {
           bc = new BroadcastChannel('airplanes-offline')
           bc.addEventListener('message', (event) => {
-            if (!isValidBroadcast(event.data)) return
-            set(event.data)
+            const incoming = parseBroadcast(event.data)
+            if (!incoming) return
+            set(incoming)
           })
         }
       }
