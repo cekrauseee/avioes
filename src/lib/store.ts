@@ -1,8 +1,9 @@
 import 'server-only'
 
-import { and, eq, sql } from 'drizzle-orm'
+import crypto from 'crypto'
+import { and, eq, gt, like, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
-import { db, events, groupInvitations, groupMembers, groups, preferences, processedOps, users } from './db'
+import { db, accounts, events, groupInvitations, groupMembers, groups, preferences, processedOps, users, verifications } from './db'
 import type { AirplaneEvent, Group, GroupMember, GroupRole, Locale, Palette, PendingOp, Theme } from './types'
 
 const groupMembersForCount = alias(groupMembers, 'group_members_for_count')
@@ -415,4 +416,88 @@ function parseServerEventId(id: string): number | null {
   if (!id.startsWith('server:')) return null
   const n = Number(id.slice('server:'.length))
   return Number.isInteger(n) && n > 0 ? n : null
+}
+
+// --- Password tokens ---
+
+const PW_TOKEN_EXPIRY_MS = 15 * 60 * 1000
+
+type PasswordTokenType = 'change' | 'create'
+
+function pwIdentifier(email: string, type: PasswordTokenType): string {
+  return `pw-${type}:${email.toLowerCase()}`
+}
+
+export async function createPasswordToken(email: string, type: PasswordTokenType): Promise<string> {
+  const identifier = pwIdentifier(email, type)
+  const token = crypto.randomUUID()
+  const now = new Date()
+  const expiresAt = new Date(now.getTime() + PW_TOKEN_EXPIRY_MS)
+
+  await db.delete(verifications).where(eq(verifications.identifier, identifier))
+
+  await db.insert(verifications).values({
+    id: crypto.randomUUID(),
+    identifier,
+    value: token,
+    expiresAt,
+    createdAt: now,
+    updatedAt: now
+  })
+
+  return token
+}
+
+export async function validatePasswordToken(token: string, type: PasswordTokenType): Promise<{ email: string } | null> {
+  const prefix = `pw-${type}:`
+  const row = await db
+    .select({ identifier: verifications.identifier, expiresAt: verifications.expiresAt })
+    .from(verifications)
+    .where(and(eq(verifications.value, token), like(verifications.identifier, `${prefix}%`)))
+    .limit(1)
+
+  const found = row[0]
+  if (!found) return null
+  if (found.expiresAt <= new Date()) return null
+
+  const email = found.identifier.slice(prefix.length)
+  return { email }
+}
+
+export async function consumePasswordToken(token: string, type: PasswordTokenType): Promise<void> {
+  const prefix = `pw-${type}:`
+  await db.delete(verifications).where(and(eq(verifications.value, token), like(verifications.identifier, `${prefix}%`)))
+}
+
+export async function userHasCredentialAccount(email: string): Promise<boolean> {
+  const row = await db
+    .select({ id: accounts.id })
+    .from(accounts)
+    .innerJoin(users, eq(users.id, accounts.userId))
+    .where(and(eq(users.email, email.toLowerCase()), eq(accounts.providerId, 'credential')))
+    .limit(1)
+  return row.length > 0
+}
+
+export async function countRecentPasswordTokens(email: string, type: PasswordTokenType): Promise<number> {
+  const identifier = pwIdentifier(email, type)
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+  const row = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(verifications)
+    .where(and(eq(verifications.identifier, identifier), gt(verifications.createdAt, oneHourAgo)))
+  return row[0]?.count ?? 0
+}
+
+export async function createCredentialAccount(userId: string, passwordHash: string): Promise<void> {
+  const now = new Date()
+  await db.insert(accounts).values({
+    id: crypto.randomUUID(),
+    accountId: userId,
+    providerId: 'credential',
+    userId,
+    password: passwordHash,
+    createdAt: now,
+    updatedAt: now
+  })
 }

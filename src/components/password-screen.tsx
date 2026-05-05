@@ -3,7 +3,7 @@
 import { motion } from 'motion/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
-import { setNewPassword } from '../actions'
+import { requestPasswordChange, requestPasswordCreation } from '../actions'
 import { authClient } from '../lib/auth-client'
 import { t } from '../lib/i18n'
 import { useNavDirection } from '../lib/nav-direction'
@@ -12,6 +12,7 @@ import type { Locale } from '../lib/types'
 import { Skel } from './skeleton'
 
 type Mode = 'set' | 'change' | null
+type Step = 'request' | 'sent' | 'confirm-unlink' | 'done'
 
 export function PasswordScreen() {
   const router = useRouter()
@@ -22,12 +23,9 @@ export function PasswordScreen() {
   const locale = selectLocale(state)
 
   const [mode, setMode] = useState<Mode>(null)
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword_] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, start] = useTransition()
-  const [step, setStep] = useState<'form' | 'confirm-unlink' | 'done'>('form')
+  const [step, setStep] = useState<Step>('request')
   const [unlinking, setUnlinking] = useState(false)
 
   const goBackToAccount = () => {
@@ -43,50 +41,21 @@ export function PasswordScreen() {
     })
   }, [])
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (newPassword.length < 8) {
-      setError(t(locale, 'password.tooShort'))
-      return
-    }
-    if (newPassword !== confirmPassword) {
-      setError(t(locale, 'password.mismatch'))
-      return
-    }
-    setError(null)
-
-    start(async () => {
-      try {
-        if (mode === 'set') {
-          const res = await setNewPassword(newPassword)
-          if (!res.ok) {
-            setError(res.error)
-            return
-          }
-        } else {
-          const res = await authClient.changePassword({
-            currentPassword,
-            newPassword
-          })
-          if (res.error) {
-            setError(res.error.message ?? t(locale, 'password.changeFailed'))
-            return
-          }
-        }
-        if (isGoogleReason) {
-          setStep('confirm-unlink')
-        } else {
-          setStep('done')
-        }
-      } catch {
-        setError(t(locale, 'password.changeFailed'))
-      }
-    })
-  }
-
   const isGoogleReason = reason === 'google'
   const heading = headingFor(mode, isGoogleReason, locale)
   const subtitle = subtitleFor(mode, isGoogleReason, locale)
+
+  const handleRequest = () => {
+    setError(null)
+    start(async () => {
+      const res = mode === 'change' ? await requestPasswordChange() : await requestPasswordCreation()
+      if (!res.ok) {
+        setError(res.error)
+        return
+      }
+      setStep('sent')
+    })
+  }
 
   const handleUnlinkGoogle = async () => {
     setUnlinking(true)
@@ -101,13 +70,45 @@ export function PasswordScreen() {
     setUnlinking(false)
   }
 
+  if (step === 'sent') {
+    return (
+      <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
+        <Header onBack={goBackToAccount} locale={locale} />
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+          className='mt-12'
+        >
+          <h1 className='font-display text-[36px] leading-[0.93] tracking-tight'>
+            {t(locale, 'password.sentLine1')}
+            <br />
+            <span className='text-sage italic'>{t(locale, 'password.sentItalic')}</span>
+          </h1>
+          <p className='text-ink-faint mt-3 text-sm'>{t(locale, 'password.sentBody')}</p>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          className='mt-10'
+        >
+          <button
+            type='button'
+            onClick={goBackToAccount}
+            className='border-line bg-paper text-ink-soft hover:bg-line/40 flex h-12 w-full items-center justify-center rounded-xl border text-sm transition-all active:scale-[0.98]'
+          >
+            {t(locale, 'password.backToAccount')}
+          </button>
+        </motion.div>
+      </div>
+    )
+  }
+
   if (step === 'confirm-unlink') {
     return (
       <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
-        <Header
-          onBack={goBackToAccount}
-          locale={locale}
-        />
+        <Header onBack={goBackToAccount} locale={locale} />
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -167,10 +168,7 @@ export function PasswordScreen() {
     const doneIsUnlinked = isGoogleReason
     return (
       <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
-        <Header
-          onBack={goBackToAccount}
-          locale={locale}
-        />
+        <Header onBack={goBackToAccount} locale={locale} />
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -204,10 +202,7 @@ export function PasswordScreen() {
 
   return (
     <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
-      <Header
-        onBack={goBackToAccount}
-        locale={locale}
-      />
+      <Header onBack={goBackToAccount} locale={locale} />
 
       {mode === null ?
         <div className='mt-12 flex flex-col gap-10'>
@@ -216,17 +211,7 @@ export function PasswordScreen() {
             <Skel className='h-10 w-36' />
             <Skel className='mt-1 h-4 w-56' />
           </div>
-          <div className='flex flex-col gap-4'>
-            <div className='flex flex-col gap-1.5'>
-              <Skel className='h-3 w-20' />
-              <Skel className='h-11 w-full rounded-xl' />
-            </div>
-            <div className='flex flex-col gap-1.5'>
-              <Skel className='h-3 w-28' />
-              <Skel className='h-11 w-full rounded-xl' />
-            </div>
-            <Skel className='mt-2 h-12 w-full rounded-xl' />
-          </div>
+          <Skel className='h-12 w-full rounded-xl' />
         </div>
       : <>
           <motion.div
@@ -243,52 +228,12 @@ export function PasswordScreen() {
             <p className='text-ink-faint mt-3 text-sm'>{subtitle}</p>
           </motion.div>
 
-          <motion.form
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            onSubmit={handleSubmit}
             className='mt-10 flex flex-col gap-4'
           >
-            {mode === 'change' && (
-              <div className='flex flex-col gap-1.5'>
-                <label className='text-ink-faint text-xs'>{t(locale, 'password.currentLabel')}</label>
-                <input
-                  type='password'
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder='••••••••'
-                  autoComplete='current-password'
-                  autoFocus
-                  className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none focus:ring-2'
-                />
-              </div>
-            )}
-
-            <div className='flex flex-col gap-1.5'>
-              <label className='text-ink-faint text-xs'>{t(locale, 'password.newLabel')}</label>
-              <input
-                type='password'
-                value={newPassword}
-                onChange={(e) => setNewPassword_(e.target.value)}
-                placeholder='••••••••'
-                autoComplete='new-password'
-                autoFocus={mode === 'set'}
-                className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none focus:ring-2'
-              />
-            </div>
-            <div className='flex flex-col gap-1.5'>
-              <label className='text-ink-faint text-xs'>{t(locale, 'password.confirmLabel')}</label>
-              <input
-                type='password'
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder='••••••••'
-                autoComplete='new-password'
-                className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none focus:ring-2'
-              />
-            </div>
-
             {error && (
               <motion.p
                 initial={{ opacity: 0, y: -4 }}
@@ -300,22 +245,23 @@ export function PasswordScreen() {
             )}
 
             <button
-              type='submit'
+              type='button'
               disabled={pending}
-              className='bg-sage text-bg mt-2 flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
+              onClick={handleRequest}
+              className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
             >
               {pending ?
                 <motion.span
                   animate={{ opacity: [1, 0.4, 1] }}
                   transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
                 >
-                  {t(locale, 'password.saving')}
+                  {t(locale, 'password.requesting')}
                 </motion.span>
               : mode === 'set' ?
-                t(locale, 'password.createButton')
-              : t(locale, 'password.changeButton')}
+                t(locale, 'password.requestCreateBtn')
+              : t(locale, 'password.requestChangeBtn')}
             </button>
-          </motion.form>
+          </motion.div>
         </>
       }
     </div>
