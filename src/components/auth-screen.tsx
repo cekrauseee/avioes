@@ -486,9 +486,12 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
             transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
             onSubmit={
               step === 'email' ? submitEmail
-              : step === 'name' ? handleSignUpWithName
-              : step === 'otp' ? handleOtpSubmit
-              : step === 'method' ? (e) => e.preventDefault()
+              : step === 'name' ?
+                handleSignUpWithName
+              : step === 'otp' ?
+                handleOtpSubmit
+              : step === 'method' ?
+                (e) => e.preventDefault()
               : handlePassword
             }
             className='mt-10 flex flex-col gap-4'
@@ -626,7 +629,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                         }}
                         autoFocus
                         placeholder='••••••'
-                        className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 font-mono w-full rounded-xl border px-4 py-3 text-center text-2xl tracking-[0.4em] transition-all outline-none focus:ring-2 disabled:opacity-50'
+                        className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 w-full rounded-xl border px-4 py-3 text-center font-mono text-2xl tracking-[0.4em] transition-all outline-none focus:ring-2 disabled:opacity-50'
                       />
                     </div>
                     <button
@@ -635,9 +638,12 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                       disabled={(resendSecondsLeft > 0 && !otpExhausted) || otpSending}
                       className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60'
                     >
-                      {otpSending ? 'enviando…'
-                      : otpExhausted ? 'pedir um novo código'
-                      : resendSecondsLeft > 0 ? `reenviar em ${resendSecondsLeft}s`
+                      {otpSending ?
+                        'enviando…'
+                      : otpExhausted ?
+                        'pedir um novo código'
+                      : resendSecondsLeft > 0 ?
+                        `reenviar em ${resendSecondsLeft}s`
                       : 'reenviar código'}
                     </button>
                     <button
@@ -722,15 +728,22 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                     animate={{ opacity: [1, 0.4, 1] }}
                     transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
                   >
-                    {step === 'name' ? 'criando conta…'
-                    : step === 'otp' ? 'verificando…'
-                    : step === 'password' && accountExists ? 'entrando…'
+                    {step === 'name' ?
+                      'criando conta…'
+                    : step === 'otp' ?
+                      'verificando…'
+                    : step === 'password' && accountExists ?
+                      'entrando…'
                     : 'aguarde…'}
                   </motion.span>
-                : step === 'email' ? 'continuar →'
-                : step === 'name' ? 'criar conta →'
-                : step === 'otp' ? 'entrar →'
-                : accountExists ? 'entrar →'
+                : step === 'email' ?
+                  'continuar →'
+                : step === 'name' ?
+                  'criar conta →'
+                : step === 'otp' ?
+                  'entrar →'
+                : accountExists ?
+                  'entrar →'
                 : 'continuar →'}
               </button>
             )}

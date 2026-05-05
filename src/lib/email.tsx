@@ -17,7 +17,12 @@ export async function sendOtpEmail(email: string, otp: string, expiresInMinutes:
     throw new Error('RESEND_API_KEY is not configured')
   }
 
-  const html = await render(<OtpLoginEmail otp={otp} expiresInMinutes={expiresInMinutes} />)
+  const html = await render(
+    <OtpLoginEmail
+      otp={otp}
+      expiresInMinutes={expiresInMinutes}
+    />
+  )
   const text = `Seu código de acesso para Aviões: ${otp}\n\nEle expira em ${expiresInMinutes} minutos.`
 
   const { error } = await resend.emails.send({
