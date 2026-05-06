@@ -9,7 +9,7 @@ import {
   applyOps,
   cancelInvitation as cancelInvitationInStore,
   consumePasswordToken,
-  countRecentPasswordTokens,
+  countRecentPasswordSends,
   createGroup,
   createInvitation as createInvitationInStore,
   createPasswordToken,
@@ -436,13 +436,17 @@ export async function requestPasswordChange(): Promise<{ ok: true } | { ok: fals
   return { ok: true }
 }
 
-export async function requestPasswordCreation(): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function requestPasswordCreation(reason?: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const user = await getSessionUser()
   if (!user) return { ok: false, error: 'Não autenticado.' }
 
+  const hasCredential = await userHasCredentialAccount(user.email)
+  if (hasCredential) return { ok: false, error: 'Você já possui uma senha.' }
+
   const locale = await readLocale(user.id)
   const token = await createPasswordToken(user.email, 'create')
-  const url = `${BETTER_AUTH_URL}/password/create/${token}`
+  const reasonParam = reason === 'google' ? '?reason=google' : ''
+  const url = `${BETTER_AUTH_URL}/password/create/${token}${reasonParam}`
 
   try {
     await sendPasswordEmail(user.email, 'create', url, locale)
@@ -456,11 +460,14 @@ export async function requestPasswordCreationForEmail(email: string): Promise<{ 
   if (!email || typeof email !== 'string') return { ok: true }
   const normalized = email.trim().toLowerCase()
 
-  const recentCount = await countRecentPasswordTokens(normalized, 'create')
+  const recentCount = await countRecentPasswordSends(normalized, 'create')
   if (recentCount >= 3) return { ok: true }
 
   const user = await findUserByEmail(normalized)
   if (!user) return { ok: true }
+
+  const hasCredential = await userHasCredentialAccount(normalized)
+  if (hasCredential) return { ok: true }
 
   const locale = await readLocale(user.id)
   const token = await createPasswordToken(normalized, 'create')
@@ -474,10 +481,7 @@ export async function requestPasswordCreationForEmail(email: string): Promise<{ 
   return { ok: true }
 }
 
-export async function consumePasswordCreationToken(
-  token: string,
-  newPassword: string
-): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function consumePasswordCreationToken(token: string, newPassword: string): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!token || typeof token !== 'string') return { ok: false, error: 'Token inválido.' }
   if (typeof newPassword !== 'string' || newPassword.length < 8 || newPassword.length > 128) {
     return { ok: false, error: 'Senha precisa ter entre 8 e 128 caracteres.' }
@@ -489,18 +493,28 @@ export async function consumePasswordCreationToken(
   const user = await findUserByEmail(result.email)
   if (!user) return { ok: false, error: 'Usuário não encontrado.' }
 
-  // Try session-based setPassword first (user is logged in)
-  try {
-    await auth.api.setPassword({
-      body: { newPassword },
-      headers: await headers()
-    })
+  const hasCredential = await userHasCredentialAccount(result.email)
+  if (hasCredential) {
     await consumePasswordToken(token, 'create')
-    return { ok: true }
-  } catch {
-    // Not authenticated — create credential account directly
+    return { ok: false, error: 'Você já possui uma senha.' }
   }
 
+  // Try session-based setPassword (user is logged in)
+  const session = await getSessionUser()
+  if (session && session.email.toLowerCase() === result.email) {
+    try {
+      await auth.api.setPassword({
+        body: { newPassword },
+        headers: await headers()
+      })
+      await consumePasswordToken(token, 'create')
+      return { ok: true }
+    } catch {
+      return { ok: false, error: 'Não foi possível criar a senha.' }
+    }
+  }
+
+  // Not authenticated — create credential account directly
   try {
     const { hashPassword } = await import('better-auth/crypto')
     const { createCredentialAccount } = await import('./lib/store')

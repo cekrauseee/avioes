@@ -3,7 +3,7 @@ import 'server-only'
 import crypto from 'crypto'
 import { and, eq, gt, like, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
-import { db, accounts, events, groupInvitations, groupMembers, groups, preferences, processedOps, users, verifications } from './db'
+import { accounts, db, events, groupInvitations, groupMembers, groups, preferences, processedOps, users, verifications } from './db'
 import type { AirplaneEvent, Group, GroupMember, GroupRole, Locale, Palette, PendingOp, Theme } from './types'
 
 const groupMembersForCount = alias(groupMembers, 'group_members_for_count')
@@ -445,6 +445,8 @@ export async function createPasswordToken(email: string, type: PasswordTokenType
     updatedAt: now
   })
 
+  await recordPasswordSend(email, type)
+
   return token
 }
 
@@ -479,8 +481,25 @@ export async function userHasCredentialAccount(email: string): Promise<boolean> 
   return row.length > 0
 }
 
-export async function countRecentPasswordTokens(email: string, type: PasswordTokenType): Promise<number> {
-  const identifier = pwIdentifier(email, type)
+function pwSendIdentifier(email: string, type: PasswordTokenType): string {
+  return `pw-send-${type}:${email.toLowerCase()}`
+}
+
+async function recordPasswordSend(email: string, type: PasswordTokenType): Promise<void> {
+  const identifier = pwSendIdentifier(email, type)
+  const now = new Date()
+  await db.insert(verifications).values({
+    id: crypto.randomUUID(),
+    identifier,
+    value: crypto.randomUUID(),
+    expiresAt: new Date(now.getTime() + 60 * 60 * 1000),
+    createdAt: now,
+    updatedAt: now
+  })
+}
+
+export async function countRecentPasswordSends(email: string, type: PasswordTokenType): Promise<number> {
+  const identifier = pwSendIdentifier(email, type)
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
   const row = await db
     .select({ count: sql<number>`count(*)::int` })
