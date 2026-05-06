@@ -544,9 +544,6 @@ export async function consumePasswordChangeToken(
   if (!result) return { ok: false, error: 'Token inválido ou expirado.' }
   if (result.email !== user.email.toLowerCase()) return { ok: false, error: 'Token inválido.' }
 
-  const claimed = await consumePasswordToken(token, 'change')
-  if (!claimed) return { ok: false, error: 'Token inválido ou expirado.' }
-
   try {
     await auth.api.changePassword({
       body: { currentPassword, newPassword },
@@ -556,5 +553,6 @@ export async function consumePasswordChangeToken(
     return { ok: false, error: 'Senha atual incorreta.' }
   }
 
+  await consumePasswordToken(token, 'change')
   return { ok: true }
 }
