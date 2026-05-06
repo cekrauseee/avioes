@@ -214,14 +214,7 @@ function isLocale(v: unknown): v is Locale {
 function isEvent(v: unknown): v is AirplaneEvent {
   if (typeof v !== 'object' || v === null) return false
   const e = v as Partial<AirplaneEvent>
-  return (
-    typeof e.id === 'string' &&
-    typeof e.who === 'string' &&
-    e.who.length > 0 &&
-    typeof e.ts === 'number' &&
-    Number.isFinite(e.ts) &&
-    e.ts > 0
-  )
+  return typeof e.id === 'string' && typeof e.who === 'string' && e.who.length > 0 && typeof e.ts === 'number' && Number.isFinite(e.ts) && e.ts > 0
 }
 
 // ---------------------------------------------------------------------------
