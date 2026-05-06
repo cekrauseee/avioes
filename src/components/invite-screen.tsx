@@ -254,9 +254,7 @@ export function InviteScreen({
 
             {isAuthenticated && emailMatch ?
               <div className='flex flex-col gap-3'>
-                {!emailVerified && (
-                  <p className='text-clay text-center text-sm'>{t(locale, 'invite.emailNotVerified')}</p>
-                )}
+                {!emailVerified && <p className='text-clay text-center text-sm'>{t(locale, 'invite.emailNotVerified')}</p>}
                 <button
                   type='button'
                   onClick={handleAccept}

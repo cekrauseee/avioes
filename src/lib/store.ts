@@ -145,11 +145,7 @@ export async function createOrReplaceInvitation(params: {
         .update(groupInvitations)
         .set({ status: 'cancelled' })
         .where(
-          and(
-            eq(groupInvitations.groupId, params.groupId),
-            eq(groupInvitations.invitedEmail, params.invitedEmail),
-            eq(groupInvitations.status, 'pending')
-          )
+          and(eq(groupInvitations.groupId, params.groupId), eq(groupInvitations.invitedEmail, params.invitedEmail), eq(groupInvitations.status, 'pending'))
         )
 
       await tx.insert(groupInvitations).values({
@@ -180,7 +176,7 @@ export type InvitationDetails = {
   invitedEmail: string
   invitedByFirstName: string
   invitedByImage: string | null
-  status: 'pending' | 'accepted' | 'rejected' | 'cancelled'
+  status: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'expired'
   createdAt: number
   expiresAt: number
 }
@@ -263,9 +259,13 @@ export async function acceptInvitation(
 
     const inv = row[0]
     if (!inv) return { ok: false as const, error: 'not_found' as const }
+    if (inv.status === 'expired') return { ok: false as const, error: 'expired' as const }
     if (inv.status === 'cancelled') return { ok: false as const, error: 'cancelled' as const }
     if (inv.status !== 'pending') return { ok: false as const, error: 'already_used' as const }
-    if (inv.expiresAt <= Date.now()) return { ok: false as const, error: 'expired' as const }
+    if (inv.expiresAt <= Date.now()) {
+      await tx.update(groupInvitations).set({ status: 'expired' }).where(and(eq(groupInvitations.id, inv.id), eq(groupInvitations.status, 'pending')))
+      return { ok: false as const, error: 'expired' as const }
+    }
 
     const existing = await tx
       .select({ userId: groupMembers.userId })
@@ -304,9 +304,13 @@ export async function rejectInvitation(
 
     const inv = row[0]
     if (!inv) return { ok: false as const, error: 'not_found' as const }
+    if (inv.status === 'expired') return { ok: false as const, error: 'expired' as const }
     if (inv.status === 'cancelled') return { ok: false as const, error: 'cancelled' as const }
     if (inv.status !== 'pending') return { ok: false as const, error: 'already_used' as const }
-    if (inv.expiresAt <= Date.now()) return { ok: false as const, error: 'expired' as const }
+    if (inv.expiresAt <= Date.now()) {
+      await tx.update(groupInvitations).set({ status: 'expired' }).where(and(eq(groupInvitations.id, inv.id), eq(groupInvitations.status, 'pending')))
+      return { ok: false as const, error: 'expired' as const }
+    }
 
     const claimed = await tx
       .update(groupInvitations)
@@ -323,6 +327,15 @@ export async function cancelInvitation(groupId: string, invitationId: string): P
     .update(groupInvitations)
     .set({ status: 'cancelled' })
     .where(and(eq(groupInvitations.id, invitationId), eq(groupInvitations.groupId, groupId), eq(groupInvitations.status, 'pending')))
+}
+
+export async function expirePendingInvitations(now = Date.now()): Promise<number> {
+  const rows = await db
+    .update(groupInvitations)
+    .set({ status: 'expired' })
+    .where(and(eq(groupInvitations.status, 'pending'), sql`${groupInvitations.expiresAt} <= ${now}`))
+    .returning({ id: groupInvitations.id })
+  return rows.length
 }
 
 export async function findUserByEmail(email: string): Promise<{ id: string; firstName: string; lastName: string | null; email: string } | null> {
