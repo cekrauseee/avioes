@@ -246,9 +246,7 @@ export async function getWorldRanking(opts: { window: WorldRankingWindow }): Pro
   return {
     window: opts.window,
     rows,
-    userGroupRanks: rows
-      .filter((r) => r.isMember)
-      .map(({ groupId, displayName, rank, score }) => ({ groupId, displayName, rank, score }))
+    userGroupRanks: rows.filter((r) => r.isMember).map(({ groupId, displayName, rank, score }) => ({ groupId, displayName, rank, score }))
   }
 }
 
