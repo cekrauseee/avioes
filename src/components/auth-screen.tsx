@@ -633,7 +633,11 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                       type='button'
                       onClick={chooseOtp}
                       disabled={otpSending}
-                      className={hasPasskey ? 'border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex h-12 items-center justify-center rounded-xl border text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50' : 'bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'}
+                      className={
+                        hasPasskey ?
+                          'border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex h-12 items-center justify-center rounded-xl border text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50'
+                        : 'bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
+                      }
                     >
                       {otpSending ?
                         <motion.span

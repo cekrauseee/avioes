@@ -614,11 +614,6 @@ export async function createCredentialAccount(userId: string, passwordHash: stri
 }
 
 export async function userHasPasskeys(email: string): Promise<boolean> {
-  const row = await db
-    .select({ id: passkeys.id })
-    .from(passkeys)
-    .innerJoin(users, eq(users.id, passkeys.userId))
-    .where(eq(users.email, email))
-    .limit(1)
+  const row = await db.select({ id: passkeys.id }).from(passkeys).innerJoin(users, eq(users.id, passkeys.userId)).where(eq(users.email, email)).limit(1)
   return row.length > 0
 }
