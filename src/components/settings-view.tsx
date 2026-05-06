@@ -2,9 +2,8 @@
 
 import { AnimatePresence, motion, useReducedMotion, type PanInfo } from 'motion/react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState, useSyncExternalStore, useTransition } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { getUserGroups } from '../actions'
 import { authClient } from '../lib/auth-client'
 import { useArrowKeyNavigation, useHorizontalWheelNavigation } from '../lib/horizontal-wheel-navigation'
@@ -13,6 +12,7 @@ import { useNavDirection } from '../lib/nav-direction'
 import { applyLocalIdentity, queuePalette, queueTheme, selectLocale, selectPalette, selectTheme, switchLocale, useOfflineState } from '../lib/offline-store'
 import { getMemberColor, getMemberFirstName, getMemberFullName, PALETTES, type Locale, type Palette, type Theme } from '../lib/types'
 import { AppShell } from './app-shell'
+import { Button, ButtonLink, usePromiseStatus } from './button'
 import { ConnectionsSheet } from './connections-sheet'
 import { Onboarding } from './onboarding'
 import { PasskeysSheet } from './passkeys-sheet'
@@ -327,30 +327,36 @@ function GroupTab({ locale, activeGroupId, isOwner }: { locale: Locale; activeGr
 
       <div className='mt-1 flex flex-col gap-2'>
         {isOwner && (
-          <Link
+          <ButtonLink
             href={`/groups/${activeGroupId}/edit`}
-            className='border-line hover:bg-paper flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors'
+            variant='row'
+            size='md'
+            fullWidth
+            trailing={<span className='text-ink-faint text-xs'>→</span>}
           >
-            <span className='text-ink-soft text-sm'>{t(locale, 'settings.editGroup')}</span>
-            <span className='text-ink-faint text-xs'>→</span>
-          </Link>
+            {t(locale, 'settings.editGroup')}
+          </ButtonLink>
         )}
         {isOwner && (
-          <Link
+          <ButtonLink
             href={`/groups/${activeGroupId}/manage`}
-            className='border-line hover:bg-paper flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors'
+            variant='row'
+            size='md'
+            fullWidth
+            trailing={<span className='text-ink-faint text-xs'>→</span>}
           >
-            <span className='text-ink-soft text-sm'>{t(locale, 'settings.manageMembers')}</span>
-            <span className='text-ink-faint text-xs'>→</span>
-          </Link>
+            {t(locale, 'settings.manageMembers')}
+          </ButtonLink>
         )}
-        <Link
+        <ButtonLink
           href='/groups'
-          className='border-line hover:bg-paper flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors'
+          variant='row'
+          size='md'
+          fullWidth
+          trailing={<span className='text-ink-faint text-xs'>→</span>}
         >
-          <span className='text-ink-soft text-sm'>{t(locale, 'settings.manageGroups')}</span>
-          <span className='text-ink-faint text-xs'>→</span>
-        </Link>
+          {t(locale, 'settings.manageGroups')}
+        </ButtonLink>
       </div>
     </div>
   )
@@ -367,22 +373,23 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
   const myMember = state.groupMembers.find((m) => m.userId === who)
   const myEmail = myMember?.email ?? ''
   const myImage = myMember?.image ?? null
-  const [, startSignOut] = useTransition()
   const [passkeysOpen, setPasskeysOpen] = useState(false)
   const [connectionsOpen, setConnectionsOpen] = useState(false)
+  const signOut = usePromiseStatus({ resetMs: 1400 })
 
-  const handleSignOut = () => {
-    startSignOut(async () => {
+  const rowArrow = <span className='text-ink-faint text-xs'>→</span>
+  const signOutArrow = <span className='text-xs opacity-60'>→</span>
+
+  const handleSignOut = () =>
+    signOut.run(async () => {
       await authClient.signOut()
       applyLocalIdentity(null)
       router.replace('/auth')
       router.refresh()
     })
-  }
 
   return (
     <div className='flex flex-col gap-4 pb-[max(env(safe-area-inset-bottom),1rem)]'>
-      {/* user card */}
       <div className='border-line flex items-center gap-4 rounded-2xl border px-5 py-4'>
         {myImage ?
           <Image
@@ -404,34 +411,35 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
         </div>
       </div>
 
-      {/* change password */}
-      <Link
+      <ButtonLink
         href='/settings/password'
-        className='border-line hover:bg-paper flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors'
+        variant='row'
+        size='md'
+        fullWidth
+        trailing={rowArrow}
       >
-        <span className='text-ink-soft text-sm'>{t(locale, 'settings.changePassword')}</span>
-        <span className='text-ink-faint text-xs'>→</span>
-      </Link>
+        {t(locale, 'settings.changePassword')}
+      </ButtonLink>
 
-      {/* passkeys */}
-      <button
-        type='button'
+      <Button
+        variant='row'
+        size='md'
+        fullWidth
         onClick={() => setPasskeysOpen(true)}
-        className='border-line hover:bg-paper flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors'
+        trailing={rowArrow}
       >
-        <span className='text-ink-soft text-sm'>{t(locale, 'settings.managePasskeys')}</span>
-        <span className='text-ink-faint text-xs'>→</span>
-      </button>
+        {t(locale, 'settings.managePasskeys')}
+      </Button>
 
-      {/* connections */}
-      <button
-        type='button'
+      <Button
+        variant='row'
+        size='md'
+        fullWidth
         onClick={() => setConnectionsOpen(true)}
-        className='border-line hover:bg-paper flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors'
+        trailing={rowArrow}
       >
-        <span className='text-ink-soft text-sm'>{t(locale, 'settings.manageConnections')}</span>
-        <span className='text-ink-faint text-xs'>→</span>
-      </button>
+        {t(locale, 'settings.manageConnections')}
+      </Button>
 
       <PasskeysSheet
         open={passkeysOpen}
@@ -445,15 +453,19 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
         locale={locale}
       />
 
-      {/* sign out */}
-      <button
-        type='button'
+      <Button
+        variant='destructive-outline'
+        size='md'
+        fullWidth
+        status={signOut.status}
+        pendingLabel={t(locale, 'settings.signingOut')}
+        successLabel={t(locale, 'settings.signedOut')}
+        errorLabel={t(locale, 'settings.signOutError')}
+        trailing={signOut.status === 'idle' ? signOutArrow : null}
         onClick={handleSignOut}
-        className='border-clay/30 text-clay hover:bg-clay/8 flex items-center justify-between rounded-xl border px-4 py-3.5 text-sm transition-colors'
       >
-        <span>{t(locale, 'settings.signOut')}</span>
-        <span className='text-xs opacity-60'>→</span>
-      </button>
+        {t(locale, 'settings.signOut')}
+      </Button>
     </div>
   )
 }

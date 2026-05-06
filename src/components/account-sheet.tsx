@@ -2,7 +2,6 @@
 
 import { AnimatePresence, motion } from 'motion/react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
 import { createPortal } from 'react-dom'
@@ -11,6 +10,7 @@ import { authClient } from '../lib/auth-client'
 import { t } from '../lib/i18n'
 import { applyLocalIdentity, applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import { getMemberColor, getMemberFirstName, getMemberFullName } from '../lib/types'
+import { Button, ButtonLink } from './button'
 
 type GroupEntry = { id: string; name: string; ownerId: string; memberCount: number }
 
@@ -127,52 +127,60 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
                 <p className='text-ink-faint text-sm italic'>{t(locale, 'groups.sheet.onlyGroup')}</p>
               : <div className='flex flex-col gap-2'>
                   {displayed.map((group) => (
-                    <button
+                    <Button
                       key={group.id}
-                      type='button'
+                      variant='row'
+                      size='sm'
+                      fullWidth
                       onClick={() => switchTo(group.id)}
                       disabled={pending}
-                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99] disabled:opacity-60'
-                    >
-                      <div className='flex min-w-0 flex-col items-start gap-0.5'>
-                        <span className='font-display truncate text-base'>{group.name}</span>
-                        <span className='text-ink-faint text-[11px]'>
-                          {group.memberCount} {t(locale, group.memberCount === 1 ? 'groups.memberCount' : 'groups.memberCountPlural')}
+                      leading={
+                        <div className='flex min-w-0 flex-col items-start gap-0.5'>
+                          <span className='font-display truncate text-base'>{group.name}</span>
+                          <span className='text-ink-faint text-[11px]'>
+                            {group.memberCount} {t(locale, group.memberCount === 1 ? 'groups.memberCount' : 'groups.memberCountPlural')}
+                          </span>
+                        </div>
+                      }
+                      trailing={
+                        <span className='text-sage text-base leading-none'>
+                          {switchingId === group.id ?
+                            <motion.span
+                              animate={{ opacity: [1, 0.4, 1] }}
+                              transition={{ duration: 1, repeat: Infinity }}
+                            >
+                              …
+                            </motion.span>
+                          : '→'}
                         </span>
-                      </div>
-                      <span className='text-sage text-base leading-none'>
-                        {switchingId === group.id ?
-                          <motion.span
-                            animate={{ opacity: [1, 0.4, 1] }}
-                            transition={{ duration: 1, repeat: Infinity }}
-                          >
-                            …
-                          </motion.span>
-                        : '→'}
-                      </span>
-                    </button>
+                      }
+                    />
                   ))}
                 </div>
               }
 
               <div className='mt-3'>
                 {hasMore ?
-                  <Link
+                  <ButtonLink
                     href='/groups'
                     onClick={onClose}
-                    className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex min-h-12 w-full items-center justify-between rounded-xl border px-4 py-3.5 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                    variant='row'
+                    size='md'
+                    fullWidth
+                    trailing={<span className='text-ink-faint text-base leading-none'>→</span>}
                   >
-                    <span>{t(locale, 'groups.sheet.viewAll')}</span>
-                    <span className='text-ink-faint text-base leading-none'>→</span>
-                  </Link>
-                : <Link
+                    {t(locale, 'groups.sheet.viewAll')}
+                  </ButtonLink>
+                : <ButtonLink
                     href='/groups/new'
                     onClick={onClose}
-                    className='border-line bg-paper text-sage hover:bg-sage-soft focus-visible:bg-sage-soft focus-visible:ring-sage/40 flex min-h-12 w-full items-center justify-between rounded-xl border px-4 py-3.5 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                    variant='row-accent'
+                    size='md'
+                    fullWidth
+                    trailing={<span className='text-base leading-none'>+</span>}
                   >
-                    <span>{t(locale, 'groups.sheet.create')}</span>
-                    <span className='text-base leading-none'>+</span>
-                  </Link>
+                    {t(locale, 'groups.sheet.create')}
+                  </ButtonLink>
                 }
               </div>
             </div>
@@ -181,14 +189,16 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
               <>
                 <div className='border-line mx-6 mt-3 border-t' />
                 <div className='px-6 pt-3'>
-                  <Link
+                  <ButtonLink
                     href={`/groups/${state.activeGroupId}/manage`}
                     onClick={onClose}
-                    className='border-line bg-paper text-sage hover:bg-sage-soft focus-visible:bg-sage-soft focus-visible:ring-sage/40 flex min-h-12 w-full items-center justify-between rounded-xl border px-4 py-3.5 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                    variant='row-accent'
+                    size='md'
+                    fullWidth
+                    trailing={<span className='text-base leading-none'>+</span>}
                   >
-                    <span>{t(locale, 'groups.sheet.invite')}</span>
-                    <span className='text-base leading-none'>+</span>
-                  </Link>
+                    {t(locale, 'groups.sheet.invite')}
+                  </ButtonLink>
                 </div>
               </>
             )}
@@ -197,14 +207,16 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
 
             {/* sign out */}
             <div className='px-6 pt-3 pb-[max(env(safe-area-inset-bottom),1.5rem)]'>
-              <button
-                type='button'
+              <Button
+                variant='destructive-outline'
+                size='md'
+                fullWidth
+                align='between'
                 onClick={handleSignOut}
-                className='border-clay/30 text-clay hover:bg-clay/8 focus-visible:bg-clay/8 focus-visible:ring-clay/30 flex min-h-12 w-full items-center justify-between rounded-xl border px-4 py-3.5 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                trailing={<span className='text-base leading-none opacity-70'>→</span>}
               >
-                <span>{t(locale, 'groups.sheet.signOut')}</span>
-                <span className='text-base leading-none opacity-70'>→</span>
-              </button>
+                {t(locale, 'groups.sheet.signOut')}
+              </Button>
             </div>
           </motion.div>
         </>

@@ -1,12 +1,12 @@
 'use client'
 
 import { AnimatePresence, motion } from 'motion/react'
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { authClient } from '../lib/auth-client'
 import { t } from '../lib/i18n'
 import type { Locale } from '../lib/types'
+import { Button, ButtonLink } from './button'
 import { ConfirmActionSlot, ConfirmRow, ConfirmTriggerRow } from './confirm-row'
 import { ExpandableItem } from './expandable-item'
 import { Skel } from './skeleton'
@@ -120,13 +120,17 @@ export function ConnectionsSheet({ open, onClose, locale }: { open: boolean; onC
                   }
                 >
                   {googleOnly ?
-                    <Link
+                    <ButtonLink
                       href='/settings/password?reason=google'
-                      className='text-clay hover:bg-clay/8 flex min-h-12 items-center justify-between px-5 text-sm transition-colors'
+                      variant='ghost-destructive'
+                      size='sm'
+                      shape='square'
+                      fullWidth
+                      className='px-5'
+                      trailing={<span className='text-ink-faint'>→</span>}
                     >
-                      <span>{t(locale, 'settings.googleDisconnect')}</span>
-                      <span className='text-ink-faint'>→</span>
-                    </Link>
+                      {t(locale, 'settings.googleDisconnect')}
+                    </ButtonLink>
                   : <ConfirmActionSlot>
                       {confirming ?
                         <ConfirmRow
@@ -149,28 +153,33 @@ export function ConnectionsSheet({ open, onClose, locale }: { open: boolean; onC
                   }
                   {error && <p className='text-clay border-line border-t px-5 py-2 text-[11px]'>{error}</p>}
                 </ExpandableItem>
-              : <button
-                  type='button'
+              : <Button
+                  variant='row'
+                  size='md'
+                  shape='square'
+                  fullWidth
                   onClick={handleLinkGoogle}
-                  className='border-line hover:bg-paper flex w-full items-center justify-between rounded-2xl border px-5 py-4 transition-colors'
-                >
-                  <div className='flex items-center gap-2.5'>
-                    <span className='text-base leading-none'>G</span>
-                    <span className='text-ink-soft text-sm'>{t(locale, 'settings.googleConnect')}</span>
-                  </div>
-                  <span className='text-ink-faint text-xs'>→</span>
-                </button>
+                  className='rounded-2xl px-5 py-4'
+                  leading={
+                    <div className='flex items-center gap-2.5'>
+                      <span className='text-base leading-none'>G</span>
+                      <span className='text-sm'>{t(locale, 'settings.googleConnect')}</span>
+                    </div>
+                  }
+                  trailing={<span className='text-ink-faint text-xs'>→</span>}
+                />
               }
             </div>
 
             <div className='flex flex-col gap-2 px-6 pt-4'>
-              <button
-                type='button'
+              <Button
+                variant='secondary'
+                size='md'
+                fullWidth
                 onClick={onClose}
-                className='border-line bg-paper text-ink hover:bg-line/40 flex h-12 items-center justify-center rounded-xl border text-sm font-medium transition-all active:scale-[0.98]'
               >
                 {t(locale, 'settings.done')}
-              </button>
+              </Button>
             </div>
           </motion.div>
         </>

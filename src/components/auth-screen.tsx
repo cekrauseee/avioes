@@ -10,6 +10,7 @@ import { authClient } from '../lib/auth-client'
 import { DATE_LOCALE, t, tf } from '../lib/i18n'
 import { applyLocalIdentity, selectLocale, useOfflineState } from '../lib/offline-store'
 import { OTP_ALLOWED_ATTEMPTS, OTP_LENGTH } from '../lib/otp-constants'
+import { Button } from './button'
 
 type Step = 'welcome' | 'email' | 'method' | 'password' | 'otp' | 'no-password' | 'name' | 'error'
 
@@ -359,30 +360,34 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
           </div>
 
           <div className='flex flex-col gap-3'>
-            <button
-              type='button'
+            <Button
+              variant='secondary'
+              size='md'
+              fullWidth
               onClick={handleGoogle}
               disabled={loading}
-              className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex h-12 items-center justify-center gap-2.5 rounded-xl border text-sm font-medium transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50'
+              leading={<GoogleMark />}
             >
-              <GoogleMark />
-              <span>{t(locale, 'auth.tryGoogle')}</span>
-            </button>
-            <button
-              type='button'
+              {t(locale, 'auth.tryGoogle')}
+            </Button>
+            <Button
+              variant='primary'
+              size='md'
+              fullWidth
               onClick={() => advanceTo('email')}
-              className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98]'
             >
               {t(locale, 'auth.continueEmail')}
-            </button>
-            <button
-              type='button'
+            </Button>
+            <Button
+              variant='secondary'
+              size='sm'
+              shape='pill'
+              className='self-start'
               onClick={() => advanceTo('welcome')}
-              className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+              leading={<span aria-hidden>←</span>}
             >
-              <span aria-hidden>←</span>
-              <span>{t(locale, 'auth.back')}</span>
-            </button>
+              {t(locale, 'auth.back')}
+            </Button>
           </div>
         </motion.div>
       : step === 'welcome' ?
@@ -426,22 +431,24 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
           </div>
 
           <div className='flex flex-col gap-3'>
-            <button
-              type='button'
+            <Button
+              variant='secondary'
+              size='md'
+              fullWidth
               onClick={handleGoogle}
               disabled={loading}
-              className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex h-12 items-center justify-center gap-2.5 rounded-xl border text-sm font-medium transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50'
+              leading={<GoogleMark />}
             >
-              <GoogleMark />
-              <span>{t(locale, 'auth.continueGoogle')}</span>
-            </button>
-            <button
-              type='button'
+              {t(locale, 'auth.continueGoogle')}
+            </Button>
+            <Button
+              variant='primary'
+              size='md'
+              fullWidth
               onClick={() => advanceTo('email')}
-              className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98]'
             >
               {t(locale, 'auth.continueEmail')}
-            </button>
+            </Button>
           </div>
         </motion.div>
       : <div className='mt-12 flex flex-1 flex-col'>
@@ -563,17 +570,19 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                       autoFocus
                       autoComplete='email'
                     />
-                    <button
-                      type='button'
+                    <Button
+                      variant='secondary'
+                      size='sm'
+                      shape='pill'
+                      className='self-start'
                       onClick={() => {
                         advanceTo('welcome')
                         setError(null)
                       }}
-                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                      leading={<span aria-hidden>←</span>}
                     >
-                      <span aria-hidden>←</span>
-                      <span>{t(locale, 'auth.back')}</span>
-                    </button>
+                      {t(locale, 'auth.back')}
+                    </Button>
                   </>
                 )}
 
@@ -588,8 +597,11 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                       autoFocus
                       autoComplete={accountExists ? 'current-password' : 'new-password'}
                     />
-                    <button
-                      type='button'
+                    <Button
+                      variant='secondary'
+                      size='sm'
+                      shape='pill'
+                      className='self-start'
                       onClick={() => {
                         setError(null)
                         setPassword('')
@@ -600,64 +612,53 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                           advanceTo('email')
                         }
                       }}
-                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                      leading={<span aria-hidden>←</span>}
                     >
-                      <span aria-hidden>←</span>
-                      <span>{accountExists ? t(locale, 'auth.back') : t(locale, 'auth.changeEmail')}</span>
-                    </button>
+                      {accountExists ? t(locale, 'auth.back') : t(locale, 'auth.changeEmail')}
+                    </Button>
                   </>
                 )}
 
                 {step === 'method' && (
                   <>
                     {hasPasskey && (
-                      <button
-                        type='button'
+                      <Button
+                        variant='primary'
+                        size='md'
+                        fullWidth
                         onClick={handlePasskeySignIn}
-                        disabled={passkeyLoading}
-                        className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
+                        status={passkeyLoading ? 'pending' : 'idle'}
+                        pendingLabel={t(locale, 'auth.waiting')}
                       >
-                        {passkeyLoading ?
-                          <motion.span
-                            animate={{ opacity: [1, 0.4, 1] }}
-                            transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-                          >
-                            {t(locale, 'auth.waiting')}
-                          </motion.span>
-                        : t(locale, 'auth.continuePasskey')}
-                      </button>
+                        {t(locale, 'auth.continuePasskey')}
+                      </Button>
                     )}
-                    <button
-                      type='button'
+                    <Button
+                      variant={hasPasskey ? 'secondary' : 'primary'}
+                      size='md'
+                      fullWidth
                       onClick={chooseOtp}
-                      disabled={otpSending}
-                      className={
-                        hasPasskey ?
-                          'border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex h-12 items-center justify-center rounded-xl border text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50'
-                        : 'bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
-                      }
+                      status={otpSending ? 'pending' : 'idle'}
+                      pendingLabel={t(locale, 'auth.sendingOtp')}
                     >
-                      {otpSending ?
-                        <motion.span
-                          animate={{ opacity: [1, 0.4, 1] }}
-                          transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-                        >
-                          {t(locale, 'auth.sendingOtp')}
-                        </motion.span>
-                      : t(locale, 'auth.sendOtpEmail')}
-                    </button>
-                    <button
-                      type='button'
+                      {t(locale, 'auth.sendOtpEmail')}
+                    </Button>
+                    <Button
+                      variant='secondary'
+                      size='md'
+                      fullWidth
                       onClick={() => {
                         setError(null)
                         advanceTo(hasPassword ? 'password' : 'no-password')
                       }}
-                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex h-12 items-center justify-center rounded-xl border text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50'
                     >
                       {t(locale, 'auth.continuePassword')}
-                    </button>
-                    <button
-                      type='button'
+                    </Button>
+                    <Button
+                      variant='secondary'
+                      size='sm'
+                      shape='pill'
+                      className='self-start'
                       onClick={() => {
                         setError(null)
                         setAccountExists(null)
@@ -665,11 +666,10 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                         setHasPassword(false)
                         advanceTo('email')
                       }}
-                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                      leading={<span aria-hidden>←</span>}
                     >
-                      <span aria-hidden>←</span>
-                      <span>{t(locale, 'auth.changeEmail')}</span>
-                    </button>
+                      {t(locale, 'auth.changeEmail')}
+                    </Button>
                   </>
                 )}
 
@@ -696,11 +696,13 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                         className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 w-full rounded-xl border px-4 py-3 text-center font-mono text-2xl tracking-[0.4em] transition-all outline-none focus:ring-2 disabled:opacity-50'
                       />
                     </div>
-                    <button
-                      type='button'
+                    <Button
+                      variant='secondary'
+                      size='sm'
+                      shape='pill'
+                      className='self-start'
                       onClick={handleResend}
                       disabled={(resendSecondsLeft > 0 && !otpExhausted) || otpSending}
-                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60'
                     >
                       {otpSending ?
                         t(locale, 'auth.sending')
@@ -709,9 +711,12 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                       : resendSecondsLeft > 0 ?
                         tf(locale, 'auth.otpResendIn', { n: resendSecondsLeft })
                       : t(locale, 'auth.otpResend')}
-                    </button>
-                    <button
-                      type='button'
+                    </Button>
+                    <Button
+                      variant='secondary'
+                      size='sm'
+                      shape='pill'
+                      className='self-start'
                       onClick={() => {
                         setError(null)
                         setOtp('')
@@ -720,11 +725,10 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                         setOtpExhausted(false)
                         advanceTo('method')
                       }}
-                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                      leading={<span aria-hidden>←</span>}
                     >
-                      <span aria-hidden>←</span>
-                      <span>{t(locale, 'auth.back')}</span>
-                    </button>
+                      {t(locale, 'auth.back')}
+                    </Button>
                   </>
                 )}
 
@@ -747,17 +751,19 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                       placeholder={t(locale, 'auth.lastNamePlaceholder')}
                       autoComplete='family-name'
                     />
-                    <button
-                      type='button'
+                    <Button
+                      variant='secondary'
+                      size='sm'
+                      shape='pill'
+                      className='self-start'
                       onClick={() => {
                         advanceTo('password')
                         setError(null)
                       }}
-                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                      leading={<span aria-hidden>←</span>}
                     >
-                      <span aria-hidden>←</span>
-                      <span>{t(locale, 'auth.back')}</span>
-                    </button>
+                      {t(locale, 'auth.back')}
+                    </Button>
                   </>
                 )}
 
@@ -765,9 +771,12 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                   <>
                     {noPasswordSent ?
                       <p className='text-sage text-sm font-medium'>{t(locale, 'auth.noPasswordSent')}</p>
-                    : <button
-                        type='button'
-                        disabled={noPasswordLoading}
+                    : <Button
+                        variant='primary'
+                        size='md'
+                        fullWidth
+                        status={noPasswordLoading ? 'pending' : 'idle'}
+                        pendingLabel={t(locale, 'auth.noPasswordSending')}
                         onClick={async () => {
                           setNoPasswordLoading(true)
                           setError(null)
@@ -779,30 +788,24 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                           }
                           setNoPasswordSent(true)
                         }}
-                        className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
                       >
-                        {noPasswordLoading ?
-                          <motion.span
-                            animate={{ opacity: [1, 0.4, 1] }}
-                            transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-                          >
-                            {t(locale, 'auth.noPasswordSending')}
-                          </motion.span>
-                        : t(locale, 'auth.noPasswordCta')}
-                      </button>
+                        {t(locale, 'auth.noPasswordCta')}
+                      </Button>
                     }
-                    <button
-                      type='button'
+                    <Button
+                      variant='secondary'
+                      size='sm'
+                      shape='pill'
+                      className='self-start'
                       onClick={() => {
                         setError(null)
                         setNoPasswordSent(false)
                         advanceTo('method')
                       }}
-                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                      leading={<span aria-hidden>←</span>}
                     >
-                      <span aria-hidden>←</span>
-                      <span>{t(locale, 'auth.back')}</span>
-                    </button>
+                      {t(locale, 'auth.back')}
+                    </Button>
                   </>
                 )}
               </motion.div>
@@ -827,25 +830,22 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
             </AnimatePresence>
 
             {step !== 'method' && step !== 'no-password' && (
-              <button
+              <Button
                 type='submit'
-                disabled={loading || (step === 'otp' && otpExhausted)}
-                className='bg-sage text-bg mt-2 flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
+                variant='primary'
+                size='md'
+                fullWidth
+                className='mt-2'
+                disabled={step === 'otp' && otpExhausted}
+                status={loading ? 'pending' : 'idle'}
+                pendingLabel={
+                  step === 'name' ? t(locale, 'auth.creatingAccount')
+                  : step === 'otp' ? t(locale, 'auth.verifying')
+                  : step === 'password' && accountExists ? t(locale, 'auth.loading')
+                  : t(locale, 'auth.waiting')
+                }
               >
-                {loading ?
-                  <motion.span
-                    animate={{ opacity: [1, 0.4, 1] }}
-                    transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-                  >
-                    {step === 'name' ?
-                      t(locale, 'auth.creatingAccount')
-                    : step === 'otp' ?
-                      t(locale, 'auth.verifying')
-                    : step === 'password' && accountExists ?
-                      t(locale, 'auth.loading')
-                    : t(locale, 'auth.waiting')}
-                  </motion.span>
-                : step === 'email' ?
+                {step === 'email' ?
                   t(locale, 'auth.submitContinue')
                 : step === 'name' ?
                   t(locale, 'auth.submitCreate')
@@ -854,7 +854,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 : accountExists ?
                   t(locale, 'auth.submitSignIn')
                 : t(locale, 'auth.submitContinue')}
-              </button>
+              </Button>
             )}
           </motion.form>
         </div>

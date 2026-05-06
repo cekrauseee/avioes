@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { t } from '../lib/i18n'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
+import { Button } from './button'
 
 export function InviteShareSheet({ open, onClose, inviteUrl, email }: { open: boolean; onClose: () => void; inviteUrl: string; email: string }) {
   const state = useOfflineState()
@@ -68,29 +69,34 @@ export function InviteShareSheet({ open, onClose, inviteUrl, email }: { open: bo
             </div>
 
             <div className='flex flex-col gap-2 px-6 pt-4'>
-              <button
-                type='button'
+              <Button
+                variant='secondary'
+                size='md'
+                fullWidth
+                status={copied ? 'success' : 'idle'}
+                successLabel={t(locale, 'invite.share.copied')}
                 onClick={handleCopy}
-                className='border-line bg-paper text-ink hover:bg-line/40 flex h-12 items-center justify-center rounded-xl border text-sm font-medium transition-all active:scale-[0.98]'
               >
-                {copied ? t(locale, 'invite.share.copied') : t(locale, 'invite.share.copy')}
-              </button>
+                {t(locale, 'invite.share.copy')}
+              </Button>
               {canShare && (
-                <button
-                  type='button'
+                <Button
+                  variant='secondary'
+                  size='md'
+                  fullWidth
                   onClick={handleShare}
-                  className='border-line bg-paper text-ink hover:bg-line/40 flex h-12 items-center justify-center rounded-xl border text-sm font-medium transition-all active:scale-[0.98]'
                 >
                   {t(locale, 'invite.share.share')}
-                </button>
+                </Button>
               )}
-              <button
-                type='button'
+              <Button
+                variant='primary'
+                size='md'
+                fullWidth
                 onClick={onClose}
-                className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98]'
               >
                 {t(locale, 'invite.share.done')}
-              </button>
+              </Button>
             </div>
           </motion.div>
         </>

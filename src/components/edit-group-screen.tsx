@@ -6,6 +6,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { getGroupDetails, updateGroup } from '../actions'
 import { t } from '../lib/i18n'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
+import { Button } from './button'
 
 export function EditGroupScreen({ groupId }: { groupId: string }) {
   const router = useRouter()
@@ -60,14 +61,15 @@ export function EditGroupScreen({ groupId }: { groupId: string }) {
         className='flex items-center justify-between gap-3'
       >
         <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
-        <button
-          type='button'
+        <Button
+          variant='secondary'
+          size='sm'
+          shape='pill'
           onClick={() => router.back()}
-          className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+          leading={<span aria-hidden>←</span>}
         >
-          <span aria-hidden>←</span>
-          <span>{t(locale, 'groups.edit.back')}</span>
-        </button>
+          {t(locale, 'groups.edit.back')}
+        </Button>
       </motion.header>
 
       <motion.div
@@ -125,20 +127,18 @@ export function EditGroupScreen({ groupId }: { groupId: string }) {
             </motion.p>
           )}
 
-          <button
+          <Button
             type='submit'
-            disabled={pending || !dirty || !loaded}
-            className='bg-sage text-bg mt-2 flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
+            variant='primary'
+            size='md'
+            fullWidth
+            className='mt-2'
+            disabled={!dirty || !loaded}
+            status={pending ? 'pending' : 'idle'}
+            pendingLabel={t(locale, 'groups.edit.saving')}
           >
-            {pending ?
-              <motion.span
-                animate={{ opacity: [1, 0.4, 1] }}
-                transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                {t(locale, 'groups.edit.saving')}
-              </motion.span>
-            : t(locale, 'groups.edit.save')}
-          </button>
+            {t(locale, 'groups.edit.save')}
+          </Button>
         </motion.form>
       }
     </div>

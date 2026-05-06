@@ -9,6 +9,7 @@ import { t } from '../lib/i18n'
 import { useNavDirection } from '../lib/nav-direction'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 import type { Locale } from '../lib/types'
+import { Button } from './button'
 import { Skel } from './skeleton'
 
 type Mode = 'set' | 'change' | null
@@ -96,13 +97,14 @@ export function PasswordScreen() {
           transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           className='mt-10'
         >
-          <button
-            type='button'
+          <Button
+            variant='secondary'
+            size='md'
+            fullWidth
             onClick={goBackToAccount}
-            className='border-line bg-paper text-ink-soft hover:bg-line/40 flex h-12 w-full items-center justify-center rounded-xl border text-sm transition-all active:scale-[0.98]'
           >
             {t(locale, 'password.backToAccount')}
-          </button>
+          </Button>
         </motion.div>
       </div>
     )
@@ -134,28 +136,24 @@ export function PasswordScreen() {
           transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           className='mt-10 flex flex-col gap-3'
         >
-          <button
-            type='button'
-            disabled={unlinking}
+          <Button
+            variant='destructive'
+            size='md'
+            fullWidth
+            status={unlinking ? 'pending' : 'idle'}
+            pendingLabel={t(locale, 'password.unlinking')}
             onClick={handleUnlinkGoogle}
-            className='bg-clay text-bg flex h-12 w-full items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
           >
-            {unlinking ?
-              <motion.span
-                animate={{ opacity: [1, 0.4, 1] }}
-                transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                {t(locale, 'password.unlinking')}
-              </motion.span>
-            : t(locale, 'password.unlinkButton')}
-          </button>
-          <button
-            type='button'
+            {t(locale, 'password.unlinkButton')}
+          </Button>
+          <Button
+            variant='secondary'
+            size='md'
+            fullWidth
             onClick={goBackToAccount}
-            className='border-line bg-paper text-ink-soft hover:bg-line/40 flex h-12 w-full items-center justify-center rounded-xl border text-sm transition-all active:scale-[0.98]'
           >
             {t(locale, 'password.unlinkSkip')}
-          </button>
+          </Button>
           {error && (
             <motion.p
               initial={{ opacity: 0, y: -4 }}
@@ -197,13 +195,15 @@ export function PasswordScreen() {
           transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           className='mt-10'
         >
-          <button
-            type='button'
+          <Button
+            variant='primary'
+            size='md'
+            fullWidth
             onClick={goBackToAccount}
-            className='bg-sage text-bg flex h-12 w-full items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98]'
+            trailing={<span aria-hidden>→</span>}
           >
-            {t(locale, 'password.backToAccount')} →
-          </button>
+            {t(locale, 'password.backToAccount')}
+          </Button>
         </motion.div>
       </div>
     )
@@ -267,23 +267,16 @@ export function PasswordScreen() {
                 </motion.p>
               )}
 
-              <button
-                type='button'
-                disabled={pending}
+              <Button
+                variant='primary'
+                size='md'
+                fullWidth
+                status={pending ? 'pending' : 'idle'}
+                pendingLabel={t(locale, 'password.requesting')}
                 onClick={handleRequest}
-                className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
               >
-                {pending ?
-                  <motion.span
-                    animate={{ opacity: [1, 0.4, 1] }}
-                    transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-                  >
-                    {t(locale, 'password.requesting')}
-                  </motion.span>
-                : mode === 'set' ?
-                  t(locale, 'password.requestCreateBtn')
-                : t(locale, 'password.requestChangeBtn')}
-              </button>
+                {mode === 'set' ? t(locale, 'password.requestCreateBtn') : t(locale, 'password.requestChangeBtn')}
+              </Button>
             </motion.div>
           </motion.div>
         }
@@ -301,14 +294,15 @@ function Header({ onBack, locale }: { onBack: () => void; locale: Locale }) {
       className='flex items-center justify-between gap-3'
     >
       <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
-      <button
-        type='button'
+      <Button
+        variant='secondary'
+        size='sm'
+        shape='pill'
         onClick={onBack}
-        className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+        leading={<span aria-hidden>←</span>}
       >
-        <span aria-hidden>←</span>
-        <span>{t(locale, 'password.back')}</span>
-      </button>
+        {t(locale, 'password.back')}
+      </Button>
     </motion.header>
   )
 }

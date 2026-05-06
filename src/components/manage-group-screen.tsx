@@ -10,6 +10,7 @@ import { selectLocale, useOfflineState } from '../lib/offline-store'
 import type { GroupMember, Locale } from '../lib/types'
 import { MEMBER_COLORS } from '../lib/types'
 import { AnimatedList, AnimatedListItem } from './animated-list'
+import { Button } from './button'
 import { InviteShareSheet } from './invite-share-sheet'
 
 type PendingInvite = { id: string; invitedEmail: string; createdAt: number; expiresAt: number }
@@ -121,14 +122,15 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
           className='flex items-center justify-between gap-3'
         >
           <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
-          <button
-            type='button'
+          <Button
+            variant='secondary'
+            size='sm'
+            shape='pill'
             onClick={() => router.back()}
-            className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+            leading={<span aria-hidden>←</span>}
           >
-            <span aria-hidden>←</span>
-            <span>{t(locale, 'groups.manage.back')}</span>
-          </button>
+            {t(locale, 'groups.manage.back')}
+          </Button>
         </motion.header>
 
         <motion.div
@@ -165,20 +167,17 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
                 placeholder={t(locale, 'groups.manage.invitePlaceholder')}
                 className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 min-h-12 min-w-0 flex-1 rounded-xl border px-4 text-sm transition-all outline-none focus:ring-2'
               />
-              <button
+              <Button
                 type='submit'
-                disabled={invitePending || !validFormat}
-                className='bg-sage text-bg focus-visible:ring-sage/40 min-h-12 shrink-0 rounded-xl px-4 text-sm font-medium transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.97] disabled:opacity-50'
+                variant='primary'
+                size='md'
+                className='shrink-0'
+                disabled={!validFormat}
+                status={invitePending ? 'pending' : 'idle'}
+                pendingLabel='…'
               >
-                {invitePending ?
-                  <motion.span
-                    animate={{ opacity: [1, 0.4, 1] }}
-                    transition={{ duration: 1, repeat: Infinity }}
-                  >
-                    …
-                  </motion.span>
-                : t(locale, 'groups.manage.invite')}
-              </button>
+                {t(locale, 'groups.manage.invite')}
+              </Button>
             </div>
             {inviteError && (
               <motion.p
@@ -347,15 +346,18 @@ function MemberRow({
                 onCancel={onCancelRemove}
                 onConfirm={onConfirmRemove}
               />
-            : <button
-                type='button'
+            : <Button
+                variant='ghost-destructive'
+                size='md'
+                shape='square'
+                fullWidth
+                className='px-4'
                 disabled={pending}
                 onClick={onAskRemove}
-                className='text-clay hover:bg-clay/8 flex min-h-12 w-full items-center justify-between px-4 text-sm transition-colors disabled:opacity-50'
+                trailing={<span>×</span>}
               >
-                <span>{t(locale, 'groups.manage.removeFromGroup')}</span>
-                <span>×</span>
-              </button>
+                {t(locale, 'groups.manage.removeFromGroup')}
+              </Button>
             }
           </motion.div>
         )}
@@ -429,15 +431,18 @@ function InviteRow({
                 onCancel={onCancelCancel}
                 onConfirm={onConfirmCancel}
               />
-            : <button
-                type='button'
+            : <Button
+                variant='ghost-destructive'
+                size='md'
+                shape='square'
+                fullWidth
+                className='px-4'
                 disabled={pending}
                 onClick={onAskCancel}
-                className='text-clay hover:bg-clay/8 flex min-h-12 w-full items-center justify-between px-4 text-sm transition-colors disabled:opacity-50'
+                trailing={<span>×</span>}
               >
-                <span>{t(locale, 'groups.manage.cancelInvite')}</span>
-                <span>×</span>
-              </button>
+                {t(locale, 'groups.manage.cancelInvite')}
+              </Button>
             }
           </motion.div>
         )}
@@ -470,29 +475,28 @@ function ConfirmRow({
     >
       <span className='text-clay px-4 pt-3 pb-2 text-sm'>{label}</span>
       <div className='border-line grid grid-cols-2 border-t'>
-        <button
-          type='button'
-          onClick={onCancel}
+        <Button
+          variant='ghost'
+          size='md'
+          shape='square'
+          className='min-h-16'
           disabled={busy}
-          className='text-ink-soft hover:bg-line/40 min-h-16 text-sm transition-colors disabled:opacity-50'
+          onClick={onCancel}
         >
           {t(locale, 'groups.manage.cancel')}
-        </button>
-        <button
-          type='button'
-          onClick={onConfirm}
+        </Button>
+        <Button
+          variant='destructive'
+          size='md'
+          shape='square'
+          className='border-line min-h-16 border-l disabled:opacity-60'
           disabled={pending}
-          className='bg-clay text-bg border-line min-h-16 border-l text-sm font-medium transition-colors disabled:opacity-60'
+          onClick={onConfirm}
+          status={busy ? 'pending' : 'idle'}
+          pendingLabel='…'
         >
-          {busy ?
-            <motion.span
-              animate={{ opacity: [1, 0.4, 1] }}
-              transition={{ duration: 1, repeat: Infinity }}
-            >
-              …
-            </motion.span>
-          : t(locale, 'groups.manage.confirm')}
-        </button>
+          {t(locale, 'groups.manage.confirm')}
+        </Button>
       </div>
     </motion.div>
   )

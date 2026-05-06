@@ -2,12 +2,12 @@
 
 import { AnimatePresence, motion } from 'motion/react'
 import Image from 'next/image'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { acceptInvitation, rejectInvitation } from '../actions'
 import { t, tf } from '../lib/i18n'
 import { applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
+import { Button, ButtonLink } from './button'
 
 type InviteStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'expired' | 'not_found'
 
@@ -164,13 +164,14 @@ export function InviteScreen({
             <p className='font-display text-ink-soft mt-3 max-w-[26ch] text-sm italic'>
               {tf(locale, 'invite.acceptedBody', { group: acceptedGroupName ?? groupName ?? '' })}
             </p>
-            <button
-              type='button'
+            <Button
+              variant='primary'
+              size='md'
+              className='mt-8 px-8'
               onClick={() => router.replace('/')}
-              className='bg-sage text-bg mt-8 flex h-12 items-center justify-center rounded-xl px-8 text-sm font-medium transition-all active:scale-[0.98]'
             >
               {t(locale, 'invite.acceptedCta')}
-            </button>
+            </Button>
           </motion.div>
         : screenState === 'rejected' ?
           <motion.div
@@ -186,12 +187,15 @@ export function InviteScreen({
               <span className='text-sage italic'>{t(locale, 'invite.rejectedItalic')}</span>
             </h1>
             <p className='font-display text-ink-soft mt-3 max-w-[26ch] text-sm italic'>{t(locale, 'invite.rejectedBody')}</p>
-            <Link
+            <ButtonLink
               href='/'
-              className='bg-paper text-ink hover:bg-line/40 mt-8 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm transition-colors active:scale-[0.99]'
+              variant='secondary'
+              size='sm'
+              shape='pill'
+              className='mt-8 font-display'
             >
-              <span className='font-display'>{t(locale, 'invite.rejectedCta')}</span>
-            </Link>
+              {t(locale, 'invite.rejectedCta')}
+            </ButtonLink>
           </motion.div>
         : <motion.div
             key='viewing'
@@ -255,35 +259,42 @@ export function InviteScreen({
             {isAuthenticated && emailMatch ?
               <div className='flex flex-col gap-3'>
                 {!emailVerified && <p className='text-clay text-center text-sm'>{t(locale, 'invite.emailNotVerified')}</p>}
-                <button
-                  type='button'
+                <Button
+                  variant='primary'
+                  size='md'
+                  fullWidth
+                  disabled={screenState === 'rejecting'}
+                  status={screenState === 'accepting' ? 'pending' : 'idle'}
+                  pendingLabel={t(locale, 'invite.accepting')}
                   onClick={handleAccept}
-                  disabled={screenState === 'accepting' || screenState === 'rejecting'}
-                  className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
                 >
-                  {screenState === 'accepting' ? t(locale, 'invite.accepting') : t(locale, 'invite.accept')}
-                </button>
-                <button
-                  type='button'
+                  {t(locale, 'invite.accept')}
+                </Button>
+                <Button
+                  variant='secondary'
+                  size='md'
+                  fullWidth
+                  disabled={screenState === 'accepting'}
+                  status={screenState === 'rejecting' ? 'pending' : 'idle'}
+                  pendingLabel={t(locale, 'invite.rejecting')}
                   onClick={handleReject}
-                  disabled={screenState === 'accepting' || screenState === 'rejecting'}
-                  className='border-line bg-paper text-ink-soft hover:bg-line/40 flex h-12 items-center justify-center rounded-xl border text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
                 >
-                  {screenState === 'rejecting' ? t(locale, 'invite.rejecting') : t(locale, 'invite.reject')}
-                </button>
+                  {t(locale, 'invite.reject')}
+                </Button>
               </div>
             : isAuthenticated && !emailMatch ?
               <div className='flex flex-col gap-3'>
                 <p className='text-ink-faint text-center text-sm'>{t(locale, 'invite.emailMismatch')}</p>
               </div>
             : <div className='flex flex-col gap-3'>
-                <button
-                  type='button'
+                <Button
+                  variant='primary'
+                  size='md'
+                  fullWidth
                   onClick={() => router.push(`/auth?next=${encodeURIComponent(`/invite/${token}`)}`)}
-                  className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98]'
                 >
                   {t(locale, 'invite.signIn')}
-                </button>
+                </Button>
               </div>
             }
           </motion.div>
@@ -329,18 +340,16 @@ function ErrorScreen({ locale, line1Key, italicKey, bodyKey }: { locale: 'pt' | 
         <p className='font-display text-ink-soft mt-3 max-w-[26ch] text-sm italic'>{t(locale, bodyKey as Parameters<typeof t>[1])}</p>
       </div>
 
-      <Link
+      <ButtonLink
         href='/'
-        className='bg-paper text-ink hover:bg-line/40 focus-visible:bg-line/40 mt-4 inline-flex items-center justify-center gap-2 self-center rounded-full px-5 py-3 text-sm transition-colors active:scale-[0.99]'
+        variant='secondary'
+        size='sm'
+        shape='pill'
+        className='mt-4 self-center font-display'
+        leading={<span aria-hidden className='text-base leading-none'>←</span>}
       >
-        <span
-          aria-hidden
-          className='text-base leading-none'
-        >
-          ←
-        </span>
-        <span className='font-display'>{t(locale, 'invite.backToApp')}</span>
-      </Link>
+        {t(locale, 'invite.backToApp')}
+      </ButtonLink>
     </main>
   )
 }

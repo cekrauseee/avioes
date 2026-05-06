@@ -1,7 +1,6 @@
 'use client'
 
 import { motion } from 'motion/react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
 import { deleteGroup, getUserGroups, leaveGroup, setActiveGroup } from '../actions'
@@ -10,6 +9,7 @@ import { t } from '../lib/i18n'
 import { applyLocalIdentity, applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import type { Locale } from '../lib/types'
 import { AnimatedList, AnimatedListItem } from './animated-list'
+import { Button, ButtonLink } from './button'
 import { ConfirmActionSlot, ConfirmRow, ConfirmTriggerRow } from './confirm-row'
 import { ExpandableItem } from './expandable-item'
 
@@ -107,13 +107,17 @@ export function GroupsScreen() {
         className='flex items-center justify-between gap-3'
       >
         <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
-        <Link
+        <ButtonLink
           href='/groups/new'
-          className='border-line bg-paper text-sage hover:bg-sage-soft focus-visible:bg-sage-soft focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+          variant='row-accent'
+          size='sm'
+          shape='pill'
+          align='center'
+          className='font-medium'
+          leading={<span aria-hidden>+</span>}
         >
-          <span aria-hidden>+</span>
-          <span>{t(locale, 'groups.new')}</span>
-        </Link>
+          {t(locale, 'groups.new')}
+        </ButtonLink>
       </motion.header>
 
       <motion.div
@@ -193,20 +197,30 @@ export function GroupsScreen() {
                       <div className='flex flex-col'>
                         {isOwner ?
                           <>
-                            <Link
+                            <ButtonLink
                               href={`/groups/${group.id}/edit`}
-                              className='text-ink-soft hover:bg-line/30 flex min-h-12 items-center justify-between px-5 text-sm transition-colors'
+                              variant='ghost'
+                              size='md'
+                              shape='square'
+                              fullWidth
+                              align='between'
+                              className='px-5'
+                              trailing={<span className='text-ink-faint'>→</span>}
                             >
-                              <span>{t(locale, 'groups.editName')}</span>
-                              <span className='text-ink-faint'>→</span>
-                            </Link>
-                            <Link
+                              {t(locale, 'groups.editName')}
+                            </ButtonLink>
+                            <ButtonLink
                               href={`/groups/${group.id}/manage`}
-                              className='text-ink-soft hover:bg-line/30 border-line flex min-h-12 items-center justify-between border-t px-5 text-sm transition-colors'
+                              variant='ghost'
+                              size='md'
+                              shape='square'
+                              fullWidth
+                              align='between'
+                              className='border-line border-t px-5'
+                              trailing={<span className='text-ink-faint'>→</span>}
                             >
-                              <span>{t(locale, 'groups.manageMembers')}</span>
-                              <span className='text-ink-faint'>→</span>
-                            </Link>
+                              {t(locale, 'groups.manageMembers')}
+                            </ButtonLink>
                             <ConfirmActionSlot>
                               {confirmingDelete === group.id ?
                                 <ConfirmRow
@@ -294,19 +308,24 @@ function EmptyState({ locale }: { locale: Locale }) {
         <p className='text-ink-soft text-sm'>{t(locale, 'groups.empty')}</p>
         <p className='text-ink-faint mt-1 text-xs'>{t(locale, 'groups.emptyHint')}</p>
       </div>
-      <Link
+      <ButtonLink
         href='/groups/new'
-        className='bg-sage text-bg focus-visible:ring-sage/40 mt-2 flex min-h-12 w-full max-w-56 items-center justify-center rounded-xl px-5 text-sm font-medium transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98]'
+        variant='primary'
+        size='md'
+        fullWidth
+        className='mt-2 max-w-56'
       >
         {t(locale, 'groups.createArrow')}
-      </Link>
-      <button
-        type='button'
+      </ButtonLink>
+      <Button
+        variant='destructive-outline'
+        size='sm'
+        fullWidth
+        className='mt-2 max-w-56'
         onClick={handleSignOut}
-        className='border-clay/30 text-clay hover:bg-clay/8 mt-2 flex min-h-11 w-full max-w-56 items-center justify-center rounded-xl border px-5 text-sm transition-all active:scale-[0.98]'
       >
         {t(locale, 'groups.signOut')}
-      </button>
+      </Button>
     </div>
   )
 }

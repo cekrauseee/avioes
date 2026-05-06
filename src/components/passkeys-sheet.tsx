@@ -7,6 +7,7 @@ import { authClient } from '../lib/auth-client'
 import { t } from '../lib/i18n'
 import type { Locale } from '../lib/types'
 import { AnimatedLayoutBlock, AnimatedList, AnimatedListGroup, AnimatedListItem } from './animated-list'
+import { Button } from './button'
 import { ConfirmActionSlot, ConfirmRow, ConfirmTriggerRow } from './confirm-row'
 import { ExpandableItem } from './expandable-item'
 import { Skel } from './skeleton'
@@ -201,38 +202,38 @@ export function PasskeysSheet({ open, onClose, locale }: { open: boolean; onClos
 
               <AnimatedLayoutBlock className='flex flex-col gap-2 px-6 pt-4'>
                 {passkeys !== null ?
-                  <button
-                    type='button'
-                    onClick={handleAdd}
-                    disabled={adding}
-                    className={
-                      passkeys.length === 0 ?
-                        'border-sage/30 bg-sage-soft/40 text-sage hover:bg-sage-soft focus-visible:ring-sage/40 flex h-12 items-center justify-between rounded-xl border px-5 text-sm font-medium transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98] disabled:opacity-60'
-                      : 'bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
-                    }
-                  >
-                    {adding ?
-                      <motion.span
-                        animate={{ opacity: [1, 0.4, 1] }}
-                        transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-                      >
-                        {t(locale, 'settings.addingPasskey')}
-                      </motion.span>
-                    : passkeys.length === 0 ?
-                      <>
-                        <span>{t(locale, 'settings.addFirstPasskey')}</span>
-                        <span className='text-base leading-none'>+</span>
-                      </>
-                    : t(locale, 'settings.addPasskey')}
-                  </button>
+                  passkeys.length === 0 ?
+                    <Button
+                      variant='row-accent'
+                      size='md'
+                      fullWidth
+                      onClick={handleAdd}
+                      status={adding ? 'pending' : 'idle'}
+                      pendingLabel={t(locale, 'settings.addingPasskey')}
+                      trailing={!adding && <span className='text-base leading-none'>+</span>}
+                    >
+                      {t(locale, 'settings.addFirstPasskey')}
+                    </Button>
+                  : <Button
+                      variant='primary'
+                      size='md'
+                      fullWidth
+                      onClick={handleAdd}
+                      status={adding ? 'pending' : 'idle'}
+                      pendingLabel={t(locale, 'settings.addingPasskey')}
+                    >
+                      {t(locale, 'settings.addPasskey')}
+                    </Button>
+
                 : null}
-                <button
-                  type='button'
+                <Button
+                  variant='secondary'
+                  size='md'
+                  fullWidth
                   onClick={onClose}
-                  className='border-line bg-paper text-ink hover:bg-line/40 flex h-12 items-center justify-center rounded-xl border text-sm font-medium transition-all active:scale-[0.98]'
                 >
                   {t(locale, 'settings.done')}
-                </button>
+                </Button>
                 {error && <p className='text-clay text-xs'>{error}</p>}
               </AnimatedLayoutBlock>
             </AnimatedListGroup>

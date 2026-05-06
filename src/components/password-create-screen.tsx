@@ -8,6 +8,7 @@ import { authClient } from '../lib/auth-client'
 import { t } from '../lib/i18n'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 import type { Locale } from '../lib/types'
+import { Button } from './button'
 
 export function PasswordCreateScreen({ token, valid }: { token: string; valid: boolean }) {
   const router = useRouter()
@@ -47,13 +48,15 @@ export function PasswordCreateScreen({ token, valid }: { token: string; valid: b
           transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           className='mt-10'
         >
-          <button
-            type='button'
+          <Button
+            variant='primary'
+            size='md'
+            fullWidth
             onClick={() => router.push('/auth')}
-            className='bg-sage text-bg flex h-12 w-full items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98]'
+            trailing={<span aria-hidden>→</span>}
           >
-            {t(locale, 'auth.back')} →
-          </button>
+            {t(locale, 'auth.back')}
+          </Button>
         </motion.div>
       </div>
     )
@@ -121,28 +124,24 @@ export function PasswordCreateScreen({ token, valid }: { token: string; valid: b
           transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           className='mt-10 flex flex-col gap-3'
         >
-          <button
-            type='button'
-            disabled={unlinking}
+          <Button
+            variant='destructive'
+            size='md'
+            fullWidth
+            status={unlinking ? 'pending' : 'idle'}
+            pendingLabel={t(locale, 'password.unlinking')}
             onClick={handleUnlinkGoogle}
-            className='bg-clay text-bg flex h-12 w-full items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
           >
-            {unlinking ?
-              <motion.span
-                animate={{ opacity: [1, 0.4, 1] }}
-                transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                {t(locale, 'password.unlinking')}
-              </motion.span>
-            : t(locale, 'password.unlinkButton')}
-          </button>
-          <button
-            type='button'
+            {t(locale, 'password.unlinkButton')}
+          </Button>
+          <Button
+            variant='secondary'
+            size='md'
+            fullWidth
             onClick={() => router.push('/settings?tab=account')}
-            className='border-line bg-paper text-ink-soft hover:bg-line/40 flex h-12 w-full items-center justify-center rounded-xl border text-sm transition-all active:scale-[0.98]'
           >
             {t(locale, 'password.unlinkSkip')}
-          </button>
+          </Button>
           {error && (
             <motion.p
               initial={{ opacity: 0, y: -4 }}
@@ -180,13 +179,15 @@ export function PasswordCreateScreen({ token, valid }: { token: string; valid: b
           transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
           className='mt-10'
         >
-          <button
-            type='button'
+          <Button
+            variant='primary'
+            size='md'
+            fullWidth
             onClick={() => router.push('/settings?tab=account')}
-            className='bg-sage text-bg flex h-12 w-full items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98]'
+            trailing={<span aria-hidden>→</span>}
           >
-            {t(locale, 'password.backToAccount')} →
-          </button>
+            {t(locale, 'password.backToAccount')}
+          </Button>
         </motion.div>
       </div>
     )
@@ -251,20 +252,17 @@ export function PasswordCreateScreen({ token, valid }: { token: string; valid: b
           </motion.p>
         )}
 
-        <button
+        <Button
           type='submit'
-          disabled={pending}
-          className='bg-sage text-bg mt-2 flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
+          variant='primary'
+          size='md'
+          fullWidth
+          className='mt-2'
+          status={pending ? 'pending' : 'idle'}
+          pendingLabel={t(locale, 'password.saving')}
         >
-          {pending ?
-            <motion.span
-              animate={{ opacity: [1, 0.4, 1] }}
-              transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              {t(locale, 'password.saving')}
-            </motion.span>
-          : t(locale, 'password.createButton')}
-        </button>
+          {t(locale, 'password.createButton')}
+        </Button>
       </motion.form>
     </div>
   )
