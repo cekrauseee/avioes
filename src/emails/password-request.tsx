@@ -15,15 +15,7 @@ const COLORS = {
 const FONT_DISPLAY = 'Fraunces, "Times New Roman", Georgia, serif'
 const FONT_BODY = '"Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
 
-export function PasswordRequestEmail({
-  type,
-  url,
-  locale = 'pt'
-}: {
-  type: 'change' | 'create'
-  url: string
-  locale?: Locale
-}) {
+export function PasswordRequestEmail({ type, url, locale = 'pt' }: { type: 'change' | 'create'; url: string; locale?: Locale }) {
   const htmlLang = locale === 'pt' ? 'pt-BR' : 'en'
   const previewKey = type === 'change' ? 'email.passwordPreviewChange' : 'email.passwordPreviewCreate'
   const headingLine1Key = type === 'change' ? 'email.passwordHeadingLine1Change' : 'email.passwordHeadingLine1Create'
@@ -77,9 +69,7 @@ export function PasswordRequestEmail({
             <span style={{ color: COLORS.sage, fontStyle: 'italic' }}>{t(locale, 'email.passwordHeadingItalic')}</span>
           </Heading>
 
-          <Text style={{ margin: '12px 0 0 0', fontSize: '14px', color: COLORS.inkFaint, lineHeight: '1.5' }}>
-            {t(locale, bodyKey)}
-          </Text>
+          <Text style={{ margin: '12px 0 0 0', fontSize: '14px', color: COLORS.inkFaint, lineHeight: '1.5' }}>{t(locale, bodyKey)}</Text>
 
           <Button
             href={url}

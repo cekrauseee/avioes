@@ -1,33 +1,34 @@
+'use client'
+
+import { motion } from 'motion/react'
 import { Skel } from '@/components/skeleton'
 
 export default function Loading() {
   return (
     <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)]'>
-      {/* header */}
-      <div className='flex items-center justify-between gap-3'>
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className='flex items-center justify-between gap-3'
+      >
         <Skel className='h-4 w-14' />
         <Skel className='h-11 w-24 rounded-full' />
-      </div>
+      </motion.div>
 
-      {/* heading */}
-      <div className='mt-12 flex flex-col gap-3'>
-        <Skel className='h-10 w-48' />
-        <Skel className='h-10 w-36' />
-        <Skel className='mt-1 h-4 w-56' />
-      </div>
-
-      {/* form fields */}
-      <div className='mt-10 flex flex-col gap-4'>
-        <div className='flex flex-col gap-1.5'>
-          <Skel className='h-3 w-20' />
-          <Skel className='h-11 w-full rounded-xl' />
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+        className='mt-12 flex flex-col gap-10'
+      >
+        <div className='flex flex-col gap-3'>
+          <Skel className='h-10 w-48' />
+          <Skel className='h-10 w-36' />
+          <Skel className='mt-1 h-4 w-56' />
         </div>
-        <div className='flex flex-col gap-1.5'>
-          <Skel className='h-3 w-28' />
-          <Skel className='h-11 w-full rounded-xl' />
-        </div>
-        <Skel className='mt-2 h-12 w-full rounded-xl' />
-      </div>
+        <Skel className='h-12 w-full rounded-xl' />
+      </motion.div>
     </div>
   )
 }

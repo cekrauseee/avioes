@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
 import { requestPasswordChange, requestPasswordCreation } from '../actions'
@@ -216,66 +216,78 @@ export function PasswordScreen() {
         locale={locale}
       />
 
-      {mode === null ?
-        <div className='mt-12 flex flex-col gap-10'>
-          <div className='flex flex-col gap-3'>
-            <Skel className='h-10 w-48' />
-            <Skel className='h-10 w-36' />
-            <Skel className='mt-1 h-4 w-56' />
-          </div>
-          <Skel className='h-12 w-full rounded-xl' />
-        </div>
-      : <>
+      <AnimatePresence mode='wait'>
+        {mode === null ?
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-            className='mt-12'
+            key='skeleton'
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className='mt-12 flex flex-col gap-10'
           >
-            <h1 className='font-display text-[36px] leading-[0.93] tracking-tight'>
-              {heading.line1}
-              <br />
-              <span className='text-sage italic'>{heading.italic}</span>
-            </h1>
-            <p className='text-ink-faint mt-3 text-sm'>{subtitle}</p>
+            <div className='flex flex-col gap-3'>
+              <Skel className='h-10 w-48' />
+              <Skel className='h-10 w-36' />
+              <Skel className='mt-1 h-4 w-56' />
+            </div>
+            <Skel className='h-12 w-full rounded-xl' />
           </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            className='mt-10 flex flex-col gap-4'
+        : <motion.div
+            key='content'
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
           >
-            {error && (
-              <motion.p
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className='text-clay text-sm'
-              >
-                {error}
-              </motion.p>
-            )}
-
-            <button
-              type='button'
-              disabled={pending}
-              onClick={handleRequest}
-              className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+              className='mt-12'
             >
-              {pending ?
-                <motion.span
-                  animate={{ opacity: [1, 0.4, 1] }}
-                  transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+              <h1 className='font-display text-[36px] leading-[0.93] tracking-tight'>
+                {heading.line1}
+                <br />
+                <span className='text-sage italic'>{heading.italic}</span>
+              </h1>
+              <p className='text-ink-faint mt-3 text-sm'>{subtitle}</p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+              className='mt-10 flex flex-col gap-4'
+            >
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className='text-clay text-sm'
                 >
-                  {t(locale, 'password.requesting')}
-                </motion.span>
-              : mode === 'set' ?
-                t(locale, 'password.requestCreateBtn')
-              : t(locale, 'password.requestChangeBtn')}
-            </button>
+                  {error}
+                </motion.p>
+              )}
+
+              <button
+                type='button'
+                disabled={pending}
+                onClick={handleRequest}
+                className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
+              >
+                {pending ?
+                  <motion.span
+                    animate={{ opacity: [1, 0.4, 1] }}
+                    transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    {t(locale, 'password.requesting')}
+                  </motion.span>
+                : mode === 'set' ?
+                  t(locale, 'password.requestCreateBtn')
+                : t(locale, 'password.requestChangeBtn')}
+              </button>
+            </motion.div>
           </motion.div>
-        </>
-      }
+        }
+      </AnimatePresence>
     </div>
   )
 }

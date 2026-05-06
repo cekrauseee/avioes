@@ -23,6 +23,7 @@ When you add an entry, also remove any older entry that has been superseded. The
 ### 2026-05-05 — Password flows redesigned to email-based magic link
 
 Password creation and update no longer happen inline. Both flows now send an email with a 15-minute magic link to a dedicated page where the actual password form lives. New flows:
+
 - **Change** (settings): CTA → email with link to `/settings/password/verify/[token]` → form with current+new+confirm → done. Requires login.
 - **Create** (settings, Google-only): CTA → email with link to `/password/create/[token]` → form with new+confirm → optional Google unlink. No login required at the link.
 - **Create** (login screen): when a user has no credential account and clicks "continuar com senha", a `no-password` step appears with CTA to send creation email → same `/password/create/[token]` flow.

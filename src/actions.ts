@@ -13,6 +13,8 @@ import {
   createGroup,
   createInvitation as createInvitationInStore,
   createPasswordToken,
+  getCredentialPasswordHash,
+  recordPasswordAttempt,
   deleteGroup as deleteGroupInStore,
   findUserByEmail,
   leaveGroup as leaveGroupInStore,
@@ -519,7 +521,8 @@ export async function consumePasswordCreationToken(token: string, newPassword: s
     const { hashPassword } = await import('better-auth/crypto')
     const { createCredentialAccount } = await import('./lib/store')
     const passwordHash = await hashPassword(newPassword)
-    await createCredentialAccount(user.id, passwordHash)
+    const created = await createCredentialAccount(user.id, passwordHash)
+    if (!created) return { ok: false, error: 'Você já possui uma senha.' }
   } catch {
     return { ok: false, error: 'Não foi possível criar a senha.' }
   }
@@ -544,15 +547,27 @@ export async function consumePasswordChangeToken(
   if (!result) return { ok: false, error: 'Token inválido ou expirado.' }
   if (result.email !== user.email.toLowerCase()) return { ok: false, error: 'Token inválido.' }
 
-  try {
-    await auth.api.changePassword({
-      body: { currentPassword, newPassword },
-      headers: await headers()
-    })
-  } catch {
+  const hash = await getCredentialPasswordHash(user.email)
+  if (!hash) return { ok: false, error: 'Conta sem senha.' }
+
+  const { verifyPassword } = await import('better-auth/crypto')
+  const valid = await verifyPassword({ hash, password: currentPassword })
+  if (!valid) {
+    const { blocked } = await recordPasswordAttempt(token, 'change')
+    if (blocked) return { ok: false, error: 'Muitas tentativas. Solicite um novo link.' }
     return { ok: false, error: 'Senha atual incorreta.' }
   }
 
-  await consumePasswordToken(token, 'change')
+  const claimed = await consumePasswordToken(token, 'change')
+  if (!claimed) return { ok: false, error: 'Token já utilizado.' }
+
+  try {
+    await auth.api.changePassword({
+      body: { currentPassword, newPassword, revokeOtherSessions: true },
+      headers: await headers()
+    })
+  } catch {
+    return { ok: false, error: 'Erro ao alterar senha. Solicite um novo link.' }
+  }
   return { ok: true }
 }

@@ -9,7 +9,7 @@ import { useNavDirection } from '../lib/nav-direction'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 import type { Locale } from '../lib/types'
 
-export function PasswordChangeVerifyScreen({ token, valid }: { token: string; valid: boolean }) {
+export function PasswordChangeVerifyScreen({ token, valid, unauthorized }: { token: string; valid: boolean; unauthorized: boolean }) {
   const router = useRouter()
   const { set: setNavDirection } = useNavDirection()
   const state = useOfflineState()
@@ -27,10 +27,51 @@ export function PasswordChangeVerifyScreen({ token, valid }: { token: string; va
     router.push('/settings?tab=account')
   }
 
+  if (unauthorized) {
+    return (
+      <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
+        <Header
+          onBack={goBackToAccount}
+          locale={locale}
+        />
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+          className='mt-12'
+        >
+          <h1 className='font-display text-[36px] leading-[0.93] tracking-tight'>
+            {t(locale, 'password.unauthorizedLine1')}
+            <br />
+            <span className='text-clay italic'>{t(locale, 'password.unauthorizedItalic')}</span>
+          </h1>
+          <p className='text-ink-faint mt-3 text-sm'>{t(locale, 'password.unauthorizedBody')}</p>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          className='mt-10'
+        >
+          <button
+            type='button'
+            onClick={goBackToAccount}
+            className='bg-sage text-bg flex h-12 w-full items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98]'
+          >
+            {t(locale, 'password.backToAccount')} →
+          </button>
+        </motion.div>
+      </div>
+    )
+  }
+
   if (!valid) {
     return (
       <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
-        <Header onBack={goBackToAccount} locale={locale} />
+        <Header
+          onBack={goBackToAccount}
+          locale={locale}
+        />
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -65,7 +106,10 @@ export function PasswordChangeVerifyScreen({ token, valid }: { token: string; va
   if (done) {
     return (
       <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
-        <Header onBack={goBackToAccount} locale={locale} />
+        <Header
+          onBack={goBackToAccount}
+          locale={locale}
+        />
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -121,7 +165,10 @@ export function PasswordChangeVerifyScreen({ token, valid }: { token: string; va
 
   return (
     <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
-      <Header onBack={goBackToAccount} locale={locale} />
+      <Header
+        onBack={goBackToAccount}
+        locale={locale}
+      />
 
       <motion.div
         initial={{ opacity: 0, y: 16 }}

@@ -421,6 +421,7 @@ function parseServerEventId(id: string): number | null {
 // --- Password tokens ---
 
 const PW_TOKEN_EXPIRY_MS = 15 * 60 * 1000
+const PW_MAX_ATTEMPTS = 5
 
 type PasswordTokenType = 'change' | 'create'
 
@@ -428,9 +429,14 @@ function pwIdentifier(email: string, type: PasswordTokenType): string {
   return `pw-${type}:${email.toLowerCase()}`
 }
 
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex')
+}
+
 export async function createPasswordToken(email: string, type: PasswordTokenType): Promise<string> {
   const identifier = pwIdentifier(email, type)
   const token = crypto.randomUUID()
+  const tokenHash = hashToken(token)
   const now = new Date()
   const expiresAt = new Date(now.getTime() + PW_TOKEN_EXPIRY_MS)
 
@@ -439,7 +445,7 @@ export async function createPasswordToken(email: string, type: PasswordTokenType
   await db.insert(verifications).values({
     id: crypto.randomUUID(),
     identifier,
-    value: token,
+    value: tokenHash,
     expiresAt,
     createdAt: now,
     updatedAt: now
@@ -452,10 +458,11 @@ export async function createPasswordToken(email: string, type: PasswordTokenType
 
 export async function validatePasswordToken(token: string, type: PasswordTokenType): Promise<{ email: string } | null> {
   const prefix = `pw-${type}:`
+  const tokenHash = hashToken(token)
   const row = await db
     .select({ identifier: verifications.identifier, expiresAt: verifications.expiresAt })
     .from(verifications)
-    .where(and(eq(verifications.value, token), like(verifications.identifier, `${prefix}%`)))
+    .where(and(eq(verifications.value, tokenHash), like(verifications.identifier, `${prefix}%`)))
     .limit(1)
 
   const found = row[0]
@@ -468,11 +475,36 @@ export async function validatePasswordToken(token: string, type: PasswordTokenTy
 
 export async function consumePasswordToken(token: string, type: PasswordTokenType): Promise<boolean> {
   const prefix = `pw-${type}:`
+  const tokenHash = hashToken(token)
   const deleted = await db
     .delete(verifications)
-    .where(and(eq(verifications.value, token), like(verifications.identifier, `${prefix}%`)))
+    .where(and(eq(verifications.value, tokenHash), like(verifications.identifier, `${prefix}%`)))
     .returning({ id: verifications.id })
   return deleted.length > 0
+}
+
+export async function recordPasswordAttempt(token: string, type: PasswordTokenType): Promise<{ blocked: boolean }> {
+  const tokenHash = hashToken(token)
+  const failId = `pw-fail:${type}:${tokenHash}`
+  const now = new Date()
+  const expiresAt = new Date(now.getTime() + PW_TOKEN_EXPIRY_MS)
+
+  const result = await db.execute<{ count: number }>(sql`
+    INSERT INTO verification (id, identifier, value, expires_at, created_at, updated_at)
+    VALUES (${crypto.randomUUID()}, ${failId}, '1', ${expiresAt}, ${now}, ${now})
+    ON CONFLICT (identifier) WHERE identifier LIKE 'pw-fail:%'
+    DO UPDATE SET value = (verification.value::int + 1)::text, updated_at = ${now}
+    RETURNING value::int AS count
+  `)
+
+  const count = result.rows[0]?.count ?? 1
+  if (count >= PW_MAX_ATTEMPTS) {
+    await consumePasswordToken(token, type)
+    await db.delete(verifications).where(eq(verifications.identifier, failId))
+    return { blocked: true }
+  }
+
+  return { blocked: false }
 }
 
 export async function userHasCredentialAccount(email: string): Promise<boolean> {
@@ -483,6 +515,16 @@ export async function userHasCredentialAccount(email: string): Promise<boolean> 
     .where(and(eq(users.email, email.toLowerCase()), eq(accounts.providerId, 'credential')))
     .limit(1)
   return row.length > 0
+}
+
+export async function getCredentialPasswordHash(email: string): Promise<string | null> {
+  const row = await db
+    .select({ password: accounts.password })
+    .from(accounts)
+    .innerJoin(users, eq(users.id, accounts.userId))
+    .where(and(eq(users.email, email.toLowerCase()), eq(accounts.providerId, 'credential')))
+    .limit(1)
+  return row[0]?.password ?? null
 }
 
 function pwSendIdentifier(email: string, type: PasswordTokenType): string {
@@ -512,15 +554,20 @@ export async function countRecentPasswordSends(email: string, type: PasswordToke
   return row[0]?.count ?? 0
 }
 
-export async function createCredentialAccount(userId: string, passwordHash: string): Promise<void> {
+export async function createCredentialAccount(userId: string, passwordHash: string): Promise<boolean> {
   const now = new Date()
-  await db.insert(accounts).values({
-    id: crypto.randomUUID(),
-    accountId: userId,
-    providerId: 'credential',
-    userId,
-    password: passwordHash,
-    createdAt: now,
-    updatedAt: now
-  })
+  const result = await db
+    .insert(accounts)
+    .values({
+      id: crypto.randomUUID(),
+      accountId: userId,
+      providerId: 'credential',
+      userId,
+      password: passwordHash,
+      createdAt: now,
+      updatedAt: now
+    })
+    .onConflictDoNothing({ target: [accounts.userId, accounts.providerId] })
+    .returning({ id: accounts.id })
+  return result.length > 0
 }

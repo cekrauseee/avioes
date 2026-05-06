@@ -111,6 +111,9 @@ const pt = {
   'password.invalidLine1': 'link',
   'password.invalidItalic': 'inválido',
   'password.invalidBody': 'este link não corresponde a nenhuma solicitação.',
+  'password.unauthorizedLine1': 'acesso',
+  'password.unauthorizedItalic': 'não autorizado',
+  'password.unauthorizedBody': 'este link pertence a outra conta. faça login com a conta correta.',
   'password.requestFailed': 'Não foi possível enviar o e-mail. Tente de novo.',
   'password.tokenError': 'Token inválido ou expirado.',
 
@@ -543,6 +546,9 @@ const en: Record<TranslationKey, string> = {
   'password.invalidLine1': 'link',
   'password.invalidItalic': 'invalid',
   'password.invalidBody': "this link doesn't match any request.",
+  'password.unauthorizedLine1': 'access',
+  'password.unauthorizedItalic': 'unauthorized',
+  'password.unauthorizedBody': 'this link belongs to another account. log in with the correct account.',
   'password.requestFailed': 'Could not send the email. Try again.',
   'password.tokenError': 'Invalid or expired token.',
 
