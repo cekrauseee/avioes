@@ -16,6 +16,7 @@ Every user-facing illustration ships as a **light/dark PNG pair** rendered with 
 | `empty-counter-{light,dark}.png`      | 1254 × 1254 | `counter.tsx` (only when both totals are 0)                              |
 | `empty-diary-{light,dark}.png`        | 1254 × 1254 | `diary-view.tsx` empty state                                             |
 | `empty-scoreboard-{light,dark}.png`   | 1254 × 1254 | `scoreboard-view.tsx` empty state                                        |
+| `empty-ranking-{light,dark}.png`      | 1254 × 1254 | `world-view.tsx` empty state                                             |
 | `airplane-not-found-{light,dark}.png` | 1254 × 1254 | `app/not-found.tsx`, `invite-screen.tsx` not-found                       |
 | `airplane-error-{light,dark}.png`     | 1254 × 1254 | `app/error.tsx`, `auth-screen.tsx` OAuth-error step                      |
 | `airplane-offline-{light,dark}.png`   | 1254 × 1254 | `offline-gate.tsx`                                                       |
