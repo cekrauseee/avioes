@@ -1,122 +1,81 @@
 'use client'
 
-import { useCallback, useEffect, useSyncExternalStore } from 'react'
-import { bootstrapState, syncOps } from '../actions'
+import { useCallback, useEffect } from 'react'
+import { writeBootState } from './offline-db'
 import {
-  clearBootState,
-  clearPersistedState,
-  migrateLegacyQueue,
-  readBootState,
-  readPersistedState,
-  writeBootState,
-  writePersistedState
-} from './offline-db'
-import {
-  makeAddEventOp,
-  makeDeleteLatestEventOp,
-  makeLocaleOp,
-  makePaletteOp,
-  makeThemeOp,
-  pendingWriteCount,
-  projectEvents,
-  projectLocale,
-  projectPalette,
-  projectTheme,
-  settleSnapshot,
-  type OfflineSnapshot,
-  type SyncSnapshot
-} from './offline-model'
+  isOffline as _isOffline,
+  selectEvents as _selectEvents,
+  selectLocale as _selectLocale,
+  selectOfflineSyncing as _selectOfflineSyncing,
+  selectPalette as _selectPalette,
+  selectPendingCount as _selectPendingCount,
+  selectTheme as _selectTheme,
+  store,
+  useAppStore,
+  type AppState
+} from './store/app-store'
 import type { AirplaneEvent, GroupMember, Identity, Locale, Palette, PendingOp, Theme } from './types'
 
-export type OfflineStoreState = OfflineSnapshot & {
-  hydrated: boolean
-  storageReady: boolean
-  storageError: boolean
-  lastSyncOk: boolean | null
-  syncInFlight: boolean
-  offlineSyncPending: boolean
-  offlineSyncInFlight: boolean
-  localeFading: boolean
-}
+// ---------------------------------------------------------------------------
+// Re-export the state type under the old name for consumers
+// ---------------------------------------------------------------------------
 
-type BroadcastState = Pick<
-  OfflineStoreState,
-  'identity' | 'activeGroupId' | 'groupMembers' | 'baseEvents' | 'baseTheme' | 'basePalette' | 'baseLocale' | 'lastSyncOk'
->
+export type OfflineStoreState = AppState
 
-const EMPTY_EVENTS: AirplaneEvent[] = []
-const EMPTY_OPS: PendingOp[] = []
-const EMPTY_MEMBERS: GroupMember[] = []
-const SYNC_BATCH_SIZE = 250
+// ---------------------------------------------------------------------------
+// Hooks
+// ---------------------------------------------------------------------------
 
-let state: OfflineStoreState = {
-  identity: null,
-  activeGroupId: null,
-  groupMembers: EMPTY_MEMBERS,
-  baseEvents: EMPTY_EVENTS,
-  baseTheme: 'system',
-  basePalette: 'default',
-  baseLocale: 'pt',
-  pendingOps: EMPTY_OPS,
-  hydrated: false,
-  storageReady: false,
-  storageError: false,
-  lastSyncOk: null,
-  syncInFlight: false,
-  offlineSyncPending: false,
-  offlineSyncInFlight: false,
-  localeFading: false
-}
-
-const serverState: OfflineStoreState = state
-const listeners = new Set<() => void>()
-let initialized = false
-let bc: BroadcastChannel | null = null
-let syncInFlight = false
-let rerunPending = false
-
-export function useOfflineState(): OfflineStoreState {
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+export function useOfflineState(): AppState {
+  return useAppStore()
 }
 
 export function useOfflineRuntime(): void {
-  useEffect(() => {
-    initOfflineStore()
-  }, [])
+  const init = useAppStore((s) => s.init)
 
-  const snapshot = useOfflineState()
-  const theme = selectTheme(snapshot)
-  const palette = selectPalette(snapshot)
-  const locale = selectLocale(snapshot)
+  useEffect(() => {
+    init()
+  }, [init])
+
+  const identity = useAppStore((s) => s.identity)
+  const activeGroupId = useAppStore((s) => s.activeGroupId)
+  const theme = useAppStore(_selectTheme)
+  const palette = useAppStore(_selectPalette)
+  const locale = useAppStore(_selectLocale)
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     document.documentElement.dataset.palette = palette
     document.documentElement.lang = locale === 'en' ? 'en' : 'pt-BR'
-    writeBootState({ userId: snapshot.identity, activeGroupId: snapshot.activeGroupId, theme, palette, locale })
-  }, [snapshot.identity, snapshot.activeGroupId, theme, palette, locale])
+    writeBootState({ userId: identity, activeGroupId, theme, palette, locale })
+  }, [identity, activeGroupId, theme, palette, locale])
 }
 
 export function useOfflineSync(): void {
-  const snapshot = useOfflineState()
+  const hydrated = useAppStore((s) => s.hydrated)
+  const storageReady = useAppStore((s) => s.storageReady)
+  const pendingOps = useAppStore((s) => s.pendingOps)
+  const lastSyncOk = useAppStore((s) => s.lastSyncOk)
+
   const sync = useCallback(() => {
-    void drainOnce()
+    void store.getState().drainOnce()
   }, [])
 
   useEffect(() => {
-    if (!snapshot.hydrated || !snapshot.storageReady) return
+    if (!hydrated || !storageReady) return
     sync()
-  }, [snapshot.hydrated, snapshot.storageReady, snapshot.pendingOps, sync])
+  }, [hydrated, storageReady, pendingOps, sync])
 
   useEffect(() => {
     const onOnline = () => {
-      updateState({ lastSyncOk: null })
+      store.setState({ lastSyncOk: null })
       sync()
     }
     const onOffline = () => {
-      updateState({
+      const s = store.getState()
+      store.setState({
         lastSyncOk: null,
-        offlineSyncPending: state.offlineSyncPending || state.pendingOps.length > 0,
+        offlineSyncPending: s.offlineSyncPending || s.pendingOps.length > 0,
         offlineSyncInFlight: false
       })
     }
@@ -134,339 +93,87 @@ export function useOfflineSync(): void {
   }, [sync])
 
   useEffect(() => {
-    if (!snapshot.hydrated || !snapshot.storageReady) return
-    if (snapshot.pendingOps.length === 0 && snapshot.lastSyncOk === true) return
-    const id = window.setInterval(sync, snapshot.pendingOps.length > 0 ? 5000 : 8000)
+    if (!hydrated || !storageReady) return
+    if (pendingOps.length === 0 && lastSyncOk === true) return
+    const id = window.setInterval(sync, pendingOps.length > 0 ? 5000 : 8000)
     return () => window.clearInterval(id)
-  }, [snapshot.hydrated, snapshot.storageReady, snapshot.pendingOps.length, snapshot.lastSyncOk, sync])
+  }, [hydrated, storageReady, pendingOps.length, lastSyncOk, sync])
 }
 
-export function selectEvents(snapshot: OfflineSnapshot): AirplaneEvent[] {
-  return projectEvents(snapshot.baseEvents, snapshot.pendingOps)
+// ---------------------------------------------------------------------------
+// Selectors (same signatures as before, accept state object)
+// ---------------------------------------------------------------------------
+
+export function selectEvents(snapshot: AppState): AirplaneEvent[] {
+  return _selectEvents(snapshot)
 }
 
-export function selectTheme(snapshot: OfflineSnapshot): Theme {
-  return projectTheme(snapshot.baseTheme, snapshot.pendingOps)
+export function selectTheme(snapshot: AppState): Theme {
+  return _selectTheme(snapshot)
 }
 
-export function selectPalette(snapshot: OfflineSnapshot): Palette {
-  return projectPalette(snapshot.basePalette, snapshot.pendingOps)
+export function selectPalette(snapshot: AppState): Palette {
+  return _selectPalette(snapshot)
 }
 
-export function selectLocale(snapshot: OfflineSnapshot): Locale {
-  return projectLocale(snapshot.baseLocale, snapshot.pendingOps)
+export function selectLocale(snapshot: AppState): Locale {
+  return _selectLocale(snapshot)
 }
 
-export function selectPendingCount(snapshot: OfflineSnapshot): number {
-  return pendingWriteCount(snapshot.pendingOps)
+export function selectPendingCount(snapshot: AppState): number {
+  return _selectPendingCount(snapshot)
 }
 
-export function selectOfflineSyncing(snapshot: OfflineStoreState): boolean {
-  return snapshot.offlineSyncInFlight
+export function selectOfflineSyncing(snapshot: AppState): boolean {
+  return _selectOfflineSyncing(snapshot)
 }
 
-export function isOffline(snapshot: OfflineStoreState): boolean {
-  if (snapshot.lastSyncOk === true) return false
-  if (snapshot.lastSyncOk === false) return true
-  if (typeof navigator === 'undefined') return false
-  return !navigator.onLine
+export function isOffline(snapshot: AppState): boolean {
+  return _isOffline(snapshot)
 }
+
+// ---------------------------------------------------------------------------
+// Imperative actions (same standalone-function API as before)
+// ---------------------------------------------------------------------------
 
 export function addAirplane(who: Identity): void {
-  const op = makeAddEventOp(who, Date.now(), crypto.randomUUID())
-  commit({ pendingOps: [...state.pendingOps, op] })
+  store.getState().addAirplane(who)
 }
 
 export function undoAirplane(who: Identity): boolean {
-  const op = makeDeleteLatestEventOp(state, who, `op:${crypto.randomUUID()}`)
-  if (!op) return false
-  commit({ pendingOps: [...state.pendingOps, op] })
-  return true
+  return store.getState().undoAirplane(who)
 }
 
 export function queueTheme(theme: Theme): void {
-  commit({ pendingOps: [...state.pendingOps, makeThemeOp(theme, `op:${crypto.randomUUID()}`)] })
+  store.getState().queueTheme(theme)
 }
 
 export function queuePalette(palette: Palette): void {
-  commit({ pendingOps: [...state.pendingOps, makePaletteOp(palette, `op:${crypto.randomUUID()}`)] })
+  store.getState().queuePalette(palette)
 }
-
-const LOCALE_FADE_MS = 180
 
 export function switchLocale(locale: Locale): void {
-  if (selectLocale(state) === locale) return
-  updateState({ localeFading: true })
-  window.setTimeout(() => {
-    commit({ pendingOps: [...state.pendingOps, makeLocaleOp(locale, `op:${crypto.randomUUID()}`)] })
-    updateState({ localeFading: false })
-  }, LOCALE_FADE_MS)
+  store.getState().switchLocale(locale)
 }
 
-export function applyServerSnapshot(sync: SyncSnapshot): void {
-  const next = migrateLegacyQueue(settleSnapshot(state, sync))
-  commit({
-    ...next,
-    lastSyncOk: true,
-    storageReady: true,
-    storageError: false,
-    syncInFlight: false,
-    offlineSyncPending: false,
-    offlineSyncInFlight: false
-  })
+export function applyServerSnapshot(sync: import('./offline-model').SyncSnapshot): void {
+  store.getState().applyServerSnapshot(sync)
 }
 
 export function applyLocalIdentity(identity: Identity | null): void {
-  if (identity) {
-    commit({ identity })
-  } else {
-    commit({
-      identity: null,
-      activeGroupId: null,
-      groupMembers: EMPTY_MEMBERS,
-      baseEvents: EMPTY_EVENTS,
-      baseTheme: 'system',
-      basePalette: 'default',
-      baseLocale: 'pt',
-      pendingOps: EMPTY_OPS,
-      offlineSyncPending: false,
-      offlineSyncInFlight: false
-    })
-    clearBootState()
-    void clearPersistedState().catch(() => {})
-  }
+  store.getState().applyLocalIdentity(identity)
 }
 
 export function applyActiveGroup(activeGroupId: string | null, groupMembers: GroupMember[]): void {
-  commit({ activeGroupId, groupMembers })
+  store.getState().applyActiveGroup(activeGroupId, groupMembers)
 }
 
 export async function drainOnce(): Promise<void> {
-  if (syncInFlight) {
-    rerunPending = true
-    return
-  }
-  if (!state.hydrated || !state.storageReady || state.storageError) return
-  if (!readOnline() && state.lastSyncOk !== true) {
-    updateState({
-      lastSyncOk: false,
-      offlineSyncPending: state.offlineSyncPending || state.pendingOps.length > 0,
-      offlineSyncInFlight: false
-    })
-    return
-  }
-  if (state.pendingOps.length === 0 && state.lastSyncOk === true) return
-  if (!state.identity) {
-    syncInFlight = true
-    updateState({ syncInFlight: true, offlineSyncInFlight: false })
-    try {
-      applyServerSnapshot(await bootstrapState())
-    } catch {
-      updateState({ lastSyncOk: false, syncInFlight: false, offlineSyncInFlight: false })
-    } finally {
-      syncInFlight = false
-      if (rerunPending) {
-        rerunPending = false
-        void drainOnce()
-      }
-    }
-    return
-  }
-
-  syncInFlight = true
-  updateState({
-    syncInFlight: true,
-    offlineSyncInFlight: state.pendingOps.length > 0 && state.offlineSyncPending
-  })
-  try {
-    const result = state.pendingOps.length > 0 ? await syncOps(state.pendingOps.slice(0, SYNC_BATCH_SIZE)) : await bootstrapState()
-    applyServerSnapshot(result)
-  } catch {
-    updateState({
-      lastSyncOk: false,
-      syncInFlight: false,
-      offlineSyncPending: state.offlineSyncPending || (!readOnline() && state.pendingOps.length > 0),
-      offlineSyncInFlight: false
-    })
-  } finally {
-    syncInFlight = false
-    if (rerunPending) {
-      rerunPending = false
-      void drainOnce()
-    }
-  }
+  return store.getState().drainOnce()
 }
 
-function initOfflineStore(): void {
-  if (initialized) return
-  initialized = true
+// ---------------------------------------------------------------------------
+// Re-exports for type compatibility
+// ---------------------------------------------------------------------------
 
-  queueMicrotask(() => {
-    const boot = readBootState()
-    updateState({
-      hydrated: true,
-      identity: boot.userId,
-      activeGroupId: boot.activeGroupId,
-      baseTheme: boot.theme,
-      basePalette: boot.palette,
-      baseLocale: boot.locale
-    })
-    void readPersistedState()
-      .then((persisted) => {
-        if (!persisted) {
-          const next = migrateLegacyQueue({
-            identity: boot.userId,
-            activeGroupId: boot.activeGroupId,
-            groupMembers: EMPTY_MEMBERS,
-            baseEvents: EMPTY_EVENTS,
-            baseTheme: boot.theme,
-            basePalette: boot.palette,
-            baseLocale: boot.locale,
-            pendingOps: EMPTY_OPS
-          })
-          updateState({ ...next, storageReady: true, offlineSyncPending: next.pendingOps.length > 0 })
-          return
-        }
-        const next = migrateLegacyQueue({
-          identity: persisted.identity,
-          activeGroupId: persisted.activeGroupId,
-          groupMembers: persisted.groupMembers ?? EMPTY_MEMBERS,
-          baseEvents: persisted.baseEvents,
-          baseTheme: persisted.baseTheme,
-          basePalette: persisted.basePalette,
-          baseLocale: persisted.baseLocale ?? 'pt',
-          pendingOps: persisted.pendingOps
-        })
-        updateState({ ...next, storageReady: true, storageError: false, offlineSyncPending: next.pendingOps.length > 0 })
-      })
-      .catch(() => updateState({ storageReady: true, storageError: true }))
-  })
-
-  window.addEventListener('storage', (event) => {
-    if (event.key !== 'ap_boot') return
-    const boot = readBootState()
-    updateState({ identity: boot.userId, activeGroupId: boot.activeGroupId, baseTheme: boot.theme, basePalette: boot.palette, baseLocale: boot.locale })
-  })
-
-  if (typeof BroadcastChannel !== 'undefined') {
-    bc = new BroadcastChannel('airplanes-offline')
-    bc.addEventListener('message', (event) => {
-      const incoming = readBroadcastState(event.data)
-      if (!incoming) return
-      updateState(incoming, false)
-    })
-  }
-}
-
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener)
-  return () => {
-    listeners.delete(listener)
-  }
-}
-
-function getSnapshot(): OfflineStoreState {
-  return state
-}
-
-function getServerSnapshot(): OfflineStoreState {
-  return serverState
-}
-
-function commit(patch: Partial<OfflineStoreState>): void {
-  updateState(patch)
-  const persisted: OfflineSnapshot = {
-    identity: state.identity,
-    activeGroupId: state.activeGroupId,
-    groupMembers: state.groupMembers,
-    baseEvents: state.baseEvents,
-    baseTheme: state.baseTheme,
-    basePalette: state.basePalette,
-    baseLocale: state.baseLocale,
-    pendingOps: state.pendingOps
-  }
-  writeBootState({
-    userId: state.identity,
-    activeGroupId: state.activeGroupId,
-    theme: selectTheme(state),
-    palette: selectPalette(state),
-    locale: selectLocale(state)
-  })
-  void writePersistedState(persisted).catch(() => updateState({ storageError: true }))
-}
-
-function updateState(patch: Partial<OfflineStoreState>, broadcast = true): void {
-  state = { ...state, ...patch }
-  listeners.forEach((listener) => listener())
-  if (broadcast) bc?.postMessage(toBroadcastState(state))
-}
-
-function readOnline(): boolean {
-  if (typeof navigator === 'undefined') return true
-  return navigator.onLine
-}
-
-function toBroadcastState(snapshot: OfflineStoreState): BroadcastState {
-  return {
-    identity: snapshot.identity,
-    activeGroupId: snapshot.activeGroupId,
-    groupMembers: snapshot.groupMembers,
-    baseEvents: snapshot.baseEvents,
-    baseTheme: snapshot.baseTheme,
-    basePalette: snapshot.basePalette,
-    baseLocale: snapshot.baseLocale,
-    lastSyncOk: snapshot.lastSyncOk
-  }
-}
-
-function readBroadcastState(value: unknown): BroadcastState | null {
-  if (typeof value !== 'object' || value === null) return null
-  const item = value as Partial<BroadcastState>
-  if (!isStringOrNull(item.identity)) return null
-  if (!isStringOrNull(item.activeGroupId)) return null
-  if (!isTheme(item.baseTheme)) return null
-  if (!isPalette(item.basePalette)) return null
-  if (!isLocale(item.baseLocale) && item.baseLocale !== undefined) return null
-  if (item.lastSyncOk !== true && item.lastSyncOk !== false && item.lastSyncOk !== null) return null
-  if (!Array.isArray(item.baseEvents) || !item.baseEvents.every(isEvent)) return null
-  if (!Array.isArray(item.groupMembers)) return null
-  return {
-    identity: item.identity,
-    activeGroupId: item.activeGroupId,
-    groupMembers: item.groupMembers as GroupMember[],
-    baseEvents: item.baseEvents,
-    baseTheme: item.baseTheme,
-    basePalette: item.basePalette,
-    baseLocale: isLocale(item.baseLocale) ? item.baseLocale : 'pt',
-    lastSyncOk: item.lastSyncOk
-  }
-}
-
-function isStringOrNull(value: unknown): value is string | null {
-  return value === null || typeof value === 'string'
-}
-
-function isTheme(value: unknown): value is Theme {
-  return value === 'light' || value === 'dark' || value === 'system'
-}
-
-function isPalette(value: unknown): value is Palette {
-  return value === 'default' || value === 'ocean' || value === 'lavender' || value === 'earth' || value === 'blossom' || value === 'sky'
-}
-
-function isLocale(value: unknown): value is Locale {
-  return value === 'pt' || value === 'en'
-}
-
-function isEvent(value: unknown): value is AirplaneEvent {
-  if (typeof value !== 'object' || value === null) return false
-  const item = value as Partial<AirplaneEvent>
-  return (
-    typeof item.id === 'string' &&
-    typeof item.who === 'string' &&
-    item.who.length > 0 &&
-    typeof item.ts === 'number' &&
-    Number.isFinite(item.ts) &&
-    item.ts > 0
-  )
-}
+export type { AirplaneEvent, GroupMember, Identity, Locale, Palette, PendingOp, Theme }
