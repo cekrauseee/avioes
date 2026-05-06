@@ -14,7 +14,7 @@ function getBuildId(): string {
 }
 
 const SW_TEMPLATE = `const CACHE = 'airplanes-__VERSION__'
-const SHELL_ROUTES = ['/', '/diary', '/scoreboard', '/settings']
+const SHELL_ROUTES = ['/', '/diary', '/scoreboard', '/settings', '/world']
 const OFFLINE_ASSETS = [
   '/airplane-offline-light.png',
   '/airplane-offline-dark.png',
@@ -28,6 +28,8 @@ const OFFLINE_ASSETS = [
   '/empty-diary-dark.png',
   '/empty-scoreboard-light.png',
   '/empty-scoreboard-dark.png',
+  '/empty-ranking-light.png',
+  '/empty-ranking-dark.png',
   '/splash-light.png',
   '/splash-dark.png',
   '/onboarding-hero-light.png',

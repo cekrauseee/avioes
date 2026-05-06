@@ -25,12 +25,15 @@ export function WorldView({ initial }: { initial: WorldRankingResult }) {
   const [windowSel, setWindowSel] = useState<WorldRankingWindow>(initial.window)
   const [pending, startTransition] = useTransition()
   const listRef = useRef<HTMLDivElement>(null)
+  const reqIdRef = useRef(0)
 
   function selectWindow(w: WorldRankingWindow) {
     if (w === windowSel) return
     setWindowSel(w)
+    const id = ++reqIdRef.current
     startTransition(async () => {
       const fresh = await getWorldRanking({ window: w })
+      if (id !== reqIdRef.current) return
       setData(fresh)
     })
   }

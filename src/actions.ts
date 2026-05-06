@@ -227,10 +227,14 @@ export async function finishOnboarding(input: {
 }
 
 export async function getWorldRanking(opts: { window: WorldRankingWindow }): Promise<WorldRankingResult> {
+  const window: WorldRankingWindow = opts?.window === 'week' ? 'week' : 'all'
+
   const user = await getSessionUser()
-  const weekStartTs = opts.window === 'week' ? startOfWeekBRT(Date.now()) : undefined
-  const ranking = await readWorldRanking({ window: opts.window, weekStartTs })
-  const memberIds = user ? new Set((await readGroupsForUser(user.id)).map((g) => g.id)) : new Set<string>()
+  if (!user) return { window, rows: [], userGroupRanks: [] }
+
+  const weekStartTs = window === 'week' ? startOfWeekBRT(Date.now()) : undefined
+  const ranking = await readWorldRanking({ window, weekStartTs })
+  const memberIds = new Set((await readGroupsForUser(user.id)).map((g) => g.id))
 
   const rows: WorldRankingRowDTO[] = ranking.map((r, i) => {
     const isMember = memberIds.has(r.groupId)
@@ -244,7 +248,7 @@ export async function getWorldRanking(opts: { window: WorldRankingWindow }): Pro
   })
 
   return {
-    window: opts.window,
+    window,
     rows,
     userGroupRanks: rows.filter((r) => r.isMember).map(({ groupId, displayName, rank, score }) => ({ groupId, displayName, rank, score }))
   }
