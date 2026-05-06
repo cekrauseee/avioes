@@ -13,6 +13,7 @@ import { Skel } from './skeleton'
 
 type PasskeyEntry = { id: string; name: string | null; aaguid: string | null; createdAt: Date | null }
 
+// Source: passkeydeveloper/passkey-authenticator-aaguids (GitHub), May 2026
 const AAGUID_NAMES: Record<string, string> = {
   'fbfc3007-154e-4ecc-8c0b-6e020557d7bd': 'iCloud Keychain',
   'dd4ec289-e01d-41c9-bb89-70fa845d4bf2': 'iCloud Keychain',
@@ -43,11 +44,11 @@ export function PasskeysSheet({ open, onClose, locale }: { open: boolean; onClos
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!open || passkeys !== null) return
+    if (!open) return
     authClient.passkey.listUserPasskeys().then((res) => {
       if (res.data) setPasskeys(res.data as PasskeyEntry[])
     })
-  }, [open, passkeys])
+  }, [open])
 
   useEffect(() => {
     if (!open) return

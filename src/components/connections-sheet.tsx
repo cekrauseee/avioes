@@ -15,17 +15,21 @@ type LinkedAccount = { providerId: string }
 
 export function ConnectionsSheet({ open, onClose, locale }: { open: boolean; onClose: () => void; locale: Locale }) {
   const [accounts, setAccounts] = useState<LinkedAccount[] | null>(null)
+  const [hasPasskey, setHasPasskey] = useState(false)
   const [unlinking, setUnlinking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
   const [confirming, setConfirming] = useState(false)
 
   useEffect(() => {
-    if (!open || accounts !== null) return
+    if (!open) return
     authClient.listAccounts().then((res) => {
       if (res.data) setAccounts(res.data)
     })
-  }, [open, accounts])
+    authClient.passkey.listUserPasskeys().then((res) => {
+      setHasPasskey((res.data?.length ?? 0) > 0)
+    })
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -38,7 +42,7 @@ export function ConnectionsSheet({ open, onClose, locale }: { open: boolean; onC
 
   const googleLinked = accounts?.some((a) => a.providerId === 'google') ?? false
   const hasCredential = accounts?.some((a) => a.providerId === 'credential') ?? false
-  const googleOnly = googleLinked && !hasCredential && (accounts?.length ?? 0) <= 1
+  const googleOnly = googleLinked && !hasCredential && !hasPasskey
 
   const toggleExpanded = () => {
     setExpanded((p) => !p)
@@ -55,8 +59,7 @@ export function ConnectionsSheet({ open, onClose, locale }: { open: boolean; onC
       setUnlinking(false)
       return
     }
-    const refreshed = await authClient.listAccounts()
-    if (refreshed.data) setAccounts(refreshed.data)
+    setAccounts((prev) => prev?.filter((a) => a.providerId !== 'google') ?? null)
     setUnlinking(false)
     setConfirming(false)
     setExpanded(false)

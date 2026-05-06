@@ -415,13 +415,25 @@ function isPendingOp(op: unknown, userId: string): boolean {
 const BETTER_AUTH_URL = process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
 export async function userHasPassword(email: string): Promise<boolean> {
-  if (!email || typeof email !== 'string') return false
   return userHasCredentialAccount(email.trim().toLowerCase())
 }
 
 export async function checkUserHasPasskey(email: string): Promise<boolean> {
-  if (!email || typeof email !== 'string') return false
   return userHasPasskeysInStore(email.trim().toLowerCase())
+}
+
+export async function getEmailAuthState(
+  email: string
+): Promise<{ exists: boolean; hasPassword: boolean; hasPasskey: boolean }> {
+  const trimmed = email.trim().toLowerCase()
+  if (!trimmed || !trimmed.includes('@')) return { exists: false, hasPassword: false, hasPasskey: false }
+  const [user, hasPassword, hasPasskey] = await Promise.all([
+    findUserByEmail(trimmed),
+    userHasCredentialAccount(trimmed),
+    userHasPasskeysInStore(trimmed)
+  ])
+  const exists = user !== null
+  return { exists, hasPassword: exists && hasPassword, hasPasskey: exists && hasPasskey }
 }
 
 export async function requestPasswordChange(): Promise<{ ok: true } | { ok: false; error: string }> {

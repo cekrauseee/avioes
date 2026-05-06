@@ -1,7 +1,7 @@
 'use client'
 
 import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 
 const PANEL_EASE = [0.22, 1, 0.36, 1] as const
 
@@ -43,7 +43,7 @@ function ExpandablePanel({ children }: { children: ReactNode }) {
   const contentRef = useRef<HTMLDivElement>(null)
   const [height, setHeight] = useState(0)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const node = contentRef.current
     if (!node) return
 

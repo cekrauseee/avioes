@@ -82,5 +82,6 @@ export const passkeys = pgTable(
     aaguid: text('aaguid'),
     createdAt: timestamp('created_at')
   },
+  // credentialID uniqueness is enforced by @better-auth/passkey at the app layer, not DB
   (t) => [index('passkey_user_id_idx').on(t.userId), index('passkey_credential_id_idx').on(t.credentialID)]
 )

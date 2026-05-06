@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import type { ReactNode } from 'react'
 
 const FADE_TRANSITION = { duration: 0.12, ease: [0.22, 1, 0.36, 1] } as const
+// Requires a `position: relative` parent (ConfirmActionSlot provides this)
 const EXIT_FADE = { opacity: 0, position: 'absolute', top: 0, right: 0, left: 0 } as const
 
 export function ConfirmActionSlot({ children }: { children: ReactNode }) {
