@@ -20,6 +20,26 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-06 — Connections moved into a bottom sheet
+
+Account tab's inline Google connect/disconnect block was replaced with a single "gerenciar conexões" row that opens `ConnectionsSheet` (`src/components/connections-sheet.tsx`), mirroring the `PasskeysSheet` pattern: portal + motion, provider card with `⋯` expand, unlink behind `ConfirmRow`. The Google-only escape hatch (must create a password before unlinking) still routes to `/settings/password?reason=google`. The account tab no longer calls `listAccounts()` — the sheet owns that fetch and only runs it when opened, so "change password" / "manage passkeys" / "manage connections" rows render unconditionally with no skeletons. New i18n keys: `settings.manageConnections`, `settings.connectionsSheetSubtitle`.
+
+### 2026-05-06 — Tailwind source scan pinned for worktree dev
+
+`next dev` in the passkey worktree could hang forever on `Compiling /auth ...` while spawning orphaned `.next/dev/build/postcss.js` workers. Tailwind v4 source detection is now explicit in `src/app/globals.css` (`source(none)` + `@source '../'`) so it scans the app source tree instead of generated worktree output.
+
+### 2026-05-06 — Passkey (WebAuthn) login and management
+
+Added `@better-auth/passkey` plugin. Users with registered passkeys see a primary "entrar com chave de acesso" button on the login method step; OTP demotes to secondary style. Settings account tab has a single "gerenciar chaves de acesso" row that opens `PasskeysSheet` (bottom sheet, `src/components/passkeys-sheet.tsx`) for list/add/delete — mirrors the `InviteShareSheet` portal+motion pattern. Each list item uses the same `⋯`-toggle + expand pattern as `/groups`, with delete behind a `ConfirmRow`; the empty state uses the stable action button as a first-passkey CTA instead of swapping in a list placeholder. Error handling maps `error.code`: silent on user-cancelled (`AUTH_CANCELLED`, `ERROR_CEREMONY_ABORTED`), distinct copy for `PASSKEY_NOT_FOUND` (login) and `ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED` (register), localized fallback otherwise — no raw English `error.message` leaks. Schema: `passkey` table in `src/lib/db/auth-schema.ts`. Run `npm run db:push` after pulling.
+
+### 2026-05-06 — Generic list/action components
+
+`src/components/expandable-item.tsx` extracts the bordered card + main slot + `⋯` toggle + animated expanded children pattern used by list items with secondary actions. API: `main` slot, `expanded`, `onToggle`, `toggleAriaLabel`, optional `active` (sage ring), children render inside a measured AnimatePresence panel so nested confirm-row height changes animate locally. Used by `groups-screen.tsx` (group cards), `connections-sheet.tsx` (Google card), and `passkeys-sheet.tsx` (each passkey). Toggle standardized at `w-14 text-xl` (groups dropped from `w-20 text-2xl`).
+
+`src/components/confirm-row.tsx` is the matching destructive-confirm grid (clay confirm button, Motion fade-in, optional top border) rendered inside ExpandableItem children. It also exports `ConfirmActionSlot` + `ConfirmTriggerRow`; exiting rows are popped absolute during fade so opacity and panel-height transitions start together without stacked heights. API: `label`, `busy`, `disabled?`, `cancelLabel`, `confirmLabel`, `onCancel`, `onConfirm`, `bordered?`. Tap target `min-h-14`.
+
+`src/components/animated-list.tsx` centralizes list item motion for `/groups`, passkey management, and group-member management. It defaults to `AnimatePresence mode='popLayout'` plus `forwardRef` list items so removed rows fade out quickly while siblings reflow with position-only layout transforms; `PasskeysSheet` opts into `mode='wait'` so the sheet waits for the deleted row's fade before its own layout transition. Bottom sheets that contain these lists should also opt into position-only layout so the sheet top moves by transform as content height changes.
+
 ### 2026-05-06 — Invitation security hardening
 
 Six fixes to the invite flow: (1) `acceptInvitation`/`rejectInvitation` require `user.emailVerified` — prevents unverified email+password signup from claiming invites. (2) Invite page redacts group name, inviter name/image unless authenticated user's email matches AND is verified. (3) Email mismatch message no longer leaks the invited email. (4) Invite tokens stored as SHA-256 hashes in the existing `token` column — plaintext only in URL/email. (5) Per-owner rate limit: 10 invites/hour, checked atomically via `pg_advisory_xact_lock` inside the creation transaction. (6) Partial unique index `unique_pending_invite_per_group_email` on `(group_id, invited_email) WHERE status = 'pending'` prevents duplicate pending invites at the DB level; unique constraint violations caught and returned as controlled errors.

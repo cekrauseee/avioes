@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { z } from 'zod'
-import { emailExists, requestPasswordCreationForEmail, userHasPassword } from '../actions'
+import { getEmailAuthState, requestPasswordCreationForEmail } from '../actions'
 import { authClient } from '../lib/auth-client'
 import { DATE_LOCALE, t, tf } from '../lib/i18n'
 import { applyLocalIdentity, selectLocale, useOfflineState } from '../lib/offline-store'
@@ -55,7 +55,9 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
   const [now, setNow] = useState(() => Date.now())
   const [noPasswordSent, setNoPasswordSent] = useState(false)
   const [noPasswordLoading, setNoPasswordLoading] = useState(false)
-  const [checkingPassword, setCheckingPassword] = useState(false)
+  const [hasPassword, setHasPassword] = useState(false)
+  const [hasPasskey, setHasPasskey] = useState(false)
+  const [passkeyLoading, setPasskeyLoading] = useState(false)
 
   useEffect(() => {
     if (resendAt === null) return
@@ -105,8 +107,10 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
     }
     setLoading(true)
     setError(null)
-    const exists = await emailExists(normalized)
+    const { exists, hasPassword: hp, hasPasskey: pk } = await getEmailAuthState(normalized)
     setAccountExists(exists)
+    setHasPassword(hp)
+    setHasPasskey(pk)
     setLoading(false)
     advanceTo(exists ? 'method' : 'password')
   }
@@ -185,6 +189,25 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
     }
     router.replace(nextPath)
     router.refresh()
+  }
+
+  const handlePasskeySignIn = async () => {
+    setPasskeyLoading(true)
+    setError(null)
+    const result = await authClient.signIn.passkey()
+    setPasskeyLoading(false)
+    if (!result?.error) {
+      router.replace(nextPath)
+      router.refresh()
+      return
+    }
+    const code = 'code' in result.error ? result.error.code : undefined
+    if (code === 'AUTH_CANCELLED') return
+    if (code === 'PASSKEY_NOT_FOUND') {
+      setError(t(locale, 'auth.passkeyNotFound'))
+      return
+    }
+    setError(t(locale, 'auth.passkeyFailed'))
   }
 
   const handleOtpSubmit = async (e: React.FormEvent) => {
@@ -587,11 +610,32 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
 
                 {step === 'method' && (
                   <>
+                    {hasPasskey && (
+                      <button
+                        type='button'
+                        onClick={handlePasskeySignIn}
+                        disabled={passkeyLoading}
+                        className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
+                      >
+                        {passkeyLoading ?
+                          <motion.span
+                            animate={{ opacity: [1, 0.4, 1] }}
+                            transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                          >
+                            {t(locale, 'auth.waiting')}
+                          </motion.span>
+                        : t(locale, 'auth.continuePasskey')}
+                      </button>
+                    )}
                     <button
                       type='button'
                       onClick={chooseOtp}
                       disabled={otpSending}
-                      className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
+                      className={
+                        hasPasskey ?
+                          'border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex h-12 items-center justify-center rounded-xl border text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50'
+                        : 'bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
+                      }
                     >
                       {otpSending ?
                         <motion.span
@@ -604,34 +648,21 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                     </button>
                     <button
                       type='button'
-                      disabled={checkingPassword}
-                      onClick={async () => {
+                      onClick={() => {
                         setError(null)
-                        setCheckingPassword(true)
-                        const hasPassword = await userHasPassword(email.trim().toLowerCase())
-                        setCheckingPassword(false)
-                        if (hasPassword) {
-                          advanceTo('password')
-                        } else {
-                          advanceTo('no-password')
-                        }
+                        advanceTo(hasPassword ? 'password' : 'no-password')
                       }}
                       className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex h-12 items-center justify-center rounded-xl border text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50'
                     >
-                      {checkingPassword ?
-                        <motion.span
-                          animate={{ opacity: [1, 0.4, 1] }}
-                          transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-                        >
-                          {t(locale, 'auth.waiting')}
-                        </motion.span>
-                      : t(locale, 'auth.continuePassword')}
+                      {t(locale, 'auth.continuePassword')}
                     </button>
                     <button
                       type='button'
                       onClick={() => {
                         setError(null)
                         setAccountExists(null)
+                        setHasPasskey(false)
+                        setHasPassword(false)
                         advanceTo('email')
                       }}
                       className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'

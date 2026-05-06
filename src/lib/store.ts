@@ -3,7 +3,7 @@ import 'server-only'
 import crypto from 'crypto'
 import { and, eq, gt, like, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
-import { accounts, db, events, groupInvitations, groupMembers, groups, preferences, processedOps, users, verifications } from './db'
+import { accounts, db, events, groupInvitations, groupMembers, groups, passkeys, preferences, processedOps, users, verifications } from './db'
 import type { AirplaneEvent, Group, GroupMember, GroupRole, Locale, Palette, PendingOp, Theme } from './types'
 
 const groupMembersForCount = alias(groupMembers, 'group_members_for_count')
@@ -611,4 +611,9 @@ export async function createCredentialAccount(userId: string, passwordHash: stri
     .onConflictDoNothing({ target: [accounts.userId, accounts.providerId] })
     .returning({ id: accounts.id })
   return result.length > 0
+}
+
+export async function userHasPasskeys(email: string): Promise<boolean> {
+  const row = await db.select({ id: passkeys.id }).from(passkeys).innerJoin(users, eq(users.id, passkeys.userId)).where(eq(users.email, email)).limit(1)
+  return row.length > 0
 }

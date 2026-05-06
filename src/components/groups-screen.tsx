@@ -1,6 +1,6 @@
 'use client'
 
-import { AnimatePresence, motion } from 'motion/react'
+import { motion } from 'motion/react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
@@ -9,6 +9,9 @@ import { authClient } from '../lib/auth-client'
 import { t } from '../lib/i18n'
 import { applyLocalIdentity, applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import type { Locale } from '../lib/types'
+import { AnimatedList, AnimatedListItem } from './animated-list'
+import { ConfirmActionSlot, ConfirmRow, ConfirmTriggerRow } from './confirm-row'
+import { ExpandableItem } from './expandable-item'
 
 type GroupEntry = { id: string; name: string; ownerId: string; memberCount: number }
 
@@ -138,68 +141,54 @@ export function GroupsScreen() {
             <SkeletonCard />
             <SkeletonCard />
           </>
-        : groups.length === 0 ?
-          <EmptyState locale={locale} />
-        : groups.map((group, i) => {
-            const isActive = group.id === state.activeGroupId
-            const isOwner = group.ownerId === state.identity
-            const expanded = expandedId === group.id
-            const isBusy = busyId === group.id
-            return (
-              <motion.div
-                key={group.id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 + i * 0.06, ease: [0.22, 1, 0.36, 1] }}
-                className={`border-line bg-paper overflow-hidden rounded-2xl border ${isActive ? 'ring-sage/30 ring-2' : ''}`}
-              >
-                <div className='flex items-stretch'>
-                  <button
-                    type='button'
-                    onClick={() => switchTo(group.id)}
-                    disabled={pending && !isActive}
-                    className='hover:bg-sage-soft/40 flex flex-1 items-center justify-between gap-3 px-5 py-4 text-left transition-colors disabled:cursor-default disabled:hover:bg-transparent'
+        : <AnimatedList className='flex flex-col gap-3'>
+            {groups.length === 0 ?
+              <AnimatedListItem key='empty'>
+                <EmptyState locale={locale} />
+              </AnimatedListItem>
+            : groups.map((group, i) => {
+                const isActive = group.id === state.activeGroupId
+                const isOwner = group.ownerId === state.identity
+                const expanded = expandedId === group.id
+                const isBusy = busyId === group.id
+                return (
+                  <AnimatedListItem
+                    key={group.id}
+                    enterDelay={0.2 + i * 0.06}
                   >
-                    <div className='flex flex-col gap-0.5'>
-                      <span className='font-display text-xl'>{group.name}</span>
-                      <span className='text-ink-faint text-xs'>
-                        {group.memberCount} {group.memberCount === 1 ? t(locale, 'groups.memberCount') : t(locale, 'groups.memberCountPlural')}
-                      </span>
-                    </div>
-                    <span className='text-sm font-medium'>
-                      {isBusy ?
-                        <motion.span
-                          animate={{ opacity: [1, 0.4, 1] }}
-                          transition={{ duration: 1, repeat: Infinity }}
-                          className='text-sage'
+                    <ExpandableItem
+                      expanded={expanded}
+                      onToggle={() => toggleExpanded(group.id)}
+                      toggleAriaLabel={t(locale, 'groups.actions')}
+                      active={isActive}
+                      main={
+                        <button
+                          type='button'
+                          onClick={() => switchTo(group.id)}
+                          disabled={pending && !isActive}
+                          className='hover:bg-sage-soft/40 flex flex-1 items-center justify-between gap-3 px-5 py-4 text-left transition-colors disabled:cursor-default disabled:hover:bg-transparent'
                         >
-                          …
-                        </motion.span>
-                      : isActive ?
-                        <span className='text-sage'>{t(locale, 'groups.open')}</span>
-                      : <span className='text-sage'>{t(locale, 'groups.enter')}</span>}
-                    </span>
-                  </button>
-                  <button
-                    type='button'
-                    onClick={() => toggleExpanded(group.id)}
-                    aria-label={t(locale, 'groups.actions')}
-                    aria-expanded={expanded}
-                    className={`text-ink-faint hover:text-ink-soft border-line flex w-20 shrink-0 items-center justify-center border-l text-2xl leading-none transition-colors ${expanded ? 'bg-line/30' : ''}`}
-                  >
-                    ⋯
-                  </button>
-                </div>
-
-                <AnimatePresence initial={false}>
-                  {expanded && (
-                    <motion.div
-                      key='actions'
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                      className='border-line border-t'
+                          <div className='flex flex-col gap-0.5'>
+                            <span className='font-display text-xl'>{group.name}</span>
+                            <span className='text-ink-faint text-xs'>
+                              {group.memberCount} {group.memberCount === 1 ? t(locale, 'groups.memberCount') : t(locale, 'groups.memberCountPlural')}
+                            </span>
+                          </div>
+                          <span className='text-sm font-medium'>
+                            {isBusy ?
+                              <motion.span
+                                animate={{ opacity: [1, 0.4, 1] }}
+                                transition={{ duration: 1, repeat: Infinity }}
+                                className='text-sage'
+                              >
+                                …
+                              </motion.span>
+                            : isActive ?
+                              <span className='text-sage'>{t(locale, 'groups.open')}</span>
+                            : <span className='text-sage'>{t(locale, 'groups.enter')}</span>}
+                          </span>
+                        </button>
+                      }
                     >
                       <div className='flex flex-col'>
                         {isOwner ?
@@ -218,116 +207,68 @@ export function GroupsScreen() {
                               <span>{t(locale, 'groups.manageMembers')}</span>
                               <span className='text-ink-faint'>→</span>
                             </Link>
-                            {confirmingDelete === group.id ?
+                            <ConfirmActionSlot>
+                              {confirmingDelete === group.id ?
+                                <ConfirmRow
+                                  key='confirm-delete'
+                                  label={t(locale, 'groups.confirmDelete')}
+                                  busy={isBusy}
+                                  disabled={pending}
+                                  cancelLabel={t(locale, 'groups.cancel')}
+                                  confirmLabel={t(locale, 'groups.confirm')}
+                                  onCancel={() => setConfirmingDelete(null)}
+                                  onConfirm={() => handleDelete(group.id)}
+                                  bordered
+                                />
+                              : <ConfirmTriggerRow
+                                  key='delete'
+                                  label={t(locale, 'groups.deleteGroup')}
+                                  icon='×'
+                                  disabled={pending}
+                                  bordered
+                                  onClick={() => {
+                                    setConfirmingDelete(group.id)
+                                    setConfirmingLeave(null)
+                                  }}
+                                />
+                              }
+                            </ConfirmActionSlot>
+                          </>
+                        : <ConfirmActionSlot>
+                            {confirmingLeave === group.id ?
                               <ConfirmRow
-                                label={t(locale, 'groups.confirmDelete')}
+                                key='confirm-leave'
+                                label={t(locale, 'groups.confirmLeave')}
                                 busy={isBusy}
-                                pending={pending}
-                                locale={locale}
-                                onCancel={() => setConfirmingDelete(null)}
-                                onConfirm={() => handleDelete(group.id)}
-                                bordered
+                                disabled={pending}
+                                cancelLabel={t(locale, 'groups.cancel')}
+                                confirmLabel={t(locale, 'groups.confirm')}
+                                onCancel={() => setConfirmingLeave(null)}
+                                onConfirm={() => handleLeave(group.id)}
                               />
-                            : <button
-                                type='button'
+                            : <ConfirmTriggerRow
+                                key='leave'
+                                label={t(locale, 'groups.leaveGroup')}
+                                icon='↩'
                                 disabled={pending}
                                 onClick={() => {
-                                  setConfirmingDelete(group.id)
-                                  setConfirmingLeave(null)
+                                  setConfirmingLeave(group.id)
+                                  setConfirmingDelete(null)
                                 }}
-                                className='border-line text-clay hover:bg-clay/8 flex min-h-12 items-center justify-between border-t px-5 text-sm transition-colors disabled:opacity-50'
-                              >
-                                <span>{t(locale, 'groups.deleteGroup')}</span>
-                                <span>×</span>
-                              </button>
+                              />
                             }
-                          </>
-                        : confirmingLeave === group.id ?
-                          <ConfirmRow
-                            label={t(locale, 'groups.confirmLeave')}
-                            busy={isBusy}
-                            pending={pending}
-                            locale={locale}
-                            onCancel={() => setConfirmingLeave(null)}
-                            onConfirm={() => handleLeave(group.id)}
-                          />
-                        : <button
-                            type='button'
-                            disabled={pending}
-                            onClick={() => {
-                              setConfirmingLeave(group.id)
-                              setConfirmingDelete(null)
-                            }}
-                            className='text-clay hover:bg-clay/8 flex min-h-12 items-center justify-between px-5 text-sm transition-colors disabled:opacity-50'
-                          >
-                            <span>{t(locale, 'groups.leaveGroup')}</span>
-                            <span>↩</span>
-                          </button>
+                          </ConfirmActionSlot>
                         }
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            )
-          })
+                    </ExpandableItem>
+                  </AnimatedListItem>
+                )
+              })
+            }
+          </AnimatedList>
         }
       </motion.div>
     </div>
-  )
-}
-
-function ConfirmRow({
-  label,
-  busy,
-  pending,
-  locale,
-  onCancel,
-  onConfirm,
-  bordered
-}: {
-  label: string
-  busy: boolean
-  pending: boolean
-  locale: Locale
-  onCancel: () => void
-  onConfirm: () => void
-  bordered?: boolean
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.18 }}
-      className={`flex flex-col ${bordered ? 'border-line border-t' : ''}`}
-    >
-      <span className='text-clay px-5 pt-3 pb-2 text-sm'>{label}</span>
-      <div className='border-line grid grid-cols-2 border-t'>
-        <button
-          type='button'
-          onClick={onCancel}
-          disabled={busy}
-          className='text-ink-soft hover:bg-line/40 min-h-16 text-sm transition-colors disabled:opacity-50'
-        >
-          {t(locale, 'groups.cancel')}
-        </button>
-        <button
-          type='button'
-          onClick={onConfirm}
-          disabled={pending}
-          className='bg-clay text-bg border-line min-h-16 border-l text-sm font-medium transition-colors disabled:opacity-60'
-        >
-          {busy ?
-            <motion.span
-              animate={{ opacity: [1, 0.4, 1] }}
-              transition={{ duration: 1, repeat: Infinity }}
-            >
-              …
-            </motion.span>
-          : t(locale, 'groups.confirm')}
-        </button>
-      </div>
-    </motion.div>
   )
 }
 
