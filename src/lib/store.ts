@@ -466,9 +466,13 @@ export async function validatePasswordToken(token: string, type: PasswordTokenTy
   return { email }
 }
 
-export async function consumePasswordToken(token: string, type: PasswordTokenType): Promise<void> {
+export async function consumePasswordToken(token: string, type: PasswordTokenType): Promise<boolean> {
   const prefix = `pw-${type}:`
-  await db.delete(verifications).where(and(eq(verifications.value, token), like(verifications.identifier, `${prefix}%`)))
+  const deleted = await db
+    .delete(verifications)
+    .where(and(eq(verifications.value, token), like(verifications.identifier, `${prefix}%`)))
+    .returning({ id: verifications.id })
+  return deleted.length > 0
 }
 
 export async function userHasCredentialAccount(email: string): Promise<boolean> {

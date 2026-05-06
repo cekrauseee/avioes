@@ -490,14 +490,15 @@ export async function consumePasswordCreationToken(token: string, newPassword: s
   const result = await validatePasswordToken(token, 'create')
   if (!result) return { ok: false, error: 'Token inválido ou expirado.' }
 
+  // Atomically claim the token — prevents concurrent double-submit
+  const claimed = await consumePasswordToken(token, 'create')
+  if (!claimed) return { ok: false, error: 'Token inválido ou expirado.' }
+
   const user = await findUserByEmail(result.email)
   if (!user) return { ok: false, error: 'Usuário não encontrado.' }
 
   const hasCredential = await userHasCredentialAccount(result.email)
-  if (hasCredential) {
-    await consumePasswordToken(token, 'create')
-    return { ok: false, error: 'Você já possui uma senha.' }
-  }
+  if (hasCredential) return { ok: false, error: 'Você já possui uma senha.' }
 
   // Try session-based setPassword (user is logged in)
   const session = await getSessionUser()
@@ -507,7 +508,6 @@ export async function consumePasswordCreationToken(token: string, newPassword: s
         body: { newPassword },
         headers: await headers()
       })
-      await consumePasswordToken(token, 'create')
       return { ok: true }
     } catch {
       return { ok: false, error: 'Não foi possível criar a senha.' }
@@ -524,7 +524,6 @@ export async function consumePasswordCreationToken(token: string, newPassword: s
     return { ok: false, error: 'Não foi possível criar a senha.' }
   }
 
-  await consumePasswordToken(token, 'create')
   return { ok: true }
 }
 
@@ -545,6 +544,9 @@ export async function consumePasswordChangeToken(
   if (!result) return { ok: false, error: 'Token inválido ou expirado.' }
   if (result.email !== user.email.toLowerCase()) return { ok: false, error: 'Token inválido.' }
 
+  const claimed = await consumePasswordToken(token, 'change')
+  if (!claimed) return { ok: false, error: 'Token inválido ou expirado.' }
+
   try {
     await auth.api.changePassword({
       body: { currentPassword, newPassword },
@@ -554,6 +556,5 @@ export async function consumePasswordChangeToken(
     return { ok: false, error: 'Senha atual incorreta.' }
   }
 
-  await consumePasswordToken(token, 'change')
   return { ok: true }
 }
