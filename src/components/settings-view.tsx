@@ -13,7 +13,9 @@ import { useNavDirection } from '../lib/nav-direction'
 import { applyLocalIdentity, queuePalette, queueTheme, selectLocale, selectPalette, selectTheme, switchLocale, useOfflineState } from '../lib/offline-store'
 import { getMemberColor, getMemberFirstName, getMemberFullName, PALETTES, type Locale, type Palette, type Theme } from '../lib/types'
 import { AppShell } from './app-shell'
+import { ConnectionsSheet } from './connections-sheet'
 import { Onboarding } from './onboarding'
+import { PasskeysSheet } from './passkeys-sheet'
 import { Skel } from './skeleton'
 import { ToolbarTabs, type ToolbarTabItem } from './toolbar-tabs'
 
@@ -356,8 +358,6 @@ function GroupTab({ locale, activeGroupId, isOwner }: { locale: Locale; activeGr
 
 // ─── Account tab ──────────────────────────────────────────────────────────────
 
-type LinkedAccount = { providerId: string }
-
 function AccountTab({ locale, who }: { locale: Locale; who: string }) {
   const router = useRouter()
   const state = useOfflineState()
@@ -368,21 +368,8 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
   const myEmail = myMember?.email ?? ''
   const myImage = myMember?.image ?? null
   const [, startSignOut] = useTransition()
-  const [accounts, setAccounts] = useState<LinkedAccount[] | null>(null)
-  const [unlinking, setUnlinking] = useState(false)
-  const [unlinkError, setUnlinkError] = useState<string | null>(null)
-  const [googleExpanded, setGoogleExpanded] = useState(false)
-  const [confirmingUnlink, setConfirmingUnlink] = useState(false)
-
-  useEffect(() => {
-    authClient.listAccounts().then((res) => {
-      if (res.data) setAccounts(res.data)
-    })
-  }, [])
-
-  const googleLinked = accounts?.some((a) => a.providerId === 'google') ?? false
-  const hasCredential = accounts?.some((a) => a.providerId === 'credential') ?? false
-  const googleOnly = googleLinked && !hasCredential && (accounts?.length ?? 0) <= 1
+  const [passkeysOpen, setPasskeysOpen] = useState(false)
+  const [connectionsOpen, setConnectionsOpen] = useState(false)
 
   const handleSignOut = () => {
     startSignOut(async () => {
@@ -390,27 +377,6 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
       applyLocalIdentity(null)
       router.replace('/auth')
       router.refresh()
-    })
-  }
-
-  const handleUnlinkGoogle = async () => {
-    setUnlinking(true)
-    setUnlinkError(null)
-    const res = await authClient.unlinkAccount({ providerId: 'google' })
-    if (res.error) {
-      setUnlinkError(res.error.message ?? t(locale, 'settings.unlinkError'))
-      setUnlinking(false)
-      return
-    }
-    const refreshed = await authClient.listAccounts()
-    if (refreshed.data) setAccounts(refreshed.data)
-    setUnlinking(false)
-  }
-
-  const handleLinkGoogle = () => {
-    authClient.linkSocial({
-      provider: 'google',
-      callbackURL: '/settings?tab=account'
     })
   }
 
@@ -438,121 +404,46 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
         </div>
       </div>
 
-      {/* connections */}
-      {accounts === null ?
-        <section>
-          <Skel className='mb-2 h-3 w-20' />
-          <Skel className='h-14 w-full rounded-2xl' />
-        </section>
-      : <section>
-          <h2 className='text-ink-faint mb-2 text-xs'>{t(locale, 'settings.connections')}</h2>
-          {googleLinked ?
-            <div className='border-line overflow-hidden rounded-2xl border'>
-              <div className='flex items-stretch'>
-                <div className='flex flex-1 items-center gap-2.5 px-5 py-4'>
-                  <span className='text-base leading-none'>G</span>
-                  <span className='text-ink-soft text-sm'>{t(locale, 'settings.googleConnected')}</span>
-                </div>
-                <button
-                  type='button'
-                  onClick={() => {
-                    setGoogleExpanded((p) => !p)
-                    setConfirmingUnlink(false)
-                  }}
-                  aria-label={t(locale, 'settings.googleDisconnect')}
-                  aria-expanded={googleExpanded}
-                  className={`text-ink-faint hover:text-ink-soft border-line flex w-14 shrink-0 items-center justify-center border-l text-xl leading-none transition-colors ${googleExpanded ? 'bg-line/30' : ''}`}
-                >
-                  ⋯
-                </button>
-              </div>
-              <AnimatePresence initial={false}>
-                {googleExpanded && (
-                  <motion.div
-                    key='google-actions'
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                    className='border-line border-t'
-                  >
-                    {googleOnly ?
-                      <Link
-                        href='/settings/password?reason=google'
-                        className='text-clay hover:bg-clay/8 flex min-h-12 items-center justify-between px-5 text-sm transition-colors'
-                      >
-                        <span>{t(locale, 'settings.googleDisconnect')}</span>
-                        <span className='text-ink-faint'>→</span>
-                      </Link>
-                    : confirmingUnlink ?
-                      <div className='flex flex-col'>
-                        <span className='text-clay px-5 pt-3 pb-2 text-sm'>{t(locale, 'settings.googleConfirm')}</span>
-                        <div className='border-line grid grid-cols-2 border-t'>
-                          <button
-                            type='button'
-                            onClick={() => setConfirmingUnlink(false)}
-                            disabled={unlinking}
-                            className='text-ink-soft hover:bg-line/40 min-h-14 text-sm transition-colors disabled:opacity-50'
-                          >
-                            {t(locale, 'settings.cancel')}
-                          </button>
-                          <button
-                            type='button'
-                            onClick={handleUnlinkGoogle}
-                            disabled={unlinking}
-                            className='bg-clay text-bg border-line min-h-14 border-l text-sm font-medium transition-colors disabled:opacity-60'
-                          >
-                            {unlinking ?
-                              <motion.span
-                                animate={{ opacity: [1, 0.4, 1] }}
-                                transition={{ duration: 1, repeat: Infinity }}
-                              >
-                                …
-                              </motion.span>
-                            : t(locale, 'settings.confirm')}
-                          </button>
-                        </div>
-                      </div>
-                    : <button
-                        type='button'
-                        onClick={() => setConfirmingUnlink(true)}
-                        className='text-clay hover:bg-clay/8 flex min-h-12 w-full items-center justify-between px-5 text-sm transition-colors'
-                      >
-                        <span>{t(locale, 'settings.googleDisconnect')}</span>
-                        <span>×</span>
-                      </button>
-                    }
-                    {unlinkError && <p className='text-clay border-line border-t px-5 py-2 text-[11px]'>{unlinkError}</p>}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          : <button
-              type='button'
-              onClick={handleLinkGoogle}
-              className='border-line hover:bg-paper flex w-full items-center justify-between rounded-xl border px-4 py-3.5 transition-colors'
-            >
-              <div className='flex items-center gap-2.5'>
-                <span className='text-base leading-none'>G</span>
-                <span className='text-ink-soft text-sm'>{t(locale, 'settings.googleConnect')}</span>
-              </div>
-              <span className='text-ink-faint text-xs'>→</span>
-            </button>
-          }
-        </section>
-      }
-
       {/* change password */}
-      {accounts === null ?
-        <Skel className='h-12 w-full rounded-xl' />
-      : <Link
-          href='/settings/password'
-          className='border-line hover:bg-paper flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors'
-        >
-          <span className='text-ink-soft text-sm'>{t(locale, 'settings.changePassword')}</span>
-          <span className='text-ink-faint text-xs'>→</span>
-        </Link>
-      }
+      <Link
+        href='/settings/password'
+        className='border-line hover:bg-paper flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors'
+      >
+        <span className='text-ink-soft text-sm'>{t(locale, 'settings.changePassword')}</span>
+        <span className='text-ink-faint text-xs'>→</span>
+      </Link>
+
+      {/* passkeys */}
+      <button
+        type='button'
+        onClick={() => setPasskeysOpen(true)}
+        className='border-line hover:bg-paper flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors'
+      >
+        <span className='text-ink-soft text-sm'>{t(locale, 'settings.managePasskeys')}</span>
+        <span className='text-ink-faint text-xs'>→</span>
+      </button>
+
+      {/* connections */}
+      <button
+        type='button'
+        onClick={() => setConnectionsOpen(true)}
+        className='border-line hover:bg-paper flex items-center justify-between rounded-xl border px-4 py-3.5 transition-colors'
+      >
+        <span className='text-ink-soft text-sm'>{t(locale, 'settings.manageConnections')}</span>
+        <span className='text-ink-faint text-xs'>→</span>
+      </button>
+
+      <PasskeysSheet
+        open={passkeysOpen}
+        onClose={() => setPasskeysOpen(false)}
+        locale={locale}
+      />
+
+      <ConnectionsSheet
+        open={connectionsOpen}
+        onClose={() => setConnectionsOpen(false)}
+        locale={locale}
+      />
 
       {/* sign out */}
       <button

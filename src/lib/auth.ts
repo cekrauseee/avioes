@@ -1,10 +1,11 @@
 import 'server-only'
 
+import { passkey } from '@better-auth/passkey'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { emailOTP } from 'better-auth/plugins'
 import { db } from './db'
-import { accounts, sessions, users, verifications } from './db/auth-schema'
+import { accounts, passkeys, sessions, users, verifications } from './db/auth-schema'
 import { sendOtpEmail } from './email'
 import { OTP_ALLOWED_ATTEMPTS, OTP_EXPIRES_IN_SECONDS, OTP_LENGTH } from './otp-constants'
 import { findUserByEmail, readLocale } from './store'
@@ -16,7 +17,8 @@ export const auth = betterAuth({
       user: users,
       session: sessions,
       account: accounts,
-      verification: verifications
+      verification: verifications,
+      passkey: passkeys
     }
   }),
   emailAndPassword: {
@@ -37,6 +39,7 @@ export const auth = betterAuth({
     }
   },
   plugins: [
+    passkey(),
     emailOTP({
       otpLength: OTP_LENGTH,
       expiresIn: OTP_EXPIRES_IN_SECONDS,

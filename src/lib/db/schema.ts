@@ -79,4 +79,4 @@ export const processedOps = pgTable('processed_ops', {
   id: text('id').primaryKey()
 })
 
-export { accounts, sessions, users, verifications } from './auth-schema'
+export { accounts, passkeys, sessions, users, verifications } from './auth-schema'

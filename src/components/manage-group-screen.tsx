@@ -9,6 +9,7 @@ import { t } from '../lib/i18n'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 import type { GroupMember, Locale } from '../lib/types'
 import { MEMBER_COLORS } from '../lib/types'
+import { AnimatedList, AnimatedListItem } from './animated-list'
 import { InviteShareSheet } from './invite-share-sheet'
 
 type PendingInvite = { id: string; invitedEmail: string; createdAt: number; expiresAt: number }
@@ -203,13 +204,11 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
             <SkeletonMember />
             <SkeletonMember />
           </div>
-        : <div className='flex flex-col gap-2'>
+        : <AnimatedList className='flex flex-col gap-2'>
             {members.map((member, index) => (
-              <motion.div
+              <AnimatedListItem
                 key={member.userId}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.3 + index * 0.05, ease: [0.22, 1, 0.36, 1] }}
+                enterDelay={0.3 + index * 0.05}
               >
                 <MemberRow
                   member={member}
@@ -225,14 +224,12 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
                   onCancelRemove={() => setConfirmingRemove(null)}
                   onConfirmRemove={() => handleRemove(member.userId)}
                 />
-              </motion.div>
+              </AnimatedListItem>
             ))}
             {pendingInvites.map((invite, index) => (
-              <motion.div
+              <AnimatedListItem
                 key={`invite-${invite.id}`}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.4, delay: 0.3 + (members.length + index) * 0.05, ease: [0.22, 1, 0.36, 1] }}
+                enterDelay={0.3 + (members.length + index) * 0.05}
               >
                 <InviteRow
                   invite={invite}
@@ -246,9 +243,9 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
                   onCancelCancel={() => setConfirmingCancelInvite(null)}
                   onConfirmCancel={() => handleCancelInvite(invite.id)}
                 />
-              </motion.div>
+              </AnimatedListItem>
             ))}
-          </div>
+          </AnimatedList>
         }
       </motion.div>
 

@@ -34,6 +34,7 @@ import {
   removeGroupMember,
   updateGroup as updateGroupInStore,
   userHasCredentialAccount,
+  userHasPasskeys as userHasPasskeysInStore,
   validatePasswordToken,
   writeActiveGroupId
 } from './lib/store'
@@ -416,6 +417,11 @@ const BETTER_AUTH_URL = process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_A
 export async function userHasPassword(email: string): Promise<boolean> {
   if (!email || typeof email !== 'string') return false
   return userHasCredentialAccount(email.trim().toLowerCase())
+}
+
+export async function checkUserHasPasskey(email: string): Promise<boolean> {
+  if (!email || typeof email !== 'string') return false
+  return userHasPasskeysInStore(email.trim().toLowerCase())
 }
 
 export async function requestPasswordChange(): Promise<{ ok: true } | { ok: false; error: string }> {
