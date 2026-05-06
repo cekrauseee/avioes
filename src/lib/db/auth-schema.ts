@@ -58,5 +58,9 @@ export const verifications = pgTable(
     createdAt: timestamp('created_at'),
     updatedAt: timestamp('updated_at')
   },
-  (t) => [uniqueIndex('pw_fail_unique').on(t.identifier).where(sql`identifier LIKE 'pw-fail:%'`)]
+  (t) => [
+    uniqueIndex('pw_fail_unique')
+      .on(t.identifier)
+      .where(sql`identifier LIKE 'pw-fail:%'`)
+  ]
 )

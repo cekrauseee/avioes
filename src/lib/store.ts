@@ -120,39 +120,72 @@ export async function removeGroupMember(groupId: string, userId: string): Promis
 
 // --- Invitations ---
 
-export async function createInvitation(params: {
+export async function createOrReplaceInvitation(params: {
   id: string
-  token: string
+  tokenHash: string
   groupId: string
   invitedEmail: string
   invitedByUserId: string
   expiresAt: number
-}): Promise<void> {
-  await db.insert(groupInvitations).values({
-    ...params,
-    status: 'pending',
-    createdAt: Date.now()
-  })
+  maxPerHour: number
+}): Promise<{ ok: true } | { ok: false; error: 'rate_limited' | 'conflict' }> {
+  try {
+    return await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${params.invitedByUserId}))`)
+
+      const oneHourAgo = Date.now() - 60 * 60 * 1000
+      const [{ count }] = await tx
+        .select({ count: sql<number>`count(*)::int` })
+        .from(groupInvitations)
+        .where(and(eq(groupInvitations.invitedByUserId, params.invitedByUserId), gt(groupInvitations.createdAt, oneHourAgo)))
+
+      if (count >= params.maxPerHour) return { ok: false as const, error: 'rate_limited' as const }
+
+      await tx
+        .update(groupInvitations)
+        .set({ status: 'cancelled' })
+        .where(
+          and(eq(groupInvitations.groupId, params.groupId), eq(groupInvitations.invitedEmail, params.invitedEmail), eq(groupInvitations.status, 'pending'))
+        )
+
+      await tx.insert(groupInvitations).values({
+        id: params.id,
+        token: params.tokenHash,
+        groupId: params.groupId,
+        invitedEmail: params.invitedEmail,
+        invitedByUserId: params.invitedByUserId,
+        expiresAt: params.expiresAt,
+        status: 'pending',
+        createdAt: Date.now()
+      })
+
+      return { ok: true as const }
+    })
+  } catch (e: unknown) {
+    if (e instanceof Error && e.message.includes('unique_pending_invite_per_group_email')) {
+      return { ok: false, error: 'conflict' }
+    }
+    throw e
+  }
 }
 
 export type InvitationDetails = {
   id: string
-  token: string
   groupId: string
   groupName: string
   invitedEmail: string
   invitedByFirstName: string
   invitedByImage: string | null
-  status: 'pending' | 'accepted' | 'rejected' | 'cancelled'
+  status: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'expired'
   createdAt: number
   expiresAt: number
 }
 
 export async function readInvitationByToken(token: string): Promise<InvitationDetails | null> {
+  const tokenHash = hashToken(token)
   const row = await db
     .select({
       id: groupInvitations.id,
-      token: groupInvitations.token,
       groupId: groupInvitations.groupId,
       groupName: groups.name,
       invitedEmail: groupInvitations.invitedEmail,
@@ -166,13 +199,12 @@ export async function readInvitationByToken(token: string): Promise<InvitationDe
     .from(groupInvitations)
     .innerJoin(groups, eq(groups.id, groupInvitations.groupId))
     .innerJoin(users, eq(users.id, groupInvitations.invitedByUserId))
-    .where(eq(groupInvitations.token, token))
+    .where(eq(groupInvitations.token, tokenHash))
     .limit(1)
   const found = row[0]
   if (!found) return null
   return {
     id: found.id,
-    token: found.token,
     groupId: found.groupId,
     groupName: found.groupName,
     invitedEmail: found.invitedEmail,
@@ -210,6 +242,7 @@ export async function acceptInvitation(
 ): Promise<
   { ok: true; groupId: string; groupName: string } | { ok: false; error: 'not_found' | 'expired' | 'already_used' | 'cancelled' | 'already_member' }
 > {
+  const tokenHash = hashToken(token)
   return db.transaction(async (tx) => {
     const row = await tx
       .select({
@@ -221,14 +254,21 @@ export async function acceptInvitation(
       })
       .from(groupInvitations)
       .innerJoin(groups, eq(groups.id, groupInvitations.groupId))
-      .where(eq(groupInvitations.token, token))
+      .where(eq(groupInvitations.token, tokenHash))
       .limit(1)
 
     const inv = row[0]
     if (!inv) return { ok: false as const, error: 'not_found' as const }
+    if (inv.status === 'expired') return { ok: false as const, error: 'expired' as const }
     if (inv.status === 'cancelled') return { ok: false as const, error: 'cancelled' as const }
     if (inv.status !== 'pending') return { ok: false as const, error: 'already_used' as const }
-    if (inv.expiresAt <= Date.now()) return { ok: false as const, error: 'expired' as const }
+    if (inv.expiresAt <= Date.now()) {
+      await tx
+        .update(groupInvitations)
+        .set({ status: 'expired' })
+        .where(and(eq(groupInvitations.id, inv.id), eq(groupInvitations.status, 'pending')))
+      return { ok: false as const, error: 'expired' as const }
+    }
 
     const existing = await tx
       .select({ userId: groupMembers.userId })
@@ -257,18 +297,26 @@ export async function acceptInvitation(
 export async function rejectInvitation(
   token: string
 ): Promise<{ ok: true } | { ok: false; error: 'not_found' | 'expired' | 'already_used' | 'cancelled' }> {
+  const tokenHash = hashToken(token)
   return db.transaction(async (tx) => {
     const row = await tx
       .select({ id: groupInvitations.id, status: groupInvitations.status, expiresAt: groupInvitations.expiresAt })
       .from(groupInvitations)
-      .where(eq(groupInvitations.token, token))
+      .where(eq(groupInvitations.token, tokenHash))
       .limit(1)
 
     const inv = row[0]
     if (!inv) return { ok: false as const, error: 'not_found' as const }
+    if (inv.status === 'expired') return { ok: false as const, error: 'expired' as const }
     if (inv.status === 'cancelled') return { ok: false as const, error: 'cancelled' as const }
     if (inv.status !== 'pending') return { ok: false as const, error: 'already_used' as const }
-    if (inv.expiresAt <= Date.now()) return { ok: false as const, error: 'expired' as const }
+    if (inv.expiresAt <= Date.now()) {
+      await tx
+        .update(groupInvitations)
+        .set({ status: 'expired' })
+        .where(and(eq(groupInvitations.id, inv.id), eq(groupInvitations.status, 'pending')))
+      return { ok: false as const, error: 'expired' as const }
+    }
 
     const claimed = await tx
       .update(groupInvitations)
@@ -287,20 +335,13 @@ export async function cancelInvitation(groupId: string, invitationId: string): P
     .where(and(eq(groupInvitations.id, invitationId), eq(groupInvitations.groupId, groupId), eq(groupInvitations.status, 'pending')))
 }
 
-export async function readExistingPendingInvitation(groupId: string, email: string): Promise<{ id: string; token: string } | null> {
-  const row = await db
-    .select({ id: groupInvitations.id, token: groupInvitations.token })
-    .from(groupInvitations)
-    .where(
-      and(
-        eq(groupInvitations.groupId, groupId),
-        eq(groupInvitations.invitedEmail, email),
-        eq(groupInvitations.status, 'pending'),
-        sql`${groupInvitations.expiresAt} > ${Date.now()}`
-      )
-    )
-    .limit(1)
-  return row[0] ?? null
+export async function expirePendingInvitations(now = Date.now()): Promise<number> {
+  const rows = await db
+    .update(groupInvitations)
+    .set({ status: 'expired' })
+    .where(and(eq(groupInvitations.status, 'pending'), sql`${groupInvitations.expiresAt} <= ${now}`))
+    .returning({ id: groupInvitations.id })
+  return rows.length
 }
 
 export async function findUserByEmail(email: string): Promise<{ id: string; firstName: string; lastName: string | null; email: string } | null> {

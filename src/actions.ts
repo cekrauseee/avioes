@@ -1,5 +1,6 @@
 'use server'
 
+import crypto from 'crypto'
 import { headers } from 'next/headers'
 import { auth } from './lib/auth'
 import { sendInviteEmail, sendPasswordEmail } from './lib/email'
@@ -11,16 +12,14 @@ import {
   consumePasswordToken,
   countRecentPasswordSends,
   createGroup,
-  createInvitation as createInvitationInStore,
+  createOrReplaceInvitation,
   createPasswordToken,
-  getCredentialPasswordHash,
-  recordPasswordAttempt,
   deleteGroup as deleteGroupInStore,
   findUserByEmail,
+  getCredentialPasswordHash,
   leaveGroup as leaveGroupInStore,
   readActiveGroupId,
   readEventsForMember,
-  readExistingPendingInvitation,
   readGroupForMember,
   readGroupMembersForMember,
   readGroupMembership,
@@ -30,6 +29,7 @@ import {
   readPalette,
   readPendingInvitationsForGroup,
   readTheme,
+  recordPasswordAttempt,
   rejectInvitation as rejectInvitationInStore,
   removeGroupMember,
   updateGroup as updateGroupInStore,
@@ -40,6 +40,7 @@ import {
 import type { Group, GroupMember, PendingOp } from './lib/types'
 
 const INVITE_EXPIRY_MS = 24 * 60 * 60 * 1000
+const MAX_INVITES_PER_HOUR = 10
 const MAX_SYNC_OPS = 250
 const MAX_FUTURE_TS_MS = 5 * 60 * 1000
 const MAX_PAST_TS_MS = 7 * 24 * 60 * 60 * 1000
@@ -160,6 +161,10 @@ export async function updateGroup(groupId: string, updates: { name?: string }): 
 
 // --- Invitations ---
 
+function hashInviteToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex')
+}
+
 export async function createInvitation(
   groupId: string,
   email: string
@@ -178,22 +183,26 @@ export async function createInvitation(
     return { ok: false, error: 'already_member' }
   }
 
-  const existing = await readExistingPendingInvitation(groupId, trimmed)
-  if (existing) {
-    const baseUrl = process.env.BETTER_AUTH_URL ?? 'http://localhost:3000'
-    return { ok: true, token: existing.token, inviteUrl: `${baseUrl}/invite/${existing.token}` }
-  }
-
   const group = await readGroupForMember(groupId, user.id)
   if (!group) return { ok: false, error: 'Grupo não encontrado' }
 
   const id = crypto.randomUUID()
   const token = crypto.randomUUID()
+  const tokenHash = hashInviteToken(token)
   const expiresAt = Date.now() + INVITE_EXPIRY_MS
   const baseUrl = process.env.BETTER_AUTH_URL ?? 'http://localhost:3000'
   const inviteUrl = `${baseUrl}/invite/${token}`
 
-  await createInvitationInStore({ id, token, groupId, invitedEmail: trimmed, invitedByUserId: user.id, expiresAt })
+  const result = await createOrReplaceInvitation({
+    id,
+    tokenHash,
+    groupId,
+    invitedEmail: trimmed,
+    invitedByUserId: user.id,
+    expiresAt,
+    maxPerHour: MAX_INVITES_PER_HOUR
+  })
+  if (!result.ok) return result
 
   const inviterName = user.firstName ?? user.name.split(' ')[0] ?? user.name
   try {
@@ -205,26 +214,12 @@ export async function createInvitation(
   return { ok: true, token, inviteUrl }
 }
 
-export async function getInvitationDetails(token: string) {
-  const inv = await readInvitationByToken(token)
-  if (!inv) return { ok: false as const, error: 'not_found' as const }
-  const expired = inv.status === 'pending' && inv.expiresAt <= Date.now()
-  return {
-    ok: true as const,
-    groupName: inv.groupName,
-    invitedByFirstName: inv.invitedByFirstName,
-    invitedByImage: inv.invitedByImage,
-    invitedEmail: inv.invitedEmail,
-    status: inv.status,
-    expired
-  }
-}
-
 export async function acceptInvitation(
   token: string
 ): Promise<{ ok: true; groupId: string; groupName: string; snapshot: SyncSnapshot } | { ok: false; error: string }> {
   const user = await getSessionUser()
   if (!user) return { ok: false, error: 'Não autenticado' }
+  if (!user.emailVerified) return { ok: false, error: 'email_not_verified' }
 
   const inv = await readInvitationByToken(token)
   if (!inv) return { ok: false, error: 'not_found' }
@@ -242,6 +237,7 @@ export async function acceptInvitation(
 export async function rejectInvitation(token: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const user = await getSessionUser()
   if (!user) return { ok: false, error: 'Não autenticado' }
+  if (!user.emailVerified) return { ok: false, error: 'email_not_verified' }
 
   const inv = await readInvitationByToken(token)
   if (!inv) return { ok: false, error: 'not_found' }

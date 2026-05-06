@@ -1,7 +1,7 @@
 'use client'
 
-import { motion } from 'motion/react'
 import { Skel } from '@/components/skeleton'
+import { motion } from 'motion/react'
 
 export default function Loading() {
   return (

@@ -333,7 +333,8 @@ const pt = {
   'invite.notFoundLine1': 'convite não',
   'invite.notFoundItalic': 'encontrado',
   'invite.notFoundBody': 'este link não corresponde a nenhum convite.',
-  'invite.emailMismatch': 'este convite foi enviado para {email}. entre com essa conta para aceitar.',
+  'invite.emailMismatch': 'entre com a conta convidada para aceitar.',
+  'invite.emailNotVerified': 'verifique seu e-mail para aceitar. entre via código por e-mail ou Google.',
   'invite.backToApp': 'voltar para o app',
   'invite.error': 'Algo deu errado. Tente de novo.',
 
@@ -417,6 +418,7 @@ const pt = {
   'groups.manage.alreadyInvited': 'Já existe um convite pendente para este e-mail.',
   'groups.manage.alreadyMember': 'Este e-mail já faz parte do grupo.',
   'groups.manage.inviteError': 'Não foi possível enviar o convite.',
+  'groups.manage.inviteRateLimited': 'Muitos convites enviados. Aguarde um pouco.',
 
   'auth.inviteWelcomeLine1': 'entre para aceitar o',
   'auth.inviteWelcomeItalic': 'convite',
@@ -768,7 +770,8 @@ const en: Record<TranslationKey, string> = {
   'invite.notFoundLine1': 'invite not',
   'invite.notFoundItalic': 'found',
   'invite.notFoundBody': "this link doesn't match any invite.",
-  'invite.emailMismatch': 'this invite was sent to {email}. sign in with that account to accept.',
+  'invite.emailMismatch': 'sign in with the invited account to accept.',
+  'invite.emailNotVerified': 'verify your email to accept. sign in via email code or Google.',
   'invite.backToApp': 'back to app',
   'invite.error': 'Something went wrong. Try again.',
 
@@ -852,6 +855,7 @@ const en: Record<TranslationKey, string> = {
   'groups.manage.alreadyInvited': 'A pending invite already exists for this email.',
   'groups.manage.alreadyMember': 'This email is already in the group.',
   'groups.manage.inviteError': 'Could not send invite.',
+  'groups.manage.inviteRateLimited': 'Too many invites sent. Please wait.',
 
   'auth.inviteWelcomeLine1': 'sign in to accept the',
   'auth.inviteWelcomeItalic': 'invite',

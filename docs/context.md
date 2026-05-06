@@ -20,6 +20,23 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-06 — Invitation security hardening
+
+Six fixes to the invite flow: (1) `acceptInvitation`/`rejectInvitation` require `user.emailVerified` — prevents unverified email+password signup from claiming invites. (2) Invite page redacts group name, inviter name/image unless authenticated user's email matches AND is verified. (3) Email mismatch message no longer leaks the invited email. (4) Invite tokens stored as SHA-256 hashes in the existing `token` column — plaintext only in URL/email. (5) Per-owner rate limit: 10 invites/hour, checked atomically via `pg_advisory_xact_lock` inside the creation transaction. (6) Partial unique index `unique_pending_invite_per_group_email` on `(group_id, invited_email) WHERE status = 'pending'` prevents duplicate pending invites at the DB level; unique constraint violations caught and returned as controlled errors.
+
+**Deploy steps (one-time, run before first deploy of this branch)**:
+
+```sql
+-- 1. Cancel pending invites (they use plaintext tokens, won't work post-deploy)
+UPDATE group_invitations SET status = 'cancelled' WHERE status = 'pending';
+-- 2. Scrub plaintext tokens from historical rows (UUIDs are 36 chars; new hashes are 64)
+UPDATE group_invitations SET token = 'migrated-' || id WHERE length(token) = 36;
+```
+
+Do NOT rerun after deploy — new rows already store hashes. Then `npm run db:push` to apply the partial unique index and `expired` enum value.
+
+Hourly cron (`/api/cron/invitations`) bulk-expires overdue pending invites. Set `CRON_SECRET` in Vercel project env vars; Vercel sends it as `Authorization: Bearer <secret>`. Accept/reject also mark rows expired on runtime time check as defense-in-depth. Config in `vercel.json`.
+
 ### 2026-05-05 — Password flows redesigned to email-based magic link
 
 Password creation and update no longer happen inline. Both flows now send an email with a 15-minute magic link to a dedicated page where the actual password form lives. New flows:
