@@ -2,14 +2,19 @@
 
 import { headers } from 'next/headers'
 import { auth } from './lib/auth'
-import { sendInviteEmail } from './lib/email'
+import { sendInviteEmail, sendPasswordEmail } from './lib/email'
 import type { SyncSnapshot } from './lib/offline-model'
 import {
   acceptInvitation as acceptInvitationInStore,
   applyOps,
   cancelInvitation as cancelInvitationInStore,
+  consumePasswordToken,
+  countRecentPasswordSends,
   createGroup,
   createInvitation as createInvitationInStore,
+  createPasswordToken,
+  getCredentialPasswordHash,
+  recordPasswordAttempt,
   deleteGroup as deleteGroupInStore,
   findUserByEmail,
   leaveGroup as leaveGroupInStore,
@@ -28,6 +33,8 @@ import {
   rejectInvitation as rejectInvitationInStore,
   removeGroupMember,
   updateGroup as updateGroupInStore,
+  userHasCredentialAccount,
+  validatePasswordToken,
   writeActiveGroupId
 } from './lib/store'
 import type { Group, GroupMember, PendingOp } from './lib/types'
@@ -404,4 +411,163 @@ function isPendingOp(op: unknown, userId: string): boolean {
     )
   if (item.kind === 'set-locale') return item.locale === 'pt' || item.locale === 'en'
   return false
+}
+
+// --- Password token actions ---
+
+const BETTER_AUTH_URL = process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+
+export async function userHasPassword(email: string): Promise<boolean> {
+  if (!email || typeof email !== 'string') return false
+  return userHasCredentialAccount(email.trim().toLowerCase())
+}
+
+export async function requestPasswordChange(): Promise<{ ok: true } | { ok: false; error: string }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false, error: 'Não autenticado.' }
+
+  const locale = await readLocale(user.id)
+  const token = await createPasswordToken(user.email, 'change')
+  const url = `${BETTER_AUTH_URL}/settings/password/verify/${token}`
+
+  try {
+    await sendPasswordEmail(user.email, 'change', url, locale)
+  } catch {
+    return { ok: false, error: 'Não foi possível enviar o e-mail.' }
+  }
+  return { ok: true }
+}
+
+export async function requestPasswordCreation(reason?: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false, error: 'Não autenticado.' }
+
+  const hasCredential = await userHasCredentialAccount(user.email)
+  if (hasCredential) return { ok: false, error: 'Você já possui uma senha.' }
+
+  const locale = await readLocale(user.id)
+  const token = await createPasswordToken(user.email, 'create')
+  const reasonParam = reason === 'google' ? '?reason=google' : ''
+  const url = `${BETTER_AUTH_URL}/password/create/${token}${reasonParam}`
+
+  try {
+    await sendPasswordEmail(user.email, 'create', url, locale)
+  } catch {
+    return { ok: false, error: 'Não foi possível enviar o e-mail.' }
+  }
+  return { ok: true }
+}
+
+export async function requestPasswordCreationForEmail(email: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!email || typeof email !== 'string') return { ok: true }
+  const normalized = email.trim().toLowerCase()
+
+  const recentCount = await countRecentPasswordSends(normalized, 'create')
+  if (recentCount >= 3) return { ok: true }
+
+  const user = await findUserByEmail(normalized)
+  if (!user) return { ok: true }
+
+  const hasCredential = await userHasCredentialAccount(normalized)
+  if (hasCredential) return { ok: true }
+
+  const locale = await readLocale(user.id)
+  const token = await createPasswordToken(normalized, 'create')
+  const url = `${BETTER_AUTH_URL}/password/create/${token}`
+
+  try {
+    await sendPasswordEmail(normalized, 'create', url, locale)
+  } catch {
+    // Swallow — don't reveal failures for unauthenticated flow
+  }
+  return { ok: true }
+}
+
+export async function consumePasswordCreationToken(token: string, newPassword: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!token || typeof token !== 'string') return { ok: false, error: 'Token inválido.' }
+  if (typeof newPassword !== 'string' || newPassword.length < 8 || newPassword.length > 128) {
+    return { ok: false, error: 'Senha precisa ter entre 8 e 128 caracteres.' }
+  }
+
+  const result = await validatePasswordToken(token, 'create')
+  if (!result) return { ok: false, error: 'Token inválido ou expirado.' }
+
+  // Atomically claim the token — prevents concurrent double-submit
+  const claimed = await consumePasswordToken(token, 'create')
+  if (!claimed) return { ok: false, error: 'Token inválido ou expirado.' }
+
+  const user = await findUserByEmail(result.email)
+  if (!user) return { ok: false, error: 'Usuário não encontrado.' }
+
+  const hasCredential = await userHasCredentialAccount(result.email)
+  if (hasCredential) return { ok: false, error: 'Você já possui uma senha.' }
+
+  // Try session-based setPassword (user is logged in)
+  const session = await getSessionUser()
+  if (session && session.email.toLowerCase() === result.email) {
+    try {
+      await auth.api.setPassword({
+        body: { newPassword },
+        headers: await headers()
+      })
+      return { ok: true }
+    } catch {
+      return { ok: false, error: 'Não foi possível criar a senha.' }
+    }
+  }
+
+  // Not authenticated — create credential account directly
+  try {
+    const { hashPassword } = await import('better-auth/crypto')
+    const { createCredentialAccount } = await import('./lib/store')
+    const passwordHash = await hashPassword(newPassword)
+    const created = await createCredentialAccount(user.id, passwordHash)
+    if (!created) return { ok: false, error: 'Você já possui uma senha.' }
+  } catch {
+    return { ok: false, error: 'Não foi possível criar a senha.' }
+  }
+
+  return { ok: true }
+}
+
+export async function consumePasswordChangeToken(
+  token: string,
+  currentPassword: string,
+  newPassword: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!token || typeof token !== 'string') return { ok: false, error: 'Token inválido.' }
+  if (typeof newPassword !== 'string' || newPassword.length < 8 || newPassword.length > 128) {
+    return { ok: false, error: 'Senha precisa ter entre 8 e 128 caracteres.' }
+  }
+
+  const user = await getSessionUser()
+  if (!user) return { ok: false, error: 'Não autenticado.' }
+
+  const result = await validatePasswordToken(token, 'change')
+  if (!result) return { ok: false, error: 'Token inválido ou expirado.' }
+  if (result.email !== user.email.toLowerCase()) return { ok: false, error: 'Token inválido.' }
+
+  const hash = await getCredentialPasswordHash(user.email)
+  if (!hash) return { ok: false, error: 'Conta sem senha.' }
+
+  const { verifyPassword } = await import('better-auth/crypto')
+  const valid = await verifyPassword({ hash, password: currentPassword })
+  if (!valid) {
+    const { blocked } = await recordPasswordAttempt(token, 'change')
+    if (blocked) return { ok: false, error: 'Muitas tentativas. Solicite um novo link.' }
+    return { ok: false, error: 'Senha atual incorreta.' }
+  }
+
+  const claimed = await consumePasswordToken(token, 'change')
+  if (!claimed) return { ok: false, error: 'Token já utilizado.' }
+
+  try {
+    await auth.api.changePassword({
+      body: { currentPassword, newPassword, revokeOtherSessions: true },
+      headers: await headers()
+    })
+  } catch {
+    return { ok: false, error: 'Erro ao alterar senha. Solicite um novo link.' }
+  }
+  return { ok: true }
 }

@@ -20,6 +20,16 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-05 — Password flows redesigned to email-based magic link
+
+Password creation and update no longer happen inline. Both flows now send an email with a 15-minute magic link to a dedicated page where the actual password form lives. New flows:
+
+- **Change** (settings): CTA → email with link to `/settings/password/verify/[token]` → form with current+new+confirm → done. Requires login.
+- **Create** (settings, Google-only): CTA → email with link to `/password/create/[token]` → form with new+confirm → optional Google unlink. No login required at the link.
+- **Create** (login screen): when a user has no credential account and clicks "continuar com senha", a `no-password` step appears with CTA to send creation email → same `/password/create/[token]` flow.
+
+Tokens reuse the `verifications` table with `pw-change:` / `pw-create:` identifier prefixes. Rate limited (3/hour/email for unauthenticated sends). New email template at `src/emails/password-request.tsx`, new components `password-create-screen.tsx` and `password-change-verify-screen.tsx`. The old inline form in `password-screen.tsx` is now a single CTA button that triggers the email.
+
 ### 2026-05-05 — Favicon + flying-airplane icon swap
 
 Browser favicon now uses `public/favicon-{light,dark}.png` via `metadata.icons` in `src/app/layout.tsx` with `prefers-color-scheme` media queries; the old `src/app/favicon.ico` was deleted because the app-folder convention takes precedence over metadata and would have shadowed the new PNGs. The counter's tap fly-by in `src/components/plane-arc.tsx` swapped the Unicode `✈` glyph for `flying-airplane-{light,dark}.png` rendered with `next/image` (`unoptimized`) and the existing `theme-light-only` / `theme-dark-only` pair. Apple touch icon points at the existing `/icons/icon-1024.png`. Prompts for all six (favicon + flying airplane + PWA `icon-1024` + maskable) live in `docs/illustrations.md`. PWA icons in `public/icons/` haven't been regenerated yet — the old May-1 files are still in place; manifest already references the right paths, so dropping new files in is enough.

@@ -4,7 +4,8 @@ import { render } from '@react-email/render'
 import { Resend } from 'resend'
 import { InviteEmail } from '../emails/invite'
 import { OtpLoginEmail } from '../emails/otp-login'
-import { tf } from './i18n'
+import { PasswordRequestEmail } from '../emails/password-request'
+import { t, tf } from './i18n'
 import type { Locale } from './types'
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
@@ -60,6 +61,29 @@ export async function sendInviteEmail(email: string, inviterName: string, groupN
   )
   const subject = tf(locale, 'email.inviteSubject', { name: inviterName })
   const text = tf(locale, 'email.invitePlainText', { name: inviterName, group: groupName, url: inviteUrl })
+
+  const { error } = await resend.emails.send({ from: FROM, to: email, subject, html, text })
+  if (error) throw new Error(error.message)
+}
+
+export async function sendPasswordEmail(email: string, type: 'change' | 'create', url: string, locale: Locale = 'pt'): Promise<void> {
+  if (!resend) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`[email] RESEND_API_KEY not set. Password ${type} link for ${email}: ${url}`)
+      return
+    }
+    throw new Error('RESEND_API_KEY is not configured')
+  }
+
+  const html = await render(
+    <PasswordRequestEmail
+      type={type}
+      url={url}
+      locale={locale}
+    />
+  )
+  const subject = t(locale, type === 'change' ? 'email.passwordSubjectChange' : 'email.passwordSubjectCreate')
+  const text = tf(locale, type === 'change' ? 'email.passwordPlainTextChange' : 'email.passwordPlainTextCreate', { url })
 
   const { error } = await resend.emails.send({ from: FROM, to: email, subject, html, text })
   if (error) throw new Error(error.message)

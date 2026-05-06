@@ -5,15 +5,15 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { z } from 'zod'
-import { emailExists } from '../actions'
+import { emailExists, requestPasswordCreationForEmail, userHasPassword } from '../actions'
 import { authClient } from '../lib/auth-client'
 import { DATE_LOCALE, t, tf } from '../lib/i18n'
 import { applyLocalIdentity, selectLocale, useOfflineState } from '../lib/offline-store'
 import { OTP_ALLOWED_ATTEMPTS, OTP_LENGTH } from '../lib/otp-constants'
 
-type Step = 'welcome' | 'email' | 'method' | 'password' | 'otp' | 'name' | 'error'
+type Step = 'welcome' | 'email' | 'method' | 'password' | 'otp' | 'no-password' | 'name' | 'error'
 
-const STEP_ORDER: Record<Step, number> = { welcome: 0, error: 0, email: 1, method: 2, password: 3, otp: 3, name: 4 }
+const STEP_ORDER: Record<Step, number> = { welcome: 0, error: 0, email: 1, method: 2, password: 3, otp: 3, 'no-password': 3, name: 4 }
 
 const RESEND_COOLDOWN_MS = 30 * 1000
 const timestamp: () => number = Date.now
@@ -53,6 +53,9 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
   const [otpAttemptsUsed, setOtpAttemptsUsed] = useState(0)
   const [resendAt, setResendAt] = useState<number | null>(null)
   const [now, setNow] = useState(() => Date.now())
+  const [noPasswordSent, setNoPasswordSent] = useState(false)
+  const [noPasswordLoading, setNoPasswordLoading] = useState(false)
+  const [checkingPassword, setCheckingPassword] = useState(false)
 
   useEffect(() => {
     if (resendAt === null) return
@@ -464,6 +467,12 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                       <br />
                       <span className='text-sage italic'>{t(locale, 'auth.welcomeBackItalic')}</span>
                     </>
+                  : step === 'no-password' ?
+                    <>
+                      {t(locale, 'auth.noPasswordLine1')}
+                      <br />
+                      <span className='text-clay italic'>{t(locale, 'auth.noPasswordItalic')}</span>
+                    </>
                   : step === 'password' && accountExists === false ?
                     <>
                       {t(locale, 'auth.signupLine1')}
@@ -482,6 +491,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                   {step === 'method' && email}
                   {step === 'otp' && tf(locale, 'auth.otpSentTo', { email })}
                   {step === 'password' && email}
+                  {step === 'no-password' && t(locale, 'auth.noPasswordBody')}
                   {step === 'name' && t(locale, 'auth.nameSubtitle')}
                 </p>
               </motion.div>
@@ -498,7 +508,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 handleSignUpWithName
               : step === 'otp' ?
                 handleOtpSubmit
-              : step === 'method' ?
+              : step === 'method' || step === 'no-password' ?
                 (e) => e.preventDefault()
               : handlePassword
             }
@@ -594,13 +604,28 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                     </button>
                     <button
                       type='button'
-                      onClick={() => {
+                      disabled={checkingPassword}
+                      onClick={async () => {
                         setError(null)
-                        advanceTo('password')
+                        setCheckingPassword(true)
+                        const hasPassword = await userHasPassword(email.trim().toLowerCase())
+                        setCheckingPassword(false)
+                        if (hasPassword) {
+                          advanceTo('password')
+                        } else {
+                          advanceTo('no-password')
+                        }
                       }}
-                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex h-12 items-center justify-center rounded-xl border text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98]'
+                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 flex h-12 items-center justify-center rounded-xl border text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50'
                     >
-                      {t(locale, 'auth.continuePassword')}
+                      {checkingPassword ?
+                        <motion.span
+                          animate={{ opacity: [1, 0.4, 1] }}
+                          transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                        >
+                          {t(locale, 'auth.waiting')}
+                        </motion.span>
+                      : t(locale, 'auth.continuePassword')}
                     </button>
                     <button
                       type='button'
@@ -704,6 +729,51 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                     </button>
                   </>
                 )}
+
+                {step === 'no-password' && (
+                  <>
+                    {noPasswordSent ?
+                      <p className='text-sage text-sm font-medium'>{t(locale, 'auth.noPasswordSent')}</p>
+                    : <button
+                        type='button'
+                        disabled={noPasswordLoading}
+                        onClick={async () => {
+                          setNoPasswordLoading(true)
+                          setError(null)
+                          const res = await requestPasswordCreationForEmail(email.trim().toLowerCase())
+                          setNoPasswordLoading(false)
+                          if (!res.ok) {
+                            setError(t(locale, 'auth.noPasswordError'))
+                            return
+                          }
+                          setNoPasswordSent(true)
+                        }}
+                        className='bg-sage text-bg flex h-12 items-center justify-center rounded-xl text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50'
+                      >
+                        {noPasswordLoading ?
+                          <motion.span
+                            animate={{ opacity: [1, 0.4, 1] }}
+                            transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+                          >
+                            {t(locale, 'auth.noPasswordSending')}
+                          </motion.span>
+                        : t(locale, 'auth.noPasswordCta')}
+                      </button>
+                    }
+                    <button
+                      type='button'
+                      onClick={() => {
+                        setError(null)
+                        setNoPasswordSent(false)
+                        advanceTo('method')
+                      }}
+                      className='border-line bg-paper text-ink-soft hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 inline-flex min-h-11 items-center gap-2 self-start rounded-full border px-4 text-sm transition-all focus-visible:ring-2 focus-visible:outline-none active:scale-[0.99]'
+                    >
+                      <span aria-hidden>←</span>
+                      <span>{t(locale, 'auth.back')}</span>
+                    </button>
+                  </>
+                )}
               </motion.div>
             </AnimatePresence>
 
@@ -725,7 +795,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
               )}
             </AnimatePresence>
 
-            {step !== 'method' && (
+            {step !== 'method' && step !== 'no-password' && (
               <button
                 type='submit'
                 disabled={loading || (step === 'otp' && otpExhausted)}
