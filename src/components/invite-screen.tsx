@@ -16,10 +16,10 @@ type Props = {
   status: InviteStatus
   groupName?: string
   invitedByFirstName?: string
-  invitedByImage?: string | null
-  invitedEmail?: string
+  invitedByImage?: string
   isAuthenticated?: boolean
-  userEmail?: string | null
+  emailMatch?: boolean
+  emailVerified?: boolean
 }
 
 type ScreenState = 'viewing' | 'accepting' | 'rejecting' | 'accepted' | 'rejected' | 'error'
@@ -30,9 +30,9 @@ export function InviteScreen({
   groupName,
   invitedByFirstName,
   invitedByImage,
-  invitedEmail,
   isAuthenticated = false,
-  userEmail = null
+  emailMatch = false,
+  emailVerified = false
 }: Props) {
   const router = useRouter()
   const state = useOfflineState()
@@ -41,8 +41,6 @@ export function InviteScreen({
   const [acceptedGroupName, setAcceptedGroupName] = useState<string | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [, startTransition] = useTransition()
-
-  const emailMatch = !invitedEmail || !userEmail || userEmail.toLowerCase() === invitedEmail.toLowerCase()
 
   if (status === 'not_found')
     return (
@@ -91,8 +89,11 @@ export function InviteScreen({
         setAcceptedGroupName(result.groupName)
         setScreenState('accepted')
       } else {
-        if (result.error === 'email_mismatch') {
+        if (result.error === 'email_mismatch' || result.error === 'email_not_verified') {
           setScreenState('viewing')
+          if (result.error === 'email_not_verified') {
+            setErrorMsg(t(locale, 'invite.emailNotVerified'))
+          }
         } else {
           setErrorMsg(t(locale, 'invite.error'))
           setScreenState('error')
@@ -253,6 +254,9 @@ export function InviteScreen({
 
             {isAuthenticated && emailMatch ?
               <div className='flex flex-col gap-3'>
+                {!emailVerified && (
+                  <p className='text-clay text-center text-sm'>{t(locale, 'invite.emailNotVerified')}</p>
+                )}
                 <button
                   type='button'
                   onClick={handleAccept}
@@ -272,7 +276,7 @@ export function InviteScreen({
               </div>
             : isAuthenticated && !emailMatch ?
               <div className='flex flex-col gap-3'>
-                <p className='text-ink-faint text-center text-sm'>{tf(locale, 'invite.emailMismatch', { email: invitedEmail ?? '' })}</p>
+                <p className='text-ink-faint text-center text-sm'>{t(locale, 'invite.emailMismatch')}</p>
               </div>
             : <div className='flex flex-col gap-3'>
                 <button

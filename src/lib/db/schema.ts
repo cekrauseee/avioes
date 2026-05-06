@@ -1,4 +1,5 @@
-import { bigint, pgEnum, pgTable, primaryKey, serial, text } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+import { bigint, pgEnum, pgTable, primaryKey, serial, text, uniqueIndex } from 'drizzle-orm/pg-core'
 import { users } from './auth-schema'
 
 export const themeEnum = pgEnum('theme', ['light', 'dark', 'system'])
@@ -31,20 +32,24 @@ export const groupMembers = pgTable(
   (t) => [primaryKey({ columns: [t.groupId, t.userId] })]
 )
 
-export const groupInvitations = pgTable('group_invitations', {
-  id: text('id').primaryKey(),
-  token: text('token').notNull().unique(),
-  groupId: text('group_id')
-    .notNull()
-    .references(() => groups.id, { onDelete: 'cascade' }),
-  invitedEmail: text('invited_email').notNull(),
-  invitedByUserId: text('invited_by_user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  status: invitationStatusEnum('status').notNull().default('pending'),
-  createdAt: bigint('created_at', { mode: 'number' }).notNull(),
-  expiresAt: bigint('expires_at', { mode: 'number' }).notNull()
-})
+export const groupInvitations = pgTable(
+  'group_invitations',
+  {
+    id: text('id').primaryKey(),
+    token: text('token').notNull().unique(),
+    groupId: text('group_id')
+      .notNull()
+      .references(() => groups.id, { onDelete: 'cascade' }),
+    invitedEmail: text('invited_email').notNull(),
+    invitedByUserId: text('invited_by_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    status: invitationStatusEnum('status').notNull().default('pending'),
+    createdAt: bigint('created_at', { mode: 'number' }).notNull(),
+    expiresAt: bigint('expires_at', { mode: 'number' }).notNull()
+  },
+  (t) => [uniqueIndex('unique_pending_invite_per_group_email').on(t.groupId, t.invitedEmail).where(sql`status = 'pending'`)]
+)
 
 export const events = pgTable('events', {
   id: serial('id').primaryKey(),

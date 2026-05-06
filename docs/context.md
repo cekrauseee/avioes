@@ -20,6 +20,16 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-06 — Invitation security hardening
+
+Six fixes to the invite flow: (1) `acceptInvitation`/`rejectInvitation` require `user.emailVerified` — prevents unverified email+password signup from claiming invites. (2) Invite page redacts group name, inviter name/image unless authenticated user's email matches AND is verified. (3) Email mismatch message no longer leaks the invited email. (4) Invite tokens stored as SHA-256 hashes in the existing `token` column — plaintext only in URL/email. (5) Per-owner rate limit: 10 invites/hour, checked atomically via `pg_advisory_xact_lock` inside the creation transaction. (6) Partial unique index `unique_pending_invite_per_group_email` on `(group_id, invited_email) WHERE status = 'pending'` prevents duplicate pending invites at the DB level; unique constraint violations caught and returned as controlled errors.
+
+**Deploy steps**: Before deploying, cancel all existing pending invites so stale plaintext tokens don't linger:
+```sql
+UPDATE group_invitations SET status = 'cancelled' WHERE status = 'pending';
+```
+Then run `npm run db:push` to apply the new partial unique index.
+
 ### 2026-05-05 — Password flows redesigned to email-based magic link
 
 Password creation and update no longer happen inline. Both flows now send an email with a 15-minute magic link to a dedicated page where the actual password form lives. New flows:

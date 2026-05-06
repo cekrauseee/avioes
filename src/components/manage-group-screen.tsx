@@ -56,6 +56,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
       const result = await createInvitation(groupId, trimmedEmail)
       if (!result.ok) {
         if (result.error === 'already_member') setInviteError(t(locale, 'groups.manage.alreadyMember'))
+        else if (result.error === 'rate_limited') setInviteError(t(locale, 'groups.manage.inviteRateLimited'))
         else setInviteError(t(locale, 'groups.manage.inviteError'))
         return
       }
