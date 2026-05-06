@@ -40,6 +40,9 @@ yarn-error.log*
 # claude code worktrees
 .claude/
 
+# codex worktrees
+.codex/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
