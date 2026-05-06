@@ -263,7 +263,10 @@ export async function acceptInvitation(
     if (inv.status === 'cancelled') return { ok: false as const, error: 'cancelled' as const }
     if (inv.status !== 'pending') return { ok: false as const, error: 'already_used' as const }
     if (inv.expiresAt <= Date.now()) {
-      await tx.update(groupInvitations).set({ status: 'expired' }).where(and(eq(groupInvitations.id, inv.id), eq(groupInvitations.status, 'pending')))
+      await tx
+        .update(groupInvitations)
+        .set({ status: 'expired' })
+        .where(and(eq(groupInvitations.id, inv.id), eq(groupInvitations.status, 'pending')))
       return { ok: false as const, error: 'expired' as const }
     }
 
@@ -308,7 +311,10 @@ export async function rejectInvitation(
     if (inv.status === 'cancelled') return { ok: false as const, error: 'cancelled' as const }
     if (inv.status !== 'pending') return { ok: false as const, error: 'already_used' as const }
     if (inv.expiresAt <= Date.now()) {
-      await tx.update(groupInvitations).set({ status: 'expired' }).where(and(eq(groupInvitations.id, inv.id), eq(groupInvitations.status, 'pending')))
+      await tx
+        .update(groupInvitations)
+        .set({ status: 'expired' })
+        .where(and(eq(groupInvitations.id, inv.id), eq(groupInvitations.status, 'pending')))
       return { ok: false as const, error: 'expired' as const }
     }
 
