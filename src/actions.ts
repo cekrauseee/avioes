@@ -35,6 +35,7 @@ import {
   readPendingInvitationsForGroup,
   readTheme,
   readUserProfile,
+  readWorldRanking,
   recordPasswordAttempt,
   rejectInvitation as rejectInvitationInStore,
   removeGroupMember,
@@ -48,6 +49,23 @@ import {
   writeOnboardingStatus
 } from './lib/store'
 import type { Group, GroupMember, OnboardingStatus, PendingOp } from './lib/types'
+import { startOfWeekBRT } from './lib/world-window'
+
+export type WorldRankingWindow = 'all' | 'week'
+
+export type WorldRankingRowDTO = {
+  rank: number
+  groupId: string
+  displayName: string
+  score: number
+  isMember: boolean
+}
+
+export type WorldRankingResult = {
+  window: WorldRankingWindow
+  rows: WorldRankingRowDTO[]
+  userGroupRanks: { groupId: string; displayName: string; rank: number; score: number }[]
+}
 
 const INVITE_EXPIRY_MS = 24 * 60 * 60 * 1000
 const MAX_INVITES_PER_HOUR = 10
@@ -206,6 +224,34 @@ export async function finishOnboarding(input: {
 
   const snapshot = await snapshotForMember(user.id, groupId, [], true, 'complete')
   return { ok: true, snapshot }
+}
+
+export async function getWorldRanking(opts: { window: WorldRankingWindow }): Promise<WorldRankingResult> {
+  const window: WorldRankingWindow = opts?.window === 'week' ? 'week' : 'all'
+
+  const user = await getSessionUser()
+  if (!user) return { window, rows: [], userGroupRanks: [] }
+
+  const weekStartTs = window === 'week' ? startOfWeekBRT(Date.now()) : undefined
+  const ranking = await readWorldRanking({ window, weekStartTs })
+  const memberIds = new Set((await readGroupsForUser(user.id)).map((g) => g.id))
+
+  const rows: WorldRankingRowDTO[] = ranking.map((r, i) => {
+    const isMember = memberIds.has(r.groupId)
+    return {
+      rank: i + 1,
+      groupId: r.groupId,
+      displayName: isMember ? r.name : `Grupo #${r.groupId.slice(0, 6)}`,
+      score: r.score,
+      isMember
+    }
+  })
+
+  return {
+    window,
+    rows,
+    userGroupRanks: rows.filter((r) => r.isMember).map(({ groupId, displayName, rank, score }) => ({ groupId, displayName, rank, score }))
+  }
 }
 
 export async function getUserGroups(): Promise<(Group & { memberCount: number })[]> {

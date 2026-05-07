@@ -15,7 +15,8 @@ const PAGE_TITLE_KEY: Record<string, TKey> = {
   '/': 'nav.count',
   '/diary': 'diary.title',
   '/scoreboard': 'scoreboard.title',
-  '/settings': 'settings.title'
+  '/settings': 'settings.title',
+  '/world': 'world.title'
 }
 
 export function AppRuntime({ children }: { children: React.ReactNode }) {
@@ -23,14 +24,16 @@ export function AppRuntime({ children }: { children: React.ReactNode }) {
   const state = useOfflineState()
   const pathname = usePathname()
   const locale = selectLocale(state)
-  const inApp = state.identity && state.activeGroupId
+  const hasIdentity = Boolean(state.identity)
+  const hasActiveGroup = Boolean(state.activeGroupId)
   const showAppNav =
-    Boolean(inApp) &&
+    hasIdentity &&
     pathname !== '/auth' &&
     !pathname.startsWith('/design') &&
     !pathname.startsWith('/groups') &&
     !pathname.startsWith('/settings/') &&
-    !pathname.startsWith('/onboarding')
+    !pathname.startsWith('/onboarding') &&
+    (hasActiveGroup || pathname === '/world')
 
   useEffect(() => {
     const key = PAGE_TITLE_KEY[pathname]

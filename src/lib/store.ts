@@ -460,6 +460,30 @@ export async function readEventsForMember(groupId: string, userId: string): Prom
   }))
 }
 
+export type WorldRankingRow = { groupId: string; name: string; score: number; firstEventTs: number }
+
+export async function readWorldRanking(opts: { window: 'all' | 'week'; weekStartTs?: number }): Promise<WorldRankingRow[]> {
+  const where = opts.window === 'week' && opts.weekStartTs !== undefined ? sql`${events.ts} >= ${opts.weekStartTs}` : sql`true`
+  const rows = await db
+    .select({
+      groupId: events.groupId,
+      name: groups.name,
+      score: sql<number>`count(${events.id})::int`,
+      firstEventTs: sql<number>`min(${events.ts})::bigint`
+    })
+    .from(events)
+    .innerJoin(groups, eq(groups.id, events.groupId))
+    .where(where)
+    .groupBy(events.groupId, groups.name)
+    .orderBy(sql`count(${events.id}) desc, min(${events.ts}) asc`)
+  return rows.map((r) => ({
+    groupId: r.groupId,
+    name: r.name,
+    score: Number(r.score),
+    firstEventTs: Number(r.firstEventTs)
+  }))
+}
+
 export async function readTheme(userId: string | null): Promise<Theme> {
   if (!userId) return 'system'
   const row = await db.select({ theme: preferences.theme }).from(preferences).where(eq(preferences.userId, userId)).limit(1)

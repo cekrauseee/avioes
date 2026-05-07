@@ -110,7 +110,7 @@ UPDATE group_invitations SET token = 'migrated-' || id WHERE length(token) = 36;
 
 Do NOT rerun after deploy — new rows already store hashes. Then `npm run db:push` to apply the partial unique index and `expired` enum value.
 
-Hourly cron (`/api/cron/invitations`) bulk-expires overdue pending invites. Set `CRON_SECRET` in Vercel project env vars; Vercel sends it as `Authorization: Bearer <secret>`. Accept/reject also mark rows expired on runtime time check as defense-in-depth. Config in `vercel.json`.
+Daily cron (`/api/cron/invitations`, midnight UTC — Vercel Hobby plan only allows daily) bulk-expires overdue pending invites. Set `CRON_SECRET` in Vercel project env vars; Vercel sends it as `Authorization: Bearer <secret>`. Accept/reject also mark rows expired on runtime time check as defense-in-depth. Config in `vercel.json`.
 
 ### 2026-05-05 — Password flows redesigned to email-based magic link
 

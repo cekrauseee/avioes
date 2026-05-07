@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { bigint, pgEnum, pgTable, primaryKey, serial, text, uniqueIndex } from 'drizzle-orm/pg-core'
+import { bigint, index, pgEnum, pgTable, primaryKey, serial, text, uniqueIndex } from 'drizzle-orm/pg-core'
 import { users } from './auth-schema'
 
 export const themeEnum = pgEnum('theme', ['light', 'dark', 'system'])
@@ -55,15 +55,19 @@ export const groupInvitations = pgTable(
   ]
 )
 
-export const events = pgTable('events', {
-  id: serial('id').primaryKey(),
-  clientId: text('client_id').unique(),
-  who: text('who').notNull(),
-  groupId: text('group_id')
-    .notNull()
-    .references(() => groups.id, { onDelete: 'cascade' }),
-  ts: bigint('ts', { mode: 'number' }).notNull()
-})
+export const events = pgTable(
+  'events',
+  {
+    id: serial('id').primaryKey(),
+    clientId: text('client_id').unique(),
+    who: text('who').notNull(),
+    groupId: text('group_id')
+      .notNull()
+      .references(() => groups.id, { onDelete: 'cascade' }),
+    ts: bigint('ts', { mode: 'number' }).notNull()
+  },
+  (t) => [index('idx_events_group_ts').on(t.groupId, t.ts)]
+)
 
 export const preferences = pgTable('preferences', {
   userId: text('user_id')
