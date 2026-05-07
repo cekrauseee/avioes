@@ -1,13 +1,12 @@
 # Airplanes
 
-A two-person airplane-spotting counter, built as a private game between Henrique and Pietra. Tap once for every airplane you see in the sky together — the app keeps a shared running tally, a diary of streaks, and a scoreboard. The UI is in Brazilian Portuguese (the visible PWA name is "Aviões"); the codebase, project name, and infrastructure are in English.
+A small group-based airplane-spotting counter. Tap once for every airplane you see in the sky together — the app keeps a shared running tally per group, a diary of streaks, and a scoreboard. The UI is fully internationalized (Brazilian Portuguese default, English alongside); the codebase, project name, and infrastructure are in English. The visible PWA name stays "Aviões" because it is the brand.
 
 ## What this is
 
-- A small, installable PWA. Two hardcoded users: Henrique and Pietra.
-- No login. Identity is picked once per device during onboarding and stored in an httpOnly cookie (`ap_id`); the browser keeps only a last-known display hint for offline boot.
-- Airplane events and per-user theme live in Postgres so they follow the user across devices. The PWA also keeps an IndexedDB snapshot and ordered pending-op queue for offline use.
-- UI is in Brazilian Portuguese; the codebase, docs, and identifiers are in English.
+- A small, installable PWA. Users sign in with better-auth (email + password, OTP, passkey, or Google) and join one or more groups; counting is scoped to the active group.
+- Airplane events, group membership, and per-user preferences (theme, palette, locale, active group) live in Postgres so they follow the user across devices. The PWA also keeps an IndexedDB snapshot and ordered pending-op queue for offline use.
+- UI is internationalized via `src/lib/i18n.ts` (`pt`, `en`); identifiers, routes, and docs are English.
 
 The aesthetic is intentionally small, organic and journal-like — see [`docs/ui-ux.md`](./docs/ui-ux.md).
 
@@ -84,7 +83,8 @@ The `docs/` folder is the source of truth for how this project is designed and b
 - [`docs/project.md`](./docs/project.md) — what the app is and what it isn't
 - [`docs/architecture.md`](./docs/architecture.md) — how the app is wired together
 - [`docs/code-style.md`](./docs/code-style.md) — conventions for writing code in this repo
-- [`docs/ui-ux.md`](./docs/ui-ux.md) — design language, palette, typography, motion
+- [`docs/ui-ux.md`](./docs/ui-ux.md) — design language, palette, typography, motion, navigation
+- [`docs/images.md`](./docs/images.md) — illustration catalog, visual contract, prompt template for new art
 - [`docs/context.md`](./docs/context.md) — running implementation log (kept up to date)
 - [`docs/backlog.md`](./docs/backlog.md) — known deferred follow-ups
 

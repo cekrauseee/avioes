@@ -8,8 +8,14 @@ import { useNavDirection } from '../lib/nav-direction'
 const ROUTES = ['/', '/diary', '/scoreboard', '/settings']
 const SWIPE_THRESHOLD = 60
 const WHEEL_SWIPE_THRESHOLD = 34
-const pageTransition = { duration: 0.2, ease: [0.22, 1, 0.36, 1] as const }
-const pageExitTransition = { duration: 0.12, ease: 'easeIn' as const }
+const PAGE_SLIDE = '108%'
+const pageTransition = { duration: 0.36, ease: [0.22, 1, 0.36, 1] as const }
+
+const pageVariants = {
+  enter: (direction: 1 | -1) => ({ opacity: 0.94, x: direction === 1 ? PAGE_SLIDE : `-${PAGE_SLIDE}` }),
+  center: { opacity: 1, x: 0 },
+  exit: (direction: 1 | -1) => ({ opacity: 0.94, x: direction === 1 ? `-${PAGE_SLIDE}` : PAGE_SLIDE })
+}
 
 function topLevelRouteKey(segments: string[]) {
   const segment = segments.find((value) => !value.startsWith('(') && !value.startsWith('@'))
@@ -50,15 +56,17 @@ export function SwipeableContent({ children, disabled }: { children: React.React
 
   const page = (
     <AnimatePresence
-      mode='wait'
+      mode='sync'
       initial={false}
       custom={direction}
     >
       <motion.div
         key={routeKey}
-        initial={{ opacity: 0, x: direction * 12 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, transition: pageExitTransition }}
+        custom={direction}
+        variants={pageVariants}
+        initial='enter'
+        animate='center'
+        exit='exit'
         transition={pageTransition}
         className='absolute inset-0 flex flex-col overflow-hidden'
       >

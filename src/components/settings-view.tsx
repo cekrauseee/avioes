@@ -31,6 +31,13 @@ const TABS = [
 const SETTINGS_PREV_ROUTE = '/scoreboard'
 const SWIPE_THRESHOLD = 60
 const WHEEL_SWIPE_THRESHOLD = 34
+const TAB_SLIDE = '108%'
+const tabTransition = { duration: 0.34, ease: [0.22, 1, 0.36, 1] as const }
+const tabVariants = {
+  enter: (direction: 1 | -1) => ({ opacity: 0.94, x: direction === 1 ? TAB_SLIDE : `-${TAB_SLIDE}` }),
+  center: { opacity: 1, x: 0 },
+  exit: (direction: 1 | -1) => ({ opacity: 0.94, x: direction === 1 ? `-${TAB_SLIDE}` : TAB_SLIDE })
+}
 
 const PALETTE_KEYS = Object.keys(PALETTES) as Palette[]
 
@@ -138,15 +145,18 @@ export function SettingsView() {
           whileDrag={{ cursor: 'grabbing' }}
         >
           <AnimatePresence
-            mode='wait'
+            mode='sync'
             initial={false}
+            custom={direction}
           >
             <motion.div
               key={tab}
-              initial={reduce ? { opacity: 0 } : { opacity: 0, x: direction * 12 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, transition: { duration: 0.12, ease: 'easeIn' } }}
-              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              custom={direction}
+              variants={reduce ? undefined : tabVariants}
+              initial={reduce ? { opacity: 0 } : 'enter'}
+              animate={reduce ? { opacity: 1 } : 'center'}
+              exit={reduce ? { opacity: 0 } : 'exit'}
+              transition={reduce ? { duration: 0.12 } : tabTransition}
               className='scroll-area absolute inset-0 overflow-y-auto px-5 py-5'
             >
               {tab === 'visual' && (

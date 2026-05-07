@@ -30,6 +30,15 @@ const slideVariants = {
 }
 
 const slideTransition = { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const }
+const screenExitTransition = { duration: 0.1, ease: 'easeIn' as const }
+
+const screenVariants = {
+  enter: (dir: number) => ({ x: dir * 20, opacity: 0, filter: 'blur(3px)' }),
+  center: { x: 0, opacity: 1, filter: 'blur(0px)' },
+  exit: (dir: number) => ({ x: -dir * 20, opacity: 0, filter: 'blur(2px)', transition: screenExitTransition })
+}
+
+const screenTransition = { duration: 0.2, ease: [0.22, 1, 0.36, 1] as const }
 
 export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthError: string | null }) {
   const router = useRouter()
@@ -289,502 +298,530 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
       </motion.header>
 
       {/* Body — error screen, welcome screen, or auth form */}
-      {step === 'error' ?
-        <motion.div
-          key='oauth-error'
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-          className='mt-12 flex flex-1 flex-col'
-        >
-          <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
-            {t(locale, 'auth.errorLine1')}
-            <br />
-            <span className='text-clay italic'>{t(locale, 'auth.errorItalic')}</span>
-          </h1>
-          <p className='text-ink-faint mt-3 text-sm'>{t(locale, 'auth.errorBody')}</p>
-
-          <div className='relative mx-auto my-auto w-[60%] max-w-55'>
-            <Image
-              src='/airplane-error-light.png'
-              alt=''
-              aria-hidden
-              width={480}
-              height={480}
-              unoptimized
-              priority
-              className='theme-light-only h-auto w-full select-none'
-              draggable={false}
-            />
-            <Image
-              src='/airplane-error-dark.png'
-              alt=''
-              aria-hidden
-              width={480}
-              height={480}
-              unoptimized
-              priority
-              className='theme-dark-only h-auto w-full select-none'
-              draggable={false}
-            />
-          </div>
-
-          <div className='flex flex-col gap-3'>
-            <Button
-              variant='secondary'
-              size='md'
-              fullWidth
-              onClick={handleGoogle}
-              disabled={loading}
-              leading={<GoogleMark />}
-            >
-              {t(locale, 'auth.tryGoogle')}
-            </Button>
-            <Button
-              variant='primary'
-              size='md'
-              fullWidth
-              onClick={() => advanceTo('email')}
-            >
-              {t(locale, 'auth.continueEmail')}
-            </Button>
-            <Button
-              variant='secondary'
-              size='sm'
-              shape='pill'
-              className='self-start'
-              onClick={() => advanceTo('welcome')}
-              leading={<span aria-hidden>←</span>}
-            >
-              {t(locale, 'auth.back')}
-            </Button>
-          </div>
-        </motion.div>
-      : step === 'welcome' ?
-        <motion.div
-          key='welcome'
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-          className='mt-12 flex flex-1 flex-col'
-        >
-          <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
-            {t(locale, isInviteFlow ? 'auth.inviteWelcomeLine1' : 'auth.welcomeLine1')}
-            <br />
-            <span className='text-sage italic'>{t(locale, isInviteFlow ? 'auth.inviteWelcomeItalic' : 'auth.welcomeItalic')}</span>
-          </h1>
-          <p className='text-ink-faint mt-3 text-sm'>{t(locale, isInviteFlow ? 'auth.inviteWelcomeBody' : 'auth.welcomeBody')}</p>
-
-          <div className='relative mx-auto my-auto w-[82%] max-w-72'>
-            <Image
-              src={isInviteFlow ? '/invite-hero-light.png' : '/onboarding-hero-light.png'}
-              alt=''
-              aria-hidden
-              width={1254}
-              height={1254}
-              unoptimized
-              priority
-              className='theme-light-only h-auto w-full select-none'
-              draggable={false}
-            />
-            <Image
-              src={isInviteFlow ? '/invite-hero-dark.png' : '/onboarding-hero-dark.png'}
-              alt=''
-              aria-hidden
-              width={1254}
-              height={1254}
-              unoptimized
-              priority
-              className='theme-dark-only h-auto w-full select-none'
-              draggable={false}
-            />
-          </div>
-
-          <div className='flex flex-col gap-3'>
-            <Button
-              variant='secondary'
-              size='md'
-              fullWidth
-              onClick={handleGoogle}
-              disabled={loading}
-              leading={<GoogleMark />}
-            >
-              {t(locale, 'auth.continueGoogle')}
-            </Button>
-            <Button
-              variant='primary'
-              size='md'
-              fullWidth
-              onClick={() => advanceTo('email')}
-            >
-              {t(locale, 'auth.continueEmail')}
-            </Button>
-          </div>
-        </motion.div>
-      : <div className='mt-12 flex flex-1 flex-col'>
+      <AnimatePresence
+        mode='wait'
+        custom={direction}
+      >
+        {step === 'error' ?
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-            className='relative'
+            key='error'
+            custom={direction}
+            variants={screenVariants}
+            initial='enter'
+            animate='center'
+            exit='exit'
+            transition={screenTransition}
+            className='mt-12 flex flex-1 flex-col'
           >
-            <AnimatePresence
-              mode='wait'
-              custom={direction}
-              initial={false}
-            >
-              <motion.div
-                key={`heading-${step}-${accountExists ?? 'pending'}`}
-                custom={direction}
-                variants={slideVariants}
-                initial='enter'
-                animate='center'
-                exit='exit'
-                transition={slideTransition}
-              >
-                <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
-                  {step === 'method' ?
-                    <>
-                      {t(locale, 'auth.welcomeBackLine1')}
-                      <br />
-                      <span className='text-sage italic'>{t(locale, 'auth.welcomeBackItalic')}</span>
-                    </>
-                  : step === 'otp' ?
-                    <>
-                      {t(locale, 'auth.otpLine1')}
-                      <br />
-                      <span className='text-sage italic'>{t(locale, 'auth.otpItalic')}</span>
-                    </>
-                  : step === 'password' && accountExists ?
-                    <>
-                      {t(locale, 'auth.welcomeBackLine1')}
-                      <br />
-                      <span className='text-sage italic'>{t(locale, 'auth.welcomeBackItalic')}</span>
-                    </>
-                  : step === 'no-password' ?
-                    <>
-                      {t(locale, 'auth.noPasswordLine1')}
-                      <br />
-                      <span className='text-clay italic'>{t(locale, 'auth.noPasswordItalic')}</span>
-                    </>
-                  : step === 'password' && accountExists === false ?
-                    <>
-                      {t(locale, 'auth.signupLine1')}
-                      <br />
-                      <span className='text-sage italic'>{t(locale, 'auth.signupItalic')}</span>
-                    </>
-                  : <>
-                      {t(locale, 'auth.title')}
-                      <br />
-                      <span className='text-sage italic'>{t(locale, 'auth.titleItalic')}</span>
-                    </>
-                  }
-                </h1>
-                <p className='text-ink-faint mt-3 truncate text-sm'>
-                  {step === 'email' && t(locale, 'auth.emailSubtitle')}
-                  {step === 'method' && email}
-                  {step === 'otp' && tf(locale, 'auth.otpSentTo', { email })}
-                  {step === 'password' && email}
-                  {step === 'no-password' && t(locale, 'auth.noPasswordBody')}
-                </p>
-              </motion.div>
-            </AnimatePresence>
-          </motion.div>
+            <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
+              {t(locale, 'auth.errorLine1')}
+              <br />
+              <span className='text-clay italic'>{t(locale, 'auth.errorItalic')}</span>
+            </h1>
+            <p className='text-ink-faint mt-3 text-sm'>{t(locale, 'auth.errorBody')}</p>
 
-          <motion.form
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            onSubmit={
-              step === 'email' ? submitEmail
-              : step === 'otp' ?
-                handleOtpSubmit
-              : step === 'method' || step === 'no-password' ?
-                (e) => e.preventDefault()
-              : handlePassword
-            }
-            className='mt-10 flex flex-col gap-4'
-          >
-            <AnimatePresence
-              mode='wait'
-              custom={direction}
-              initial={false}
-            >
-              <motion.div
-                key={`fields-${step}`}
-                custom={direction}
-                variants={slideVariants}
-                initial='enter'
-                animate='center'
-                exit='exit'
-                transition={slideTransition}
-                className='flex flex-col gap-4'
-              >
-                {step === 'email' && (
-                  <>
-                    <Field
-                      label={t(locale, 'auth.emailLabel')}
-                      type='text'
-                      value={email}
-                      onChange={setEmail}
-                      placeholder={t(locale, 'auth.emailPlaceholder')}
-                      autoFocus
-                      autoComplete='email'
-                    />
-                    <Button
-                      variant='secondary'
-                      size='sm'
-                      shape='pill'
-                      className='self-start'
-                      onClick={() => {
-                        advanceTo('welcome')
-                        setError(null)
-                      }}
-                      leading={<span aria-hidden>←</span>}
-                    >
-                      {t(locale, 'auth.back')}
-                    </Button>
-                  </>
-                )}
+            <div className='relative mx-auto my-auto w-[60%] max-w-55'>
+              <Image
+                src='/airplane-error-light.png'
+                alt=''
+                aria-hidden
+                width={480}
+                height={480}
+                unoptimized
+                priority
+                className='theme-light-only h-auto w-full select-none'
+                draggable={false}
+              />
+              <Image
+                src='/airplane-error-dark.png'
+                alt=''
+                aria-hidden
+                width={480}
+                height={480}
+                unoptimized
+                priority
+                className='theme-dark-only h-auto w-full select-none'
+                draggable={false}
+              />
+            </div>
 
-                {step === 'password' && (
-                  <>
-                    <Field
-                      label={accountExists === false ? t(locale, 'auth.createPassword') : t(locale, 'auth.passwordLabel')}
-                      type='password'
-                      value={password}
-                      onChange={setPassword}
-                      placeholder={t(locale, 'auth.passwordPlaceholder')}
-                      autoFocus
-                      autoComplete={accountExists ? 'current-password' : 'new-password'}
-                    />
-                    <Button
-                      variant='secondary'
-                      size='sm'
-                      shape='pill'
-                      className='self-start'
-                      onClick={() => {
-                        setError(null)
-                        setPassword('')
-                        if (accountExists) {
-                          advanceTo('method')
-                        } else {
-                          setAccountExists(null)
-                          advanceTo('email')
-                        }
-                      }}
-                      leading={<span aria-hidden>←</span>}
-                    >
-                      {accountExists ? t(locale, 'auth.back') : t(locale, 'auth.changeEmail')}
-                    </Button>
-                  </>
-                )}
-
-                {step === 'method' && (
-                  <>
-                    {hasPasskey && (
-                      <Button
-                        variant='primary'
-                        size='md'
-                        fullWidth
-                        onClick={handlePasskeySignIn}
-                        status={passkeyLoading ? 'pending' : 'idle'}
-                        pendingLabel={t(locale, 'auth.waiting')}
-                      >
-                        {t(locale, 'auth.continuePasskey')}
-                      </Button>
-                    )}
-                    <Button
-                      variant={hasPasskey ? 'secondary' : 'primary'}
-                      size='md'
-                      fullWidth
-                      onClick={chooseOtp}
-                      status={otpSending ? 'pending' : 'idle'}
-                      pendingLabel={t(locale, 'auth.sendingOtp')}
-                    >
-                      {t(locale, 'auth.sendOtpEmail')}
-                    </Button>
-                    <Button
-                      variant='secondary'
-                      size='md'
-                      fullWidth
-                      onClick={() => {
-                        setError(null)
-                        advanceTo(hasPassword ? 'password' : 'no-password')
-                      }}
-                    >
-                      {t(locale, 'auth.continuePassword')}
-                    </Button>
-                    <Button
-                      variant='secondary'
-                      size='sm'
-                      shape='pill'
-                      className='self-start'
-                      onClick={() => {
-                        setError(null)
-                        setAccountExists(null)
-                        setHasPasskey(false)
-                        setHasPassword(false)
-                        advanceTo('email')
-                      }}
-                      leading={<span aria-hidden>←</span>}
-                    >
-                      {t(locale, 'auth.changeEmail')}
-                    </Button>
-                  </>
-                )}
-
-                {step === 'otp' && (
-                  <>
-                    <div className='flex flex-col gap-1.5'>
-                      <label className='text-ink-faint text-xs'>{tf(locale, 'auth.otpFieldLabel', { n: OTP_LENGTH })}</label>
-                      <input
-                        type='text'
-                        inputMode='numeric'
-                        autoComplete='one-time-code'
-                        pattern='[0-9]*'
-                        maxLength={OTP_LENGTH}
-                        value={otp}
-                        disabled={otpExhausted}
-                        onChange={(e) => {
-                          const next = e.target.value.replace(/\D/g, '').slice(0, OTP_LENGTH)
-                          setOtp(next)
-                          if (error) setError(null)
-                          if (next.length === OTP_LENGTH && !loading && !otpExhausted) verifyOtp(next)
-                        }}
-                        autoFocus
-                        placeholder='••••••'
-                        className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 w-full rounded-xl border px-4 py-3 text-center font-mono text-2xl tracking-[0.4em] transition-all outline-none focus:ring-2 disabled:opacity-50'
-                      />
-                    </div>
-                    <Button
-                      variant='secondary'
-                      size='sm'
-                      shape='pill'
-                      className='self-start'
-                      onClick={handleResend}
-                      disabled={(resendSecondsLeft > 0 && !otpExhausted) || otpSending}
-                    >
-                      {otpSending ?
-                        t(locale, 'auth.sending')
-                      : otpExhausted ?
-                        t(locale, 'auth.otpRequestNew')
-                      : resendSecondsLeft > 0 ?
-                        tf(locale, 'auth.otpResendIn', { n: resendSecondsLeft })
-                      : t(locale, 'auth.otpResend')}
-                    </Button>
-                    <Button
-                      variant='secondary'
-                      size='sm'
-                      shape='pill'
-                      className='self-start'
-                      onClick={() => {
-                        setError(null)
-                        setOtp('')
-                        setResendAt(null)
-                        setOtpAttemptsUsed(0)
-                        setOtpExhausted(false)
-                        advanceTo('method')
-                      }}
-                      leading={<span aria-hidden>←</span>}
-                    >
-                      {t(locale, 'auth.back')}
-                    </Button>
-                  </>
-                )}
-
-                {step === 'no-password' && (
-                  <>
-                    {noPasswordSent ?
-                      <p className='text-sage text-sm font-medium'>{t(locale, 'auth.noPasswordSent')}</p>
-                    : <Button
-                        variant='primary'
-                        size='md'
-                        fullWidth
-                        status={noPasswordLoading ? 'pending' : 'idle'}
-                        pendingLabel={t(locale, 'auth.noPasswordSending')}
-                        onClick={async () => {
-                          setNoPasswordLoading(true)
-                          setError(null)
-                          const res = await requestPasswordCreationForEmail(email.trim().toLowerCase())
-                          setNoPasswordLoading(false)
-                          if (!res.ok) {
-                            setError(t(locale, 'auth.noPasswordError'))
-                            return
-                          }
-                          setNoPasswordSent(true)
-                        }}
-                      >
-                        {t(locale, 'auth.noPasswordCta')}
-                      </Button>
-                    }
-                    <Button
-                      variant='secondary'
-                      size='sm'
-                      shape='pill'
-                      className='self-start'
-                      onClick={() => {
-                        setError(null)
-                        setNoPasswordSent(false)
-                        advanceTo('method')
-                      }}
-                      leading={<span aria-hidden>←</span>}
-                    >
-                      {t(locale, 'auth.back')}
-                    </Button>
-                  </>
-                )}
-              </motion.div>
-            </AnimatePresence>
-
-            <AnimatePresence
-              mode='wait'
-              initial={false}
-            >
-              {error && (
-                <motion.p
-                  key={error}
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.18 }}
-                  className='text-clay text-sm'
-                >
-                  {error}
-                </motion.p>
-              )}
-            </AnimatePresence>
-
-            {step !== 'method' && step !== 'no-password' && (
+            <div className='flex flex-col gap-3'>
               <Button
-                type='submit'
+                variant='secondary'
+                size='md'
+                fullWidth
+                onClick={handleGoogle}
+                disabled={loading}
+                leading={<GoogleMark />}
+              >
+                {t(locale, 'auth.tryGoogle')}
+              </Button>
+              <Button
                 variant='primary'
                 size='md'
                 fullWidth
-                className='mt-2'
-                disabled={step === 'otp' && otpExhausted}
-                status={loading ? 'pending' : 'idle'}
-                pendingLabel={
-                  step === 'otp' ? t(locale, 'auth.verifying')
-                  : step === 'password' && accountExists ?
-                    t(locale, 'auth.loading')
-                  : step === 'password' && accountExists === false ?
-                    t(locale, 'auth.creatingAccount')
-                  : t(locale, 'auth.waiting')
-                }
+                onClick={() => advanceTo('email')}
               >
-                {step === 'email' ?
-                  t(locale, 'auth.submitContinue')
-                : step === 'otp' ?
-                  t(locale, 'auth.submitSignIn')
-                : accountExists ?
-                  t(locale, 'auth.submitSignIn')
-                : t(locale, 'auth.submitCreate')}
+                {t(locale, 'auth.continueEmail')}
               </Button>
-            )}
-          </motion.form>
-        </div>
-      }
+              <Button
+                variant='secondary'
+                size='sm'
+                shape='pill'
+                className='self-start'
+                onClick={() => advanceTo('welcome')}
+                leading={<span aria-hidden>←</span>}
+              >
+                {t(locale, 'auth.back')}
+              </Button>
+            </div>
+          </motion.div>
+        : step === 'welcome' ?
+          <motion.div
+            key='welcome'
+            custom={direction}
+            variants={screenVariants}
+            initial='enter'
+            animate='center'
+            exit='exit'
+            transition={screenTransition}
+            className='mt-12 flex flex-1 flex-col'
+          >
+            <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
+              {t(locale, isInviteFlow ? 'auth.inviteWelcomeLine1' : 'auth.welcomeLine1')}
+              <br />
+              <span className='text-sage italic'>{t(locale, isInviteFlow ? 'auth.inviteWelcomeItalic' : 'auth.welcomeItalic')}</span>
+            </h1>
+            <p className='text-ink-faint mt-3 text-sm'>{t(locale, isInviteFlow ? 'auth.inviteWelcomeBody' : 'auth.welcomeBody')}</p>
+
+            <div className='relative mx-auto my-auto w-[82%] max-w-72'>
+              <Image
+                src={isInviteFlow ? '/invite-hero-light.png' : '/onboarding-hero-light.png'}
+                alt=''
+                aria-hidden
+                width={1254}
+                height={1254}
+                unoptimized
+                priority
+                className='theme-light-only h-auto w-full select-none'
+                draggable={false}
+              />
+              <Image
+                src={isInviteFlow ? '/invite-hero-dark.png' : '/onboarding-hero-dark.png'}
+                alt=''
+                aria-hidden
+                width={1254}
+                height={1254}
+                unoptimized
+                priority
+                className='theme-dark-only h-auto w-full select-none'
+                draggable={false}
+              />
+            </div>
+
+            <div className='flex flex-col gap-3'>
+              <Button
+                variant='secondary'
+                size='md'
+                fullWidth
+                onClick={handleGoogle}
+                disabled={loading}
+                leading={<GoogleMark />}
+              >
+                {t(locale, 'auth.continueGoogle')}
+              </Button>
+              <Button
+                variant='primary'
+                size='md'
+                fullWidth
+                onClick={() => advanceTo('email')}
+              >
+                {t(locale, 'auth.continueEmail')}
+              </Button>
+            </div>
+          </motion.div>
+        : <motion.div
+            key='form'
+            custom={direction}
+            variants={screenVariants}
+            initial='enter'
+            animate='center'
+            exit='exit'
+            transition={screenTransition}
+            className='mt-12 flex flex-1 flex-col'
+          >
+            <div className='relative'>
+              <AnimatePresence
+                mode='wait'
+                custom={direction}
+                initial={false}
+              >
+                <motion.div
+                  key={`heading-${step}-${accountExists ?? 'pending'}`}
+                  custom={direction}
+                  variants={slideVariants}
+                  initial='enter'
+                  animate='center'
+                  exit='exit'
+                  transition={slideTransition}
+                >
+                  <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
+                    {step === 'method' ?
+                      <>
+                        {t(locale, 'auth.welcomeBackLine1')}
+                        <br />
+                        <span className='text-sage italic'>{t(locale, 'auth.welcomeBackItalic')}</span>
+                      </>
+                    : step === 'otp' ?
+                      <>
+                        {t(locale, 'auth.otpLine1')}
+                        <br />
+                        <span className='text-sage italic'>{t(locale, 'auth.otpItalic')}</span>
+                      </>
+                    : step === 'password' && accountExists ?
+                      <>
+                        {t(locale, 'auth.welcomeBackLine1')}
+                        <br />
+                        <span className='text-sage italic'>{t(locale, 'auth.welcomeBackItalic')}</span>
+                      </>
+                    : step === 'no-password' ?
+                      <>
+                        {t(locale, 'auth.noPasswordLine1')}
+                        <br />
+                        <span className='text-clay italic'>{t(locale, 'auth.noPasswordItalic')}</span>
+                      </>
+                    : step === 'password' && accountExists === false ?
+                      <>
+                        {t(locale, 'auth.signupLine1')}
+                        <br />
+                        <span className='text-sage italic'>{t(locale, 'auth.signupItalic')}</span>
+                      </>
+                    : <>
+                        {t(locale, 'auth.title')}
+                        <br />
+                        <span className='text-sage italic'>{t(locale, 'auth.titleItalic')}</span>
+                      </>
+                    }
+                  </h1>
+                  <p className='text-ink-faint mt-3 truncate text-sm'>
+                    {step === 'email' && t(locale, 'auth.emailSubtitle')}
+                    {step === 'method' && email}
+                    {step === 'otp' && tf(locale, 'auth.otpSentTo', { email })}
+                    {step === 'password' && email}
+                    {step === 'no-password' && t(locale, 'auth.noPasswordBody')}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            <form
+              onSubmit={
+                step === 'email' ? submitEmail
+                : step === 'otp' ?
+                  handleOtpSubmit
+                : step === 'method' || step === 'no-password' ?
+                  (e) => e.preventDefault()
+                : handlePassword
+              }
+              className='mt-10 flex flex-col gap-4'
+            >
+              <AnimatePresence
+                mode='wait'
+                custom={direction}
+                initial={false}
+              >
+                <motion.div
+                  key={`fields-${step}`}
+                  custom={direction}
+                  variants={slideVariants}
+                  initial='enter'
+                  animate='center'
+                  exit='exit'
+                  transition={slideTransition}
+                  className='flex flex-col gap-4'
+                >
+                  {step === 'email' && (
+                    <>
+                      <Field
+                        label={t(locale, 'auth.emailLabel')}
+                        type='text'
+                        value={email}
+                        onChange={setEmail}
+                        placeholder={t(locale, 'auth.emailPlaceholder')}
+                        autoFocus
+                        autoComplete='email'
+                      />
+                      <Button
+                        variant='secondary'
+                        size='sm'
+                        shape='pill'
+                        className='self-start'
+                        onClick={() => {
+                          advanceTo('welcome')
+                          setError(null)
+                        }}
+                        leading={<span aria-hidden>←</span>}
+                      >
+                        {t(locale, 'auth.back')}
+                      </Button>
+                    </>
+                  )}
+
+                  {step === 'password' && (
+                    <>
+                      <Field
+                        label={accountExists === false ? t(locale, 'auth.createPassword') : t(locale, 'auth.passwordLabel')}
+                        type='password'
+                        value={password}
+                        onChange={setPassword}
+                        placeholder={t(locale, 'auth.passwordPlaceholder')}
+                        autoFocus
+                        autoComplete={accountExists ? 'current-password' : 'new-password'}
+                      />
+                      <Button
+                        variant='secondary'
+                        size='sm'
+                        shape='pill'
+                        className='self-start'
+                        onClick={() => {
+                          setError(null)
+                          setPassword('')
+                          if (accountExists) {
+                            advanceTo('method')
+                          } else {
+                            setAccountExists(null)
+                            advanceTo('email')
+                          }
+                        }}
+                        leading={<span aria-hidden>←</span>}
+                      >
+                        {accountExists ? t(locale, 'auth.back') : t(locale, 'auth.changeEmail')}
+                      </Button>
+                    </>
+                  )}
+
+                  {step === 'method' && (
+                    <>
+                      {hasPasskey && (
+                        <Button
+                          variant='primary'
+                          size='md'
+                          fullWidth
+                          onClick={handlePasskeySignIn}
+                          status={passkeyLoading ? 'pending' : 'idle'}
+                          pendingLabel={t(locale, 'auth.waiting')}
+                        >
+                          {t(locale, 'auth.continuePasskey')}
+                        </Button>
+                      )}
+                      <Button
+                        variant={hasPasskey ? 'secondary' : 'primary'}
+                        size='md'
+                        fullWidth
+                        onClick={chooseOtp}
+                        status={otpSending ? 'pending' : 'idle'}
+                        pendingLabel={t(locale, 'auth.sendingOtp')}
+                      >
+                        {t(locale, 'auth.sendOtpEmail')}
+                      </Button>
+                      <Button
+                        variant='secondary'
+                        size='md'
+                        fullWidth
+                        onClick={() => {
+                          setError(null)
+                          advanceTo(hasPassword ? 'password' : 'no-password')
+                        }}
+                      >
+                        {t(locale, 'auth.continuePassword')}
+                      </Button>
+                      <Button
+                        variant='secondary'
+                        size='sm'
+                        shape='pill'
+                        className='self-start'
+                        onClick={() => {
+                          setError(null)
+                          setAccountExists(null)
+                          setHasPasskey(false)
+                          setHasPassword(false)
+                          advanceTo('email')
+                        }}
+                        leading={<span aria-hidden>←</span>}
+                      >
+                        {t(locale, 'auth.changeEmail')}
+                      </Button>
+                    </>
+                  )}
+
+                  {step === 'otp' && (
+                    <>
+                      <div className='flex flex-col gap-1.5'>
+                        <label className='text-ink-faint text-xs'>{tf(locale, 'auth.otpFieldLabel', { n: OTP_LENGTH })}</label>
+                        <input
+                          type='text'
+                          inputMode='numeric'
+                          autoComplete='one-time-code'
+                          pattern='[0-9]*'
+                          maxLength={OTP_LENGTH}
+                          value={otp}
+                          disabled={otpExhausted}
+                          onChange={(e) => {
+                            const next = e.target.value.replace(/\D/g, '').slice(0, OTP_LENGTH)
+                            setOtp(next)
+                            if (error) setError(null)
+                            if (next.length === OTP_LENGTH && !loading && !otpExhausted) verifyOtp(next)
+                          }}
+                          autoFocus
+                          placeholder='••••••'
+                          className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 w-full rounded-xl border px-4 py-3 text-center font-mono text-2xl tracking-[0.4em] transition-all outline-none focus:ring-2 disabled:opacity-50'
+                        />
+                      </div>
+                      <Button
+                        variant='secondary'
+                        size='sm'
+                        shape='pill'
+                        className='self-start'
+                        onClick={handleResend}
+                        disabled={(resendSecondsLeft > 0 && !otpExhausted) || otpSending}
+                      >
+                        {otpSending ?
+                          t(locale, 'auth.sending')
+                        : otpExhausted ?
+                          t(locale, 'auth.otpRequestNew')
+                        : resendSecondsLeft > 0 ?
+                          tf(locale, 'auth.otpResendIn', { n: resendSecondsLeft })
+                        : t(locale, 'auth.otpResend')}
+                      </Button>
+                      <Button
+                        variant='secondary'
+                        size='sm'
+                        shape='pill'
+                        className='self-start'
+                        onClick={() => {
+                          setError(null)
+                          setOtp('')
+                          setResendAt(null)
+                          setOtpAttemptsUsed(0)
+                          setOtpExhausted(false)
+                          advanceTo('method')
+                        }}
+                        leading={<span aria-hidden>←</span>}
+                      >
+                        {t(locale, 'auth.back')}
+                      </Button>
+                    </>
+                  )}
+
+                  {step === 'no-password' && (
+                    <>
+                      {noPasswordSent ?
+                        <p className='text-sage text-sm font-medium'>{t(locale, 'auth.noPasswordSent')}</p>
+                      : <Button
+                          variant='primary'
+                          size='md'
+                          fullWidth
+                          status={noPasswordLoading ? 'pending' : 'idle'}
+                          pendingLabel={t(locale, 'auth.noPasswordSending')}
+                          onClick={async () => {
+                            setNoPasswordLoading(true)
+                            setError(null)
+                            const res = await requestPasswordCreationForEmail(email.trim().toLowerCase())
+                            setNoPasswordLoading(false)
+                            if (!res.ok) {
+                              setError(t(locale, 'auth.noPasswordError'))
+                              return
+                            }
+                            setNoPasswordSent(true)
+                          }}
+                        >
+                          {t(locale, 'auth.noPasswordCta')}
+                        </Button>
+                      }
+                      <Button
+                        variant='secondary'
+                        size='sm'
+                        shape='pill'
+                        className='self-start'
+                        onClick={() => {
+                          setError(null)
+                          setNoPasswordSent(false)
+                          advanceTo('method')
+                        }}
+                        leading={<span aria-hidden>←</span>}
+                      >
+                        {t(locale, 'auth.back')}
+                      </Button>
+                    </>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+
+              <AnimatePresence
+                mode='wait'
+                initial={false}
+              >
+                {error && (
+                  <motion.p
+                    key={error}
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.18 }}
+                    className='text-clay text-sm'
+                  >
+                    {error}
+                  </motion.p>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence
+                mode='wait'
+                custom={direction}
+                initial={false}
+              >
+                {step !== 'method' && step !== 'no-password' && (
+                  <motion.div
+                    key={step}
+                    custom={direction}
+                    variants={slideVariants}
+                    initial='enter'
+                    animate='center'
+                    exit='exit'
+                    transition={slideTransition}
+                  >
+                    <Button
+                      type='submit'
+                      variant='primary'
+                      size='md'
+                      fullWidth
+                      className='mt-2'
+                      disabled={step === 'otp' && otpExhausted}
+                      status={loading ? 'pending' : 'idle'}
+                      pendingLabel={
+                        step === 'otp' ? t(locale, 'auth.verifying')
+                        : step === 'password' && accountExists ?
+                          t(locale, 'auth.loading')
+                        : step === 'password' && accountExists === false ?
+                          t(locale, 'auth.creatingAccount')
+                        : t(locale, 'auth.waiting')
+                      }
+                    >
+                      {step === 'email' ?
+                        t(locale, 'auth.submitContinue')
+                      : step === 'otp' ?
+                        t(locale, 'auth.submitSignIn')
+                      : accountExists ?
+                        t(locale, 'auth.submitSignIn')
+                      : t(locale, 'auth.submitCreate')}
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </form>
+          </motion.div>
+        }
+      </AnimatePresence>
     </div>
   )
 }

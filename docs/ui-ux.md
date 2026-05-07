@@ -46,21 +46,51 @@ Labels (timestamps, helper text under a number, "trocar", "desfazer") are render
 
 ## Components
 
-- **`<Placeholder/>`** is the temporary stand-in for illustrations. It has a dashed border, a 45° hatch pattern, and a small lowercase label. Use it everywhere a real drawing would go. Replace it with the real artwork by swapping the component, not by editing the consumers.
 - **`<Noise/>`** is a fixed full-screen SVG `feTurbulence` overlay at very low opacity. It gives the paper grain. Don't tune the opacity per-screen.
-- **`<AppShell/>`** wraps a screen with the bottom nav and theme toggle. Onboarding renders without the shell.
+- **`<AppShell/>`** wraps a screen with the bottom nav and theme toggle. Auth, onboarding, intro, and offline gates render without the shell.
+- **`<Placeholder/>`** is the dashed-hatch stand-in still used by the intro carousel for slots that don't have hand-drawn art yet. It is **not** for new screens — every other empty/error/welcome surface ships a real PNG. When you build a new feature, request a real illustration (see below) instead of reaching for `Placeholder`.
+- Generic list/action primitives live alongside the screens that consume them: `expandable-item.tsx`, `confirm-row.tsx`, `animated-list.tsx`, `skeleton.tsx`. Reuse those before inventing new wrappers.
 
-## Motion
+## Imagery
 
-- Use the `motion` package (framer-motion v12).
+Illustrations carry as much of the product feel as the typography does. Treat them as first-class UI, not decoration.
+
+- **Use real images for empty/error/welcome moments.** Counter, diary, and scoreboard empty states; the 404, 500, splash, offline, and OAuth error screens; the auth welcome and invite flows — all have hand-drawn PNGs already wired up. New equivalents should follow the same pattern instead of falling back to glyph emoji or text-only screens.
+- **Light/dark pairs always.** Render with `next/image` (`unoptimized`) inside `theme-light-only` / `theme-dark-only` wrappers. Don't filter or invert a single PNG to fake the dark version — generate both.
+- **Theme-aware preloading.** When an image triggers on interaction (tap fly-by, post-action confirmation), preload both variants so the dark/light swap is invisible. `counter.tsx` shows the pattern.
+- **Add to `OFFLINE_ASSETS`.** Any user-facing PNG must live in the precache list in `src/app/sw.js/route.ts`, otherwise empty/error states break offline.
+- **No icon libraries, no stock art.** The aesthetic is one hand. Glyphs (`✈`, `◐`) are still fine for tiny inline marks; everything bigger gets a real drawing.
+
+The full catalog, the visual contract every illustration follows, and the prompt template for requesting new art live in [`docs/images.md`](./images.md). When a feature needs new art, do not generate it inline — author the prompt, hand it to Codex with the file name and target location, and wire the returned PNG.
+
+## Motion and navigation
+
+The app uses Motion (framer-motion v12). Animation should make the journey feel calm and intentional — never busy.
+
+### Page transitions
+
+- `src/components/swipeable-content.tsx` owns route enter/exit motion. It keys transitions from committed layout segments, uses clipped absolute route layers with `AnimatePresence mode="wait"`, and keeps page exit as a quick opacity-only fade so the incoming page never paints over the outgoing page mid-exit; `app/template.tsx` stays inert.
+- Lateral navigation between `/`, `/diary`, `/scoreboard`, `/settings` is a single horizontal swipe (touch + trackpad wheel + Left/Right arrow). The handler in `src/lib/horizontal-wheel-navigation.ts` accumulates per-gesture and locks until input settles, so one trackpad gesture advances exactly one page. Settings tabs reuse the same path so swipes feel uniform across the app.
+- Use Motion `dragDirectionLock` on swipeable wrappers so vertical list scroll and horizontal page navigation can coexist without fighting.
+
+### Component motion
+
+- **Counter spring**: `stiffness: 220, damping: 22`. Don't change without a reason.
+- **Plane arc**: the one piece of celebratory motion. Keep it under 1.7 s and cap in-flight planes at ≤3.
+- **List add/remove**: use `animated-list.tsx` (`AnimatePresence mode='popLayout'` by default) so removed rows fade while siblings reflow with position-only layout. Bottom sheets containing these lists must opt into position-only layout too, so the sheet top moves by transform as the content shrinks.
+- **Confirm rows**: use `confirm-row.tsx`. Exiting rows are popped absolute during fade so opacity and panel-height transitions start together — don't roll your own destructive-confirm grid.
+- **Bottom sheets**: portal + Motion entry/exit (`account-sheet`, `connections-sheet`, `passkeys-sheet`, `invite-share-sheet` all share the pattern). Open with a quick spring, close with a softer ease, never bounce.
+
+### Restraint
+
 - Keep page-load animation to a single staggered fade-up; don't sprinkle micro-interactions everywhere.
-- The counter number rolls with a spring (`stiffness: 220, damping: 22`). Don't change those values without a reason.
-- The plane arc on tap is the one piece of celebratory motion. Keep it under 1.7s and trim the array of in-flight planes to ≤3.
-- Respect `prefers-reduced-motion` if/when we add more animations.
+- Respect `prefers-reduced-motion`. If you add a new motion surface, it must degrade to a static state under reduced-motion — not a faster animation.
+- No parallax, no looping ambient motion, no attention-getting bounces. The journal aesthetic does not move on its own.
 
 ## Don'ts
 
 - Don't add gradients, shadows, or glassmorphism. The aesthetic is matte paper.
-- Don't introduce icon libraries. Use text glyphs (`✈`) or hand-drawn SVG.
+- Don't introduce icon libraries. Use text glyphs (`✈`) for tiny inline marks; use the hand-drawn PNG set for anything bigger.
 - Don't add a desktop-specific layout. Desktop is a centered phone frame.
 - Don't add an "About" or "Help" page. The app is its own help.
+- Don't ship a new screen with a `<Placeholder/>` where a real illustration belongs. Either reuse an existing PNG, or request a new one via [`docs/images.md`](./images.md).

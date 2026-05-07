@@ -2,7 +2,7 @@
 
 Known follow-ups that are not part of the current session. This file is for concrete deferred work, not active coordination, release notes, or a product roadmap.
 
-Use [`docs/context.md`](./context.md) for what is currently in flight or freshly decided. Use this file when a review or implementation leaves a real issue, cleanup, or investigation intentionally out of scope.
+Use [`docs/context.md`](./context.md) for what is currently in flight or freshly decided. Use this file when a review or implementation leaves a real issue, cleanup, or investigation intentionally out of scope. Cross-cutting conventions belong in the matching `docs/*.md` (architecture, code-style, ui-ux, images), not here.
 
 ## Maintaining This File
 
@@ -56,3 +56,10 @@ Area: offline sync
 Why: Pending sync retries every five seconds while failures continue. The mutex prevents parallel drains, but flaky networks could still cause unnecessary server traffic.
 Trigger: If flaky-network behavior becomes noisy in practice, or if sync status gains richer retry state.
 Done: Retry delay backs off on sustained failure, with a small cap and no parallel drains.
+
+### P3 — Replace intro carousel placeholders with real illustrations
+
+Area: imagery
+Why: The intro carousel (`src/components/intro.tsx`) still renders three `<Placeholder/>` slots (`page1.artLabel`, `page2.artLabel`, `page3.artLabel`). Every other empty/error/welcome surface ships hand-drawn art; the intro is the last hatched-dashed stand-in shipping in production.
+Trigger: Next time we touch onboarding, or when the post-launch art batch is queued.
+Done: Three new PNG pairs (`intro-1-{light,dark}.png`, etc.) generated via the `docs/images.md` template, wired through `theme-light-only` / `theme-dark-only`, added to `OFFLINE_ASSETS`, and `<Placeholder/>` removed from `src/components/intro.tsx`. The component file `src/components/placeholder.tsx` can be deleted once the carousel is migrated.

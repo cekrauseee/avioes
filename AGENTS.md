@@ -4,9 +4,9 @@ Read this first if you are an AI agent (or a human dropped in cold) about to mak
 
 ## What this project is
 
-Airplanes is a tiny PWA: a two-person airplane-counting game. Identity is picked once per device via onboarding (cookie). Taps add airplane events. Three views: counter, diary, scoreboard. State for the two hardcoded users (`henrique`, `pietra`) lives in Postgres so it follows the user across devices; only the identity selector is per-device.
+Airplanes is a small PWA: a group-based airplane-counting game. Users authenticate with better-auth (email + password, OTP, passkey, Google), join one or more groups, and tap to register airplane events scoped to the active group. Three views per group: counter, diary, scoreboard. Canonical state lives in Postgres; the browser keeps an offline IndexedDB snapshot and ordered pending-op queue.
 
-The codebase, project name, and infra are English. The UI is Brazilian Portuguese — the visible PWA name is "Aviões" and on-screen copy stays in PT.
+The codebase, project name, and infra are English. The UI is fully internationalized — Brazilian Portuguese is the default, English ships alongside it, and the visible PWA name stays "Aviões" because it is the brand.
 
 The full picture is in [`README.md`](./README.md) and [`docs/project.md`](./docs/project.md).
 
@@ -35,19 +35,21 @@ Before writing non-trivial code, skim the relevant doc inside `node_modules/next
 | Trace data flow, routes, server actions, cookies       | [`docs/architecture.md`](./docs/architecture.md) |
 | Match the conventions of the codebase                  | [`docs/code-style.md`](./docs/code-style.md)     |
 | Touch anything visual (palette, fonts, layout, motion) | [`docs/ui-ux.md`](./docs/ui-ux.md)               |
+| Add, replace, or request a new illustration            | [`docs/images.md`](./docs/images.md)             |
 | See what's been decided recently and why               | [`docs/context.md`](./docs/context.md)           |
 | Pick up or leave known deferred work                   | [`docs/backlog.md`](./docs/backlog.md)           |
 
 ## Hard rules
 
-- **Source code is English. UI strings are Brazilian Portuguese.** Routes follow the source code (`/diary`, `/scoreboard`). Visible nav labels are Portuguese. Don't mix.
-- **Two hardcoded users.** Don't add auth, signup, or arbitrary user creation. The identity union stays `'henrique' | 'pietra'`.
-- **Persistence is Postgres via Drizzle.** Schema lives in `src/lib/db/schema.ts`. Reads/writes go through `src/lib/store.ts`. `src/lib/db/index.ts` switches between `node-postgres` (dev) and `@neondatabase/serverless` (prod, when `VERCEL=1`). Schema changes are applied with `npm run db:push` — no migration files are generated.
-- **Identity is the only cookie.** `ap_id` (`'henrique' | 'pietra'`) selects who is using the device. Events and per-user theme live in Postgres, keyed by `who`.
-- **Don't break Tailwind class detection.** No string-concatenated class names. Use the `IDENTITIES` map for per-person colors.
-- **No `useEffect` to mirror props into state.** Use `useOptimistic` or render directly from props. The lint rule `react-hooks/set-state-in-effect` is a tripwire for this mistake.
-- **Mutations go through Server Actions** in `src/actions.ts`. Server Components don't write cookies and don't write to the DB directly outside of `store.ts`.
-- **No tests speculatively, no comments speculatively, no abstractions speculatively.** Default to fewer files, fewer indirections.
+- **Source code is English. UI strings flow through `t(locale, key)`.** Routes follow the source code (`/diary`, `/scoreboard`). Hardcoded JSX text is a bug — every visible string lives in `src/lib/i18n.ts`, with `pt` defining the key set and `en` mirroring it. Brand strings (`Aviões`, manifest name, page title) stay in Portuguese on purpose.
+- **Auth is better-auth, multi-tenant by group.** Don't reintroduce hardcoded identities. Every server action and route resolves the user via `auth.api.getSession({ headers })` and re-derives membership through `requireUser` / `requireActiveGroup` / `requireGroupMember` / `requireGroupOwner` in `src/lib/auth-guards.ts`. Trust nothing the client sends as `userId` / `groupId`.
+- **Persistence is Postgres via Drizzle.** Schema lives in `src/lib/db/schema.ts`. Reads/writes go through `src/lib/store.ts` and use membership-scoped queries (`readGroupMembership`, `readGroupMembersForMember`, `readEventsForMember`). `src/lib/db/index.ts` switches between `node-postgres` (dev) and `@neondatabase/serverless` (prod, when `VERCEL=1`). Schema changes are applied with `npm run db:push` — no migration files are generated.
+- **Cookies are `HttpOnly Secure SameSite=Lax` only.** No bearer token, session id, invite token, or password-reset token in localStorage / IndexedDB. Sensitive tokens are stored hashed at rest (SHA-256).
+- **Don't break Tailwind class detection.** No string-concatenated class names. Use the `MEMBER_COLORS` array + `getMemberColor` helper for per-member accents; per-palette tokens are CSS variables driven by `[data-palette]` selectors in `globals.css`.
+- **No `useEffect` to mirror props into state.** Use `useOptimistic`, the offline store (`useSyncExternalStore`), or render directly from props. The lint rule `react-hooks/set-state-in-effect` is a tripwire.
+- **Mutations go through Server Actions** in `src/actions.ts`. Server Components don't write cookies and don't write to the DB directly outside of `store.ts`. Every new op kind extends the same shape + identity validation `syncOps` already enforces.
+- **Illustrations are part of the product.** When a new screen needs art, request the PNG from Codex using the prompt template in [`docs/images.md`](./docs/images.md), drop it into `public/`, render it as a `theme-light-only` / `theme-dark-only` pair, and add the path to `OFFLINE_ASSETS` in `src/app/sw.js/route.ts`. Don't ship a `<Placeholder/>` outside the intro carousel.
+- **No tests speculatively, no comments speculatively, no abstractions speculatively.** Default to fewer files, fewer indirections. Componentize only when a pattern repeats or owns its own non-trivial behaviour — see the Componentization section in [`docs/code-style.md`](./docs/code-style.md).
 
 ## Workflow expectations
 

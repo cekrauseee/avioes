@@ -47,9 +47,9 @@ Photo picker resizes client-side via canvas to ≤384 px JPEG, uploads via `uplo
 
 Schema: `user` table gained `username text unique`, `country text`, `city text`. New env var `BLOB_READ_WRITE_TOKEN`. Run `npm run db:push` after pulling.
 
-### 2026-05-07 — Route transitions wait on exit
+### 2026-05-07 — Route transitions slide as one strip
 
-Route enter/exit animation now lives in `src/components/swipeable-content.tsx`, not `src/app/template.tsx`. `AnimatePresence` uses `mode="wait"` with clipped absolute route layers so the incoming page cannot paint over the outgoing page mid-exit; exit is a quick opacity-only fade, and route blur was removed to avoid mobile repaint flicker. The transition key comes from committed layout segments instead of optimistic `usePathname()`, so an old page cannot be re-keyed as the new route before the RSC payload lands.
+Route enter/exit animation now lives in `src/components/swipeable-content.tsx`, not `src/app/template.tsx`. `AnimatePresence` uses `mode="sync"` with clipped absolute route layers and full-panel `108%` offsets so the outgoing and incoming pages move in the same direction like adjacent pages in one strip, without visual overlap. The transition key comes from committed layout segments instead of optimistic `usePathname()`, so an old page cannot be re-keyed as the new route before the RSC payload lands.
 
 ### 2026-05-06 — Public /design kitchen-sink page
 
