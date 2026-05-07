@@ -137,15 +137,15 @@ export function SettingsView() {
           whileDrag={{ cursor: 'grabbing' }}
         >
           <AnimatePresence
-            mode='sync'
+            mode='wait'
             initial={false}
           >
             <motion.div
               key={tab}
-              initial={reduce ? { opacity: 0 } : { opacity: 0, x: direction * 32, filter: 'blur(4px)' }}
-              animate={reduce ? { opacity: 1 } : { opacity: 1, x: 0, filter: 'blur(0px)' }}
-              exit={reduce ? { opacity: 0 } : { opacity: 0, x: -direction * 32, filter: 'blur(4px)' }}
-              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+              initial={reduce ? { opacity: 0 } : { opacity: 0, x: direction * 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, transition: { duration: 0.12, ease: 'easeIn' } }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
               className='scroll-area absolute inset-0 overflow-y-auto px-5 py-5'
             >
               {tab === 'visual' && (

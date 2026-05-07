@@ -20,6 +20,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-07 — Route transitions wait on exit
+
+Route enter/exit animation now lives in `src/components/swipeable-content.tsx`, not `src/app/template.tsx`. `AnimatePresence` uses `mode="wait"` with clipped absolute route layers so the incoming page cannot paint over the outgoing page mid-exit; exit is a quick opacity-only fade, and route blur was removed to avoid mobile repaint flicker. The transition key comes from committed layout segments instead of optimistic `usePathname()`, so an old page cannot be re-keyed as the new route before the RSC payload lands.
+
 ### 2026-05-06 — Public /design kitchen-sink page
 
 Public dev surface at `/design` — single scrolling page, no tabs, no auth. `src/app/design/page.tsx` (server, exports metadata + `robots: noindex,nofollow`) renders header + footer and composes the section components from `src/app/design/sections.tsx` (`ThemePaletteSection`, `ColorTokensSection`, `TypographySection`, `VariantsSection`, `SizesSection`, `ShapesSection`, `AlignmentSection`, `StatesSection`, `PromiseDemoSection`, `ButtonLinkSection`, `SkeletonSection`, `ExpandableSection`, plus the local `Section` helper).
