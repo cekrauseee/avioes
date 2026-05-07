@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion, useSpring, useTransform } fr
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import { t } from '../lib/i18n'
+import { MOTION_OFFSET, MOTION_SPRING, MOTION_TRANSITION } from '../lib/motion'
 import { addAirplane, isOffline, selectEvents, selectLocale, selectOfflineSyncing, undoAirplane, useOfflineState } from '../lib/offline-store'
 import { totals } from '../lib/streaks'
 import { getMemberColor, getMemberFirstName } from '../lib/types'
@@ -40,10 +41,9 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
   const offlineSyncing = selectOfflineSyncing(state)
   const syncVisible = offline
   const reducedMotion = useReducedMotion()
-  const tokenInitial = reducedMotion ? { opacity: 0 } : { opacity: 0, y: 2 }
+  const tokenInitial = reducedMotion ? { opacity: 0 } : { opacity: 0, y: MOTION_OFFSET.token }
   const tokenEnter = reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }
-  const tokenExit = reducedMotion ? { opacity: 0 } : { opacity: 0, y: -2 }
-  const tokenTransition = { duration: 0.15, ease: [0.22, 1, 0.36, 1] as const }
+  const tokenExit = reducedMotion ? { opacity: 0 } : { opacity: 0, y: -MOTION_OFFSET.token }
 
   const display = tt[who] ?? 0
   const othersTotal = Object.entries(tt)
@@ -55,7 +55,7 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
   const [accountOpen, setAccountOpen] = useState(false)
   const [flights, setFlights] = useState<ArcKey[]>([])
   const flightIdRef = useRef(0)
-  const spring = useSpring(display, { stiffness: 220, damping: 22 })
+  const spring = useSpring(display, MOTION_SPRING.counter)
   const animateNextRef = useRef(false)
   useEffect(() => {
     if (animateNextRef.current) {
@@ -157,7 +157,7 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
                     initial={tokenInitial}
                     animate={tokenEnter}
                     exit={tokenExit}
-                    transition={tokenTransition}
+                    transition={MOTION_TRANSITION.token}
                     className='inline-block'
                   >
                     {totalDisplay}
@@ -183,7 +183,7 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
                 initial={{ opacity: 0, scale: 0.94 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.94 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                transition={MOTION_TRANSITION.confirmation}
                 aria-hidden
                 className='pointer-events-none absolute top-1/2 left-0 w-[48%] max-w-50 -translate-y-1/2'
               >

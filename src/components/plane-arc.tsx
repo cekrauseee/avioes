@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from 'motion/react'
 import Image from 'next/image'
+import { MOTION_TRANSITION } from '../lib/motion'
 
 export type ArcKey = {
   id: number
@@ -39,9 +40,8 @@ export function PlaneArc({ flights, onFlightDone }: { flights: ArcKey[]; onFligh
                 opacity: [0.7, 0.7, 0.7, 0]
               }}
               transition={{
-                duration: 1.4,
-                ease: 'linear',
-                opacity: { times: [0, 0.85, 0.92, 1], duration: 1.4 }
+                ...MOTION_TRANSITION.planeArc,
+                opacity: { times: [0, 0.85, 0.92, 1], duration: MOTION_TRANSITION.planeArc.duration }
               }}
               onAnimationComplete={() => onFlightDone(f.id)}
               className='absolute h-9 w-9'

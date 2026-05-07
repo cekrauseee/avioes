@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { createNewGroup, setActiveGroup } from '../actions'
 import { t } from '../lib/i18n'
+import { MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import { Button } from './button'
 
@@ -48,7 +49,7 @@ export function NewGroupScreen() {
       <motion.header
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        transition={MOTION_TRANSITION.header}
         className='flex items-center justify-between gap-3'
       >
         <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
@@ -66,7 +67,7 @@ export function NewGroupScreen() {
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+        transition={withMotionDelay(MOTION_TRANSITION.section, 0.08)}
         className='mt-12'
       >
         <h1 className='font-display text-[36px] leading-[0.93] tracking-tight'>
@@ -80,7 +81,7 @@ export function NewGroupScreen() {
       <motion.form
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+        transition={withMotionDelay(MOTION_TRANSITION.section, 0.15)}
         onSubmit={handleSubmit}
         className='mt-10 flex flex-col gap-4'
       >

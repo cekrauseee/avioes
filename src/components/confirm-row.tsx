@@ -2,8 +2,7 @@
 
 import { AnimatePresence, motion } from 'motion/react'
 import type { ReactNode } from 'react'
-
-const FADE_TRANSITION = { duration: 0.12, ease: [0.22, 1, 0.36, 1] } as const
+import { MOTION_TRANSITION } from '../lib/motion'
 // Requires a `position: relative` parent (ConfirmActionSlot provides this)
 const EXIT_FADE = { opacity: 0, position: 'absolute', top: 0, right: 0, left: 0 } as const
 
@@ -34,7 +33,7 @@ export function ConfirmTriggerRow({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={EXIT_FADE}
-      transition={FADE_TRANSITION}
+      transition={MOTION_TRANSITION.fastFade}
       disabled={disabled}
       onClick={onClick}
       className={`text-clay hover:bg-clay/8 flex min-h-12 w-full items-center justify-between px-5 text-sm transition-colors disabled:opacity-50 ${bordered ? 'border-line border-t' : ''}`}
@@ -69,7 +68,7 @@ export function ConfirmRow({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={EXIT_FADE}
-      transition={FADE_TRANSITION}
+      transition={MOTION_TRANSITION.fastFade}
       className={`flex w-full flex-col ${bordered ? 'border-line border-t' : ''}`}
     >
       <span className='text-clay flex min-h-12 items-center px-5 py-2 text-sm'>{label}</span>
@@ -91,7 +90,7 @@ export function ConfirmRow({
           {busy ?
             <motion.span
               animate={{ opacity: [1, 0.4, 1] }}
-              transition={{ duration: 1, repeat: Infinity }}
+              transition={MOTION_TRANSITION.pulse}
             >
               …
             </motion.span>

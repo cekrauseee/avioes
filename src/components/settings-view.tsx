@@ -8,6 +8,7 @@ import { authClient } from '../lib/auth-client'
 import { resolveAvatarUrl } from '../lib/avatar'
 import { useArrowKeyNavigation, useHorizontalWheelNavigation } from '../lib/horizontal-wheel-navigation'
 import { t, type TKey } from '../lib/i18n'
+import { MOTION_OFFSET, MOTION_SPRING, MOTION_TRANSITION } from '../lib/motion'
 import { useNavDirection } from '../lib/nav-direction'
 import { applyLocalIdentity, queuePalette, queueTheme, selectLocale, selectPalette, selectTheme, switchLocale, useOfflineState } from '../lib/offline-store'
 import { getMemberColor, getMemberFirstName, getMemberFullName, PALETTES, type Locale, type Palette, type Theme } from '../lib/types'
@@ -31,13 +32,6 @@ const TABS = [
 const SETTINGS_PREV_ROUTE = '/scoreboard'
 const SWIPE_THRESHOLD = 60
 const WHEEL_SWIPE_THRESHOLD = 34
-const TAB_SLIDE = '108%'
-const tabTransition = { duration: 0.34, ease: [0.22, 1, 0.36, 1] as const }
-const tabVariants = {
-  enter: (direction: 1 | -1) => ({ opacity: 0.94, x: direction === 1 ? TAB_SLIDE : `-${TAB_SLIDE}` }),
-  center: { opacity: 1, x: 0 },
-  exit: (direction: 1 | -1) => ({ opacity: 0.94, x: direction === 1 ? `-${TAB_SLIDE}` : TAB_SLIDE })
-}
 
 const PALETTE_KEYS = Object.keys(PALETTES) as Palette[]
 
@@ -147,16 +141,13 @@ export function SettingsView() {
           <AnimatePresence
             mode='sync'
             initial={false}
-            custom={direction}
           >
             <motion.div
               key={tab}
-              custom={direction}
-              variants={reduce ? undefined : tabVariants}
-              initial={reduce ? { opacity: 0 } : 'enter'}
-              animate={reduce ? { opacity: 1 } : 'center'}
-              exit={reduce ? { opacity: 0 } : 'exit'}
-              transition={reduce ? { duration: 0.12 } : tabTransition}
+              initial={reduce ? { opacity: 0 } : { opacity: 0, x: direction * MOTION_OFFSET.tab, filter: 'blur(4px)' }}
+              animate={reduce ? { opacity: 1 } : { opacity: 1, x: 0, filter: 'blur(0px)' }}
+              exit={reduce ? { opacity: 0 } : { opacity: 0, x: -direction * MOTION_OFFSET.tab, filter: 'blur(4px)' }}
+              transition={MOTION_TRANSITION.tab}
               className='scroll-area absolute inset-0 overflow-y-auto px-5 py-5'
             >
               {tab === 'visual' && (
@@ -218,7 +209,7 @@ function VisualTab({ locale, reduce }: { locale: Locale; reduce: boolean | null 
                   <motion.span
                     layoutId='theme-active'
                     className='bg-ink text-bg absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] leading-none'
-                    transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 30 }}
+                    transition={reduce ? { duration: 0 } : MOTION_SPRING.selection}
                   >
                     ✓
                   </motion.span>
@@ -267,7 +258,7 @@ function VisualTab({ locale, reduce }: { locale: Locale; reduce: boolean | null 
                       layoutId='palette-active'
                       className='bg-ink absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] leading-none'
                       style={{ color: preview.bg }}
-                      transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 30 }}
+                      transition={reduce ? { duration: 0 } : MOTION_SPRING.selection}
                     >
                       ✓
                     </motion.span>
@@ -299,7 +290,7 @@ function VisualTab({ locale, reduce }: { locale: Locale; reduce: boolean | null 
                   <motion.span
                     layoutId='locale-active'
                     className='bg-ink text-bg absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] leading-none'
-                    transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 30 }}
+                    transition={reduce ? { duration: 0 } : MOTION_SPRING.selection}
                   >
                     ✓
                   </motion.span>

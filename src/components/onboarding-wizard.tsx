@@ -15,6 +15,7 @@ import {
 import { authClient } from '../lib/auth-client'
 import { resolveAvatarUrl } from '../lib/avatar'
 import { t, tf } from '../lib/i18n'
+import { MOTION_OFFSET, MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { applyLocalIdentity, applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import { MEMBER_COLORS } from '../lib/types'
 import { Avatar } from './avatar'
@@ -35,12 +36,10 @@ const firstNameSchemaMax = z.string().trim().max(60)
 const lastNameSchema = z.string().trim().max(60)
 
 const slideVariants = {
-  enter: (dir: number) => ({ x: dir * 24, opacity: 0 }),
+  enter: (dir: number) => ({ x: dir * MOTION_OFFSET.step, opacity: 0 }),
   center: { x: 0, opacity: 1 },
-  exit: (dir: number) => ({ x: -dir * 24, opacity: 0 })
+  exit: (dir: number) => ({ x: -dir * MOTION_OFFSET.step, opacity: 0 })
 }
-
-const slideTransition = { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const }
 
 export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
   const router = useRouter()
@@ -262,7 +261,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
       <motion.header
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        transition={MOTION_TRANSITION.header}
         className='flex items-center justify-between'
       >
         <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
@@ -272,7 +271,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.05, ease: 'easeOut' }}
+        transition={withMotionDelay(MOTION_TRANSITION.introEnter, 0.05)}
         className='mt-6 flex items-center justify-center gap-2'
       >
         {STEPS.map((_, i) => (
@@ -286,7 +285,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+        transition={withMotionDelay(MOTION_TRANSITION.section, 0.08)}
         className='relative mt-10'
       >
         <AnimatePresence
@@ -301,7 +300,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
             initial='enter'
             animate='center'
             exit='exit'
-            transition={slideTransition}
+            transition={MOTION_TRANSITION.stepSlide}
           >
             <h1 className='font-display text-[36px] leading-[0.95] tracking-tight'>
               {t(locale, `onboarding.title.${step}`)}
@@ -316,7 +315,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
       <motion.form
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+        transition={withMotionDelay(MOTION_TRANSITION.section, 0.15)}
         onSubmit={onSubmit}
         className='mt-10 flex flex-1 flex-col gap-4'
       >
@@ -332,7 +331,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
             initial='enter'
             animate='center'
             exit='exit'
-            transition={slideTransition}
+            transition={MOTION_TRANSITION.stepSlide}
             className='flex flex-col gap-4'
           >
             {step === 'name' && (
@@ -415,7 +414,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.18 }}
+              transition={MOTION_TRANSITION.inline}
               className='text-clay text-sm'
             >
               {error}
@@ -490,7 +489,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                  transition={MOTION_TRANSITION.inline}
                 >
                   <Button
                     type='button'
@@ -507,7 +506,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                  transition={MOTION_TRANSITION.inline}
                 >
                   <Button
                     type='button'

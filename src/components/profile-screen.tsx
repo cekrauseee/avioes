@@ -7,6 +7,7 @@ import { getMyProfile, updateMyProfile, uploadProfileImage, type ProfileUpdate }
 import { resolveAvatarUrl } from '../lib/avatar'
 import { getSortedCountries } from '../lib/countries'
 import { t, type TKey } from '../lib/i18n'
+import { MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { useNavDirection } from '../lib/nav-direction'
 import { applyActiveGroup, selectLocale, useOfflineState } from '../lib/offline-store'
 import { getMemberColor, type Locale } from '../lib/types'
@@ -176,7 +177,7 @@ export function ProfileScreen() {
       <motion.header
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        transition={MOTION_TRANSITION.header}
         className='flex items-center justify-between gap-3'
       >
         <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
@@ -194,7 +195,7 @@ export function ProfileScreen() {
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.06, ease: [0.22, 1, 0.36, 1] }}
+        transition={withMotionDelay(MOTION_TRANSITION.section, 0.06)}
         className='mt-10 shrink-0'
       >
         <h1 className='font-display text-[36px] leading-[0.93] tracking-tight'>
@@ -213,7 +214,7 @@ export function ProfileScreen() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={MOTION_TRANSITION.screen}
             >
               <ProfileSkeleton />
             </motion.div>
@@ -222,7 +223,7 @@ export function ProfileScreen() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+              transition={MOTION_TRANSITION.tab}
               onSubmit={submit}
               className='flex flex-col gap-5 pb-2'
             >
@@ -282,7 +283,7 @@ export function ProfileScreen() {
                       initial={{ opacity: 0, y: -2 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -2 }}
-                      transition={{ duration: 0.18 }}
+                      transition={MOTION_TRANSITION.inline}
                       className='text-clay text-[11px]'
                     >
                       {error.message}
@@ -354,7 +355,7 @@ export function ProfileScreen() {
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.18 }}
+                    transition={MOTION_TRANSITION.inline}
                     className='text-clay text-sm'
                   >
                     {error.message}
@@ -439,7 +440,7 @@ function FieldHint({ error, hint }: { error?: string; hint?: string }) {
           initial={{ opacity: 0, y: -2 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -2 }}
-          transition={{ duration: 0.18 }}
+          transition={MOTION_TRANSITION.inline}
           className='text-clay text-[11px]'
         >
           {error}
@@ -450,7 +451,7 @@ function FieldHint({ error, hint }: { error?: string; hint?: string }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.18 }}
+          transition={MOTION_TRANSITION.inline}
           className='text-ink-faint text-[11px]'
         >
           {hint}

@@ -8,6 +8,7 @@ import { getUserGroups, setActiveGroup } from '../actions'
 import { authClient } from '../lib/auth-client'
 import { resolveAvatarUrl } from '../lib/avatar'
 import { t } from '../lib/i18n'
+import { MOTION_TRANSITION } from '../lib/motion'
 import { applyLocalIdentity, applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import { getMemberColor, getMemberFirstName, getMemberFullName } from '../lib/types'
 import { Avatar } from './avatar'
@@ -79,7 +80,7 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={MOTION_TRANSITION.sheetBackdrop}
             onClick={onClose}
             className='bg-ink/20 fixed inset-0 z-40'
           />
@@ -88,7 +89,7 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            transition={MOTION_TRANSITION.sheetPanel}
             className='bg-bg fixed right-0 bottom-0 left-0 z-50 mx-auto w-full max-w-[630px] rounded-t-2xl'
           >
             {/* drag handle */}
@@ -141,7 +142,7 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
                           {switchingId === group.id ?
                             <motion.span
                               animate={{ opacity: [1, 0.4, 1] }}
-                              transition={{ duration: 1, repeat: Infinity }}
+                              transition={MOTION_TRANSITION.pulse}
                             >
                               …
                             </motion.span>

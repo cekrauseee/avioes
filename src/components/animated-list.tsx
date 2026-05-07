@@ -2,9 +2,7 @@
 
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react'
 import { forwardRef, type ReactNode } from 'react'
-
-const EASE = [0.22, 1, 0.36, 1] as const
-const LAYOUT_TRANSITION = { duration: 0.18, ease: EASE }
+import { MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 
 export function AnimatedListGroup({ children }: { children: ReactNode }) {
   return <LayoutGroup>{children}</LayoutGroup>
@@ -14,7 +12,7 @@ export function AnimatedLayoutBlock({ children, className }: { children: ReactNo
   return (
     <motion.div
       layout='position'
-      transition={{ layout: LAYOUT_TRANSITION }}
+      transition={{ layout: MOTION_TRANSITION.listLayout }}
       className={className}
     >
       {children}
@@ -52,9 +50,9 @@ export const AnimatedListItem = forwardRef<HTMLDivElement, { children: ReactNode
       ref={ref}
       layout='position'
       initial={{ opacity: 0 }}
-      animate={{ opacity: 1, transition: { duration: 0.14, delay: enterDelay, ease: EASE } }}
-      exit={{ opacity: 0, transition: { duration: 0.12, ease: EASE } }}
-      transition={{ layout: LAYOUT_TRANSITION }}
+      animate={{ opacity: 1, transition: withMotionDelay(MOTION_TRANSITION.listEnter, enterDelay) }}
+      exit={{ opacity: 0, transition: MOTION_TRANSITION.fastFade }}
+      transition={{ layout: MOTION_TRANSITION.listLayout }}
       className={className}
     >
       {children}

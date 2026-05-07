@@ -6,6 +6,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { deleteGroup, getUserGroups, leaveGroup, setActiveGroup } from '../actions'
 import { authClient } from '../lib/auth-client'
 import { t } from '../lib/i18n'
+import { MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { applyLocalIdentity, applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import type { Locale } from '../lib/types'
 import { AnimatedList, AnimatedListItem } from './animated-list'
@@ -103,7 +104,7 @@ export function GroupsScreen() {
       <motion.header
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        transition={MOTION_TRANSITION.header}
         className='flex items-center justify-between gap-3'
       >
         <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
@@ -123,7 +124,7 @@ export function GroupsScreen() {
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+        transition={withMotionDelay(MOTION_TRANSITION.section, 0.08)}
         className='mt-10'
       >
         <h1 className='font-display text-[34px] leading-[0.93] tracking-tight'>
@@ -137,7 +138,7 @@ export function GroupsScreen() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+        transition={withMotionDelay(MOTION_TRANSITION.section, 0.15)}
         className='mt-8 flex flex-1 flex-col gap-3'
       >
         {!loaded ?
@@ -182,7 +183,7 @@ export function GroupsScreen() {
                             {isBusy ?
                               <motion.span
                                 animate={{ opacity: [1, 0.4, 1] }}
-                                transition={{ duration: 1, repeat: Infinity }}
+                                transition={MOTION_TRANSITION.pulse}
                                 className='text-sage'
                               >
                                 …

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { authClient } from '../lib/auth-client'
 import { t } from '../lib/i18n'
+import { MOTION_TRANSITION } from '../lib/motion'
 import type { Locale } from '../lib/types'
 import { AnimatedLayoutBlock, AnimatedList, AnimatedListGroup, AnimatedListItem } from './animated-list'
 import { Button } from './button'
@@ -112,7 +113,7 @@ export function PasskeysSheet({ open, onClose, locale }: { open: boolean; onClos
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={MOTION_TRANSITION.sheetBackdrop}
             onClick={onClose}
             className='bg-ink/20 fixed inset-0 z-40'
           />
@@ -123,9 +124,8 @@ export function PasskeysSheet({ open, onClose, locale }: { open: boolean; onClos
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{
-              duration: 0.35,
-              ease: [0.22, 1, 0.36, 1],
-              layout: { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
+              ...MOTION_TRANSITION.sheetPanel,
+              layout: MOTION_TRANSITION.sheetLayout
             }}
             className='bg-bg fixed right-0 bottom-0 left-0 z-50 mx-auto w-full max-w-[630px] rounded-t-2xl pb-[max(env(safe-area-inset-bottom),1.25rem)]'
           >

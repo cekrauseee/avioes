@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion, type HTMLMotionProps } from 'motion/react'
 import NextLink, { type LinkProps as NextLinkProps } from 'next/link'
 import { forwardRef, useCallback, useEffect, useRef, useState, type AnchorHTMLAttributes, type ReactNode } from 'react'
+import { MOTION_OFFSET, MOTION_SPRING, MOTION_TRANSITION } from '../lib/motion'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'destructive' | 'destructive-outline' | 'row' | 'row-accent' | 'ghost' | 'ghost-destructive'
 export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg'
@@ -175,10 +176,10 @@ function ButtonStatusContent({ status, label }: { status: ButtonStatus; label: R
     >
       <motion.span
         key={status}
-        initial={reduce ? { opacity: 0 } : { opacity: 0, y: 4, filter: 'blur(2px)' }}
+        initial={reduce ? { opacity: 0 } : { opacity: 0, y: MOTION_OFFSET.buttonLabel, filter: 'blur(2px)' }}
         animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, filter: 'blur(0px)' }}
-        exit={reduce ? { opacity: 0 } : { opacity: 0, y: -4, filter: 'blur(2px)' }}
-        transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+        exit={reduce ? { opacity: 0 } : { opacity: 0, y: -MOTION_OFFSET.buttonLabel, filter: 'blur(2px)' }}
+        transition={MOTION_TRANSITION.inline}
         className='inline-flex items-center gap-2'
       >
         <StatusIcon status={status} />
@@ -203,7 +204,7 @@ function Spinner() {
       viewBox='0 0 16 16'
       className='shrink-0'
       animate={{ rotate: 360 }}
-      transition={{ duration: 0.9, repeat: Infinity, ease: 'linear' }}
+      transition={MOTION_TRANSITION.spinner}
       aria-hidden='true'
     >
       <circle
@@ -244,7 +245,7 @@ function CheckIcon() {
         strokeLinejoin='round'
         initial={{ pathLength: 0, opacity: 0 }}
         animate={{ pathLength: 1, opacity: 1 }}
-        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        transition={MOTION_TRANSITION.check}
       />
     </svg>
   )
@@ -260,7 +261,7 @@ function WarningIcon() {
       className='shrink-0'
       initial={{ scale: 0.7, rotate: -8 }}
       animate={{ scale: 1, rotate: 0 }}
-      transition={{ type: 'spring', stiffness: 420, damping: 18 }}
+      transition={MOTION_SPRING.warning}
       aria-hidden='true'
     >
       <path

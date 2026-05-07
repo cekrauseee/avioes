@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { startTransition, useState } from 'react'
 import { t } from '../lib/i18n'
+import { MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 
 export function OfflineGate() {
@@ -25,7 +26,7 @@ export function OfflineGate() {
     <motion.main
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      transition={MOTION_TRANSITION.navIndicator}
       className='relative flex h-full w-full flex-col px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.25rem)]'
     >
       <header className='flex items-baseline justify-between'>
@@ -37,7 +38,7 @@ export function OfflineGate() {
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+          transition={withMotionDelay(MOTION_TRANSITION.header, 0.05)}
           className='relative w-[64%] max-w-[240px]'
         >
           <Image
@@ -67,7 +68,7 @@ export function OfflineGate() {
         <motion.h1
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          transition={withMotionDelay(MOTION_TRANSITION.offlineStagger, 0.15)}
           className='font-display mt-8 text-[34px] leading-[0.95] tracking-tight'
         >
           {t(locale, 'offline.titleLine1')}
@@ -77,7 +78,7 @@ export function OfflineGate() {
         <motion.p
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          transition={withMotionDelay(MOTION_TRANSITION.offlineStagger, 0.22)}
           className='font-display text-ink-soft mt-3 max-w-[28ch] text-sm italic'
         >
           {t(locale, 'offline.body')}
@@ -87,7 +88,7 @@ export function OfflineGate() {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        transition={withMotionDelay(MOTION_TRANSITION.offlineStagger, 0.3)}
         className='mt-4 flex flex-col items-center gap-1.5'
       >
         <button
@@ -100,7 +101,7 @@ export function OfflineGate() {
             aria-hidden
             className='text-base leading-none'
             animate={retrying ? { rotate: 360 } : { rotate: 0 }}
-            transition={retrying ? { duration: 0.8, ease: 'linear', repeat: Infinity } : { duration: 0.2 }}
+            transition={retrying ? MOTION_TRANSITION.spinner : MOTION_TRANSITION.screen}
           >
             ↻
           </motion.span>

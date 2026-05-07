@@ -47,9 +47,13 @@ Photo picker resizes client-side via canvas to ≤384 px JPEG, uploads via `uplo
 
 Schema: `user` table gained `username text unique`, `country text`, `city text`. New env var `BLOB_READ_WRITE_TOKEN`. Run `npm run db:push` after pulling.
 
-### 2026-05-07 — Route transitions slide as one strip
+### 2026-05-07 — Shared Motion constants
 
-Route enter/exit animation now lives in `src/components/swipeable-content.tsx`, not `src/app/template.tsx`. `AnimatePresence` uses `mode="sync"` with clipped absolute route layers and full-panel `108%` offsets so the outgoing and incoming pages move in the same direction like adjacent pages in one strip, without visual overlap. The transition key comes from committed layout segments instead of optimistic `usePathname()`, so an old page cannot be re-keyed as the new route before the RSC payload lands.
+`src/lib/motion.ts` is the source of truth for Motion timing/easing/offsets/springs. It exports `MOTION_TRANSITION`, `MOTION_OFFSET`, `MOTION_SPRING`, and `withMotionDelay()`. Route, sheet, tab, inline, list, loading, auth/onboarding, profile/password, invite, and navigation transitions now consume those constants instead of local near-duplicates.
+
+### 2026-05-07 — Route transitions restored to soft fade
+
+Route enter motion moved back to `src/app/template.tsx`: 300 ms opacity fade, 24 px directional slide, and 4 px blur. `src/components/swipeable-content.tsx` is gesture-only again, and settings tabs use the same older light fade/slide/blur treatment instead of full-panel strip movement.
 
 ### 2026-05-06 — Public /design kitchen-sink page
 

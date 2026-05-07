@@ -1,6 +1,7 @@
 'use client'
 
 import { Skel } from '@/components/skeleton'
+import { MOTION_TRANSITION, withMotionDelay } from '@/lib/motion'
 import { motion } from 'motion/react'
 
 export default function Loading() {
@@ -9,7 +10,7 @@ export default function Loading() {
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        transition={MOTION_TRANSITION.header}
         className='flex items-center justify-between gap-3'
       >
         <Skel className='h-4 w-14' />
@@ -19,7 +20,7 @@ export default function Loading() {
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+        transition={withMotionDelay(MOTION_TRANSITION.section, 0.08)}
         className='mt-12 flex flex-col gap-10'
       >
         <div className='flex flex-col gap-3'>

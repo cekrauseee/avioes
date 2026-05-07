@@ -7,6 +7,7 @@ import { useState, useTransition } from 'react'
 import { acceptInvitation, rejectInvitation } from '../actions'
 import { resolveAvatarUrl } from '../lib/avatar'
 import { t, tf } from '../lib/i18n'
+import { MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import { Button, ButtonLink } from './button'
 
@@ -132,7 +133,7 @@ export function InviteScreen({
             key='accepted'
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            transition={MOTION_TRANSITION.sectionMedium}
             className='flex flex-1 flex-col items-center justify-center text-center'
           >
             <div className='relative w-[60%] max-w-55'>
@@ -179,7 +180,7 @@ export function InviteScreen({
             key='rejected'
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            transition={MOTION_TRANSITION.sectionMedium}
             className='flex flex-1 flex-col items-center justify-center text-center'
           >
             <h1 className='font-display mt-8 text-[34px] leading-[0.95] tracking-tight'>
@@ -202,7 +203,7 @@ export function InviteScreen({
             key='viewing'
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+            transition={withMotionDelay(MOTION_TRANSITION.section, 0.08)}
             className='mt-12 flex flex-1 flex-col'
           >
             <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>

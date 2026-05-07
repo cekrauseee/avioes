@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion, type PanInfo } from 'motion/react'
 import { useState } from 'react'
 import { t, type TKey } from '../lib/i18n'
+import { MOTION_TRANSITION } from '../lib/motion'
 import type { Locale } from '../lib/types'
 import { Placeholder } from './placeholder'
 
@@ -91,7 +92,7 @@ export function Intro({ onDone, locale }: { onDone: () => void; locale: Locale }
     <motion.main
       initial={{ opacity: 0 }}
       animate={leaving ? { opacity: 0, y: -12, filter: 'blur(6px)' } : { opacity: 1, y: 0, filter: 'blur(0px)' }}
-      transition={{ duration: leaving ? 0.36 : 0.5, ease: [0.22, 1, 0.36, 1] }}
+      transition={leaving ? MOTION_TRANSITION.introExit : MOTION_TRANSITION.introEnter}
       className='relative flex h-full w-full flex-col px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.25rem)]'
     >
       <header className='relative z-10 flex items-baseline justify-between'>
@@ -127,7 +128,7 @@ export function Intro({ onDone, locale }: { onDone: () => void; locale: Locale }
             initial={reduce ? { opacity: 0 } : { opacity: 0, x: direction * 24, filter: 'blur(4px)' }}
             animate={reduce ? { opacity: 1 } : { opacity: 1, x: 0, filter: 'blur(0px)' }}
             exit={reduce ? { opacity: 0 } : { opacity: 0, x: -direction * 24, filter: 'blur(4px)' }}
-            transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+            transition={MOTION_TRANSITION.intro}
             className='flex flex-1 flex-col'
           >
             <div className='mt-3 mb-5 flex items-baseline gap-3'>

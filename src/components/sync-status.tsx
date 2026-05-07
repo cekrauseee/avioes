@@ -2,9 +2,8 @@
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { t } from '../lib/i18n'
+import { MOTION_OFFSET, MOTION_TRANSITION } from '../lib/motion'
 import { isOffline, selectLocale, selectPendingCount, useOfflineState } from '../lib/offline-store'
-
-const EASE = [0.22, 1, 0.36, 1] as const
 
 export function SyncStatus() {
   const state = useOfflineState()
@@ -26,9 +25,8 @@ export function SyncStatus() {
     : null
 
   const tokenEnter = reducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }
-  const tokenExit = reducedMotion ? { opacity: 0 } : { opacity: 0, y: -2 }
-  const tokenInitial = reducedMotion ? { opacity: 0 } : { opacity: 0, y: 2 }
-  const tokenTransition = { duration: 0.15, ease: EASE }
+  const tokenExit = reducedMotion ? { opacity: 0 } : { opacity: 0, y: -MOTION_OFFSET.token }
+  const tokenInitial = reducedMotion ? { opacity: 0 } : { opacity: 0, y: MOTION_OFFSET.token }
 
   return (
     <span
@@ -53,7 +51,7 @@ export function SyncStatus() {
               initial={tokenInitial}
               animate={tokenEnter}
               exit={tokenExit}
-              transition={tokenTransition}
+              transition={MOTION_TRANSITION.token}
               className='inline-block'
             >
               {label}
@@ -67,7 +65,7 @@ export function SyncStatus() {
               initial={tokenInitial}
               animate={tokenEnter}
               exit={tokenExit}
-              transition={tokenTransition}
+              transition={MOTION_TRANSITION.token}
               className='inline-block'
             >
               {' · '}
@@ -80,7 +78,7 @@ export function SyncStatus() {
                   initial={tokenInitial}
                   animate={tokenEnter}
                   exit={tokenExit}
-                  transition={tokenTransition}
+                  transition={MOTION_TRANSITION.token}
                   className='inline-block'
                 >
                   {countNumber}
@@ -98,7 +96,7 @@ export function SyncStatus() {
                       initial={tokenInitial}
                       animate={tokenEnter}
                       exit={tokenExit}
-                      transition={tokenTransition}
+                      transition={MOTION_TRANSITION.token}
                       className='inline-block'
                     >
                       {countWord}

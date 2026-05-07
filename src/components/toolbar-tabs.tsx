@@ -4,6 +4,7 @@ import { motion, useMotionValue, useReducedMotion, type PanInfo } from 'motion/r
 import Link from 'next/link'
 import { useRef, useState } from 'react'
 import { t, type TKey } from '../lib/i18n'
+import { MOTION_SPRING } from '../lib/motion'
 import type { Locale } from '../lib/types'
 
 export type ToolbarTabItem<Id extends string> = {
@@ -139,7 +140,7 @@ export function ToolbarTabs<Id extends string>({
           style={{
             left: `calc(${activeIndex} * ${100 / items.length}% + ${50 / items.length}% - 16px)`
           }}
-          transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 32 }}
+          transition={reduceMotion ? { duration: 0 } : MOTION_SPRING.toolbarIndicator}
         />
       )}
 

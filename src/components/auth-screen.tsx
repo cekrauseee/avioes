@@ -8,6 +8,7 @@ import { z } from 'zod'
 import { getEmailAuthState, requestPasswordCreationForEmail } from '../actions'
 import { authClient } from '../lib/auth-client'
 import { DATE_LOCALE, t, tf } from '../lib/i18n'
+import { MOTION_OFFSET, MOTION_TRANSITION } from '../lib/motion'
 import { applyLocalIdentity, selectLocale, useOfflineState } from '../lib/offline-store'
 import { OTP_ALLOWED_ATTEMPTS, OTP_LENGTH } from '../lib/otp-constants'
 import { Button } from './button'
@@ -24,21 +25,16 @@ const passwordSchemaMin = z.string().min(8)
 const passwordSchemaMax = z.string().max(128)
 
 const slideVariants = {
-  enter: (dir: number) => ({ x: dir * 24, opacity: 0 }),
+  enter: (dir: number) => ({ x: dir * MOTION_OFFSET.step, opacity: 0 }),
   center: { x: 0, opacity: 1 },
-  exit: (dir: number) => ({ x: -dir * 24, opacity: 0 })
+  exit: (dir: number) => ({ x: -dir * MOTION_OFFSET.step, opacity: 0 })
 }
-
-const slideTransition = { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const }
-const screenExitTransition = { duration: 0.1, ease: 'easeIn' as const }
 
 const screenVariants = {
-  enter: (dir: number) => ({ x: dir * 20, opacity: 0, filter: 'blur(3px)' }),
+  enter: (dir: number) => ({ x: dir * MOTION_OFFSET.screen, opacity: 0, filter: 'blur(3px)' }),
   center: { x: 0, opacity: 1, filter: 'blur(0px)' },
-  exit: (dir: number) => ({ x: -dir * 20, opacity: 0, filter: 'blur(2px)', transition: screenExitTransition })
+  exit: (dir: number) => ({ x: -dir * MOTION_OFFSET.screen, opacity: 0, filter: 'blur(2px)', transition: MOTION_TRANSITION.screenExit })
 }
-
-const screenTransition = { duration: 0.2, ease: [0.22, 1, 0.36, 1] as const }
 
 export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthError: string | null }) {
   const router = useRouter()
@@ -288,7 +284,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
       <motion.header
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        transition={MOTION_TRANSITION.header}
         className='flex items-baseline justify-between'
       >
         <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
@@ -310,7 +306,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
             initial='enter'
             animate='center'
             exit='exit'
-            transition={screenTransition}
+            transition={MOTION_TRANSITION.screen}
             className='mt-12 flex flex-1 flex-col'
           >
             <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
@@ -384,7 +380,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
             initial='enter'
             animate='center'
             exit='exit'
-            transition={screenTransition}
+            transition={MOTION_TRANSITION.screen}
             className='mt-12 flex flex-1 flex-col'
           >
             <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
@@ -447,7 +443,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
             initial='enter'
             animate='center'
             exit='exit'
-            transition={screenTransition}
+            transition={MOTION_TRANSITION.screen}
             className='mt-12 flex flex-1 flex-col'
           >
             <div className='relative'>
@@ -463,7 +459,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                   initial='enter'
                   animate='center'
                   exit='exit'
-                  transition={slideTransition}
+                  transition={MOTION_TRANSITION.stepSlide}
                 >
                   <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
                     {step === 'method' ?
@@ -537,7 +533,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                   initial='enter'
                   animate='center'
                   exit='exit'
-                  transition={slideTransition}
+                  transition={MOTION_TRANSITION.stepSlide}
                   className='flex flex-col gap-4'
                 >
                   {step === 'email' && (
@@ -767,7 +763,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.18 }}
+                    transition={MOTION_TRANSITION.inline}
                     className='text-clay text-sm'
                   >
                     {error}
@@ -788,7 +784,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                     initial='enter'
                     animate='center'
                     exit='exit'
-                    transition={slideTransition}
+                    transition={MOTION_TRANSITION.stepSlide}
                   >
                     <Button
                       type='submit'

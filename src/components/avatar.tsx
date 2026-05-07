@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from 'motion/react'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
+import { MOTION_TRANSITION } from '../lib/motion'
 
 type AvatarProps = {
   image: string | null
@@ -29,7 +30,7 @@ export function Avatar({ image, firstName, accentBg, size, initialClassName = 't
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            transition={MOTION_TRANSITION.avatar}
             className='absolute inset-0'
           >
             <Image

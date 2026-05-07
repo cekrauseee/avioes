@@ -2,8 +2,7 @@
 
 import { AnimatePresence, motion } from 'motion/react'
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-
-const PANEL_EASE = [0.22, 1, 0.36, 1] as const
+import { MOTION_TRANSITION } from '../lib/motion'
 
 export function ExpandableItem({
   main,
@@ -62,7 +61,7 @@ function ExpandablePanel({ children }: { children: ReactNode }) {
       initial={{ height: 0, opacity: 0 }}
       animate={{ height, opacity: 1 }}
       exit={{ height: 0, opacity: 0 }}
-      transition={{ duration: 0.22, ease: PANEL_EASE }}
+      transition={MOTION_TRANSITION.expandable}
       className='border-line overflow-hidden border-t'
     >
       <div ref={contentRef}>{children}</div>

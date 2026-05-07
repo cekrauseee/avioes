@@ -69,9 +69,10 @@ The app uses Motion (framer-motion v12). Animation should make the journey feel 
 
 ### Page transitions
 
-- `src/components/swipeable-content.tsx` owns route enter/exit motion. It keys transitions from committed layout segments, uses clipped absolute route layers with `AnimatePresence mode="wait"`, and keeps page exit as a quick opacity-only fade so the incoming page never paints over the outgoing page mid-exit; `app/template.tsx` stays inert.
+- `src/app/template.tsx` owns route enter motion: a short opacity fade with a light 24 px directional slide and 4 px blur. `src/components/swipeable-content.tsx` owns gestures only.
 - Lateral navigation between `/`, `/diary`, `/scoreboard`, `/settings` is a single horizontal swipe (touch + trackpad wheel + Left/Right arrow). The handler in `src/lib/horizontal-wheel-navigation.ts` accumulates per-gesture and locks until input settles, so one trackpad gesture advances exactly one page. Settings tabs reuse the same path so swipes feel uniform across the app.
 - Use Motion `dragDirectionLock` on swipeable wrappers so vertical list scroll and horizontal page navigation can coexist without fighting.
+- Motion timing, easing, offsets, and springs live in `src/lib/motion.ts`. New Motion surfaces should reuse `MOTION_TRANSITION`, `MOTION_OFFSET`, `MOTION_SPRING`, and `withMotionDelay()` instead of declaring local timing objects.
 
 ### Component motion
 

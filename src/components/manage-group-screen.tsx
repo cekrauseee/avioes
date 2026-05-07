@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import { cancelInvitation, createInvitation, getGroupDetailsWithInvites, removeMember } from '../actions'
 import { resolveAvatarUrl } from '../lib/avatar'
 import { t } from '../lib/i18n'
+import { MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 import type { GroupMember, Locale } from '../lib/types'
 import { MEMBER_COLORS } from '../lib/types'
@@ -119,7 +120,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
         <motion.header
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          transition={MOTION_TRANSITION.header}
           className='flex items-center justify-between gap-3'
         >
           <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
@@ -137,7 +138,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+          transition={withMotionDelay(MOTION_TRANSITION.section, 0.08)}
           className='mt-10'
         >
           <h1 className='font-display text-[34px] leading-[0.93] tracking-tight'>
@@ -151,7 +152,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
           <motion.form
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
+            transition={withMotionDelay(MOTION_TRANSITION.header, 0.18)}
             onSubmit={handleInvite}
             className='mt-8 flex flex-col gap-2'
           >
@@ -196,7 +197,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.25 }}
+        transition={withMotionDelay(MOTION_TRANSITION.sectionMedium, 0.25)}
         className='scroll-area mt-6 flex-1 overflow-y-auto px-6 pb-[max(env(safe-area-inset-bottom),2rem)]'
       >
         {!loaded ?
@@ -328,7 +329,7 @@ function MemberRow({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            transition={MOTION_TRANSITION.expandable}
             className='border-line border-t'
           >
             {confirming ?
@@ -413,7 +414,7 @@ function InviteRow({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            transition={MOTION_TRANSITION.expandable}
             className='border-line border-t'
           >
             {confirming ?
@@ -464,7 +465,7 @@ function ConfirmRow({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.18 }}
+      transition={MOTION_TRANSITION.inline}
       className='flex flex-col'
     >
       <span className='text-clay px-4 pt-3 pb-2 text-sm'>{label}</span>
