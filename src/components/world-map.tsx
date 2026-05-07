@@ -52,6 +52,18 @@ export function WorldMap({ locale }: { locale: Locale }) {
 
   const pinchRef = useRef<Map<number, { x: number; y: number }>>(new Map())
 
+  const pinchStateRef = useRef({
+    active: false,
+    startDist: 0,
+    startCx: 0,
+    startCy: 0,
+    startScale: 1,
+    startVpX: 0,
+    startVpY: 0
+  })
+
+  const multitouchRef = useRef(false)
+
   useEffect(() => {
     fetch('/world-110m.json')
       .then((r) => r.json())
@@ -135,8 +147,9 @@ export function WorldMap({ locale }: { locale: Locale }) {
     ;(canvas as HTMLElement).setPointerCapture(e.pointerId)
 
     pinchRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    const size = pinchRef.current.size
 
-    if (pinchRef.current.size === 1) {
+    if (size === 1) {
       dragRef.current = {
         active: true,
         startX: e.clientX,
@@ -145,13 +158,45 @@ export function WorldMap({ locale }: { locale: Locale }) {
         startVpY: vpRef.current.y,
         moved: 0
       }
+    } else if (size === 2) {
+      multitouchRef.current = true
+      dragRef.current.active = false
+      const [p1, p2] = [...pinchRef.current.values()]
+      const dx = p1.x - p2.x
+      const dy = p1.y - p2.y
+      pinchStateRef.current = {
+        active: true,
+        startDist: Math.hypot(dx, dy) || 1,
+        startCx: (p1.x + p2.x) / 2,
+        startCy: (p1.y + p2.y) / 2,
+        startScale: vpRef.current.scale,
+        startVpX: vpRef.current.x,
+        startVpY: vpRef.current.y
+      }
     }
   }, [])
 
   const onPointerMoveFull = useCallback((e: React.PointerEvent) => {
     pinchRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
-    if (pinchRef.current.size >= 2) {
+    if (pinchStateRef.current.active && pinchRef.current.size >= 2) {
+      const [p1, p2] = [...pinchRef.current.values()]
+      const dx = p1.x - p2.x
+      const dy = p1.y - p2.y
+      const dist = Math.hypot(dx, dy) || 1
+      const cx = (p1.x + p2.x) / 2
+      const cy = (p1.y + p2.y) / 2
+      const s = pinchStateRef.current
+      const newScale = Math.max(
+        SCALE_MIN,
+        Math.min(SCALE_MAX, s.startScale * (dist / s.startDist))
+      )
+      const ratio = newScale / s.startScale
+      vpRef.current = {
+        x: cx - (s.startCx - s.startVpX) * ratio,
+        y: cy - (s.startCy - s.startVpY) * ratio,
+        scale: newScale
+      }
       return
     }
 
@@ -171,23 +216,34 @@ export function WorldMap({ locale }: { locale: Locale }) {
     (e: React.PointerEvent) => {
       pinchRef.current.delete(e.pointerId)
 
-      if (dragRef.current.active && dragRef.current.moved < TAP_THRESHOLD) {
-        const canvas = fullCanvasRef.current
-        if (canvas) {
-          const rect = canvas.getBoundingClientRect()
-          const sx = e.clientX - rect.left
-          const sy = e.clientY - rect.top
-          const [lon, lat] = screenToLonLat(sx, sy, vpRef.current, rect.width, rect.height)
-          let flights = flightsRef.current
-          if (!reduceMotion && pollTimeRef.current > 0) {
-            const dt = (Date.now() - pollTimeRef.current) / 1000
-            flights = interpolateFlights(flights, dt)
-          }
-          const hit = findFlightAt(flights, lon, lat, HIT_THRESHOLD / vpRef.current.scale)
-          if (hit) setSelectedFlight(hit)
-        }
+      if (pinchStateRef.current.active && pinchRef.current.size < 2) {
+        pinchStateRef.current.active = false
       }
-      dragRef.current.active = false
+
+      if (pinchRef.current.size === 0) {
+        if (
+          dragRef.current.active &&
+          !multitouchRef.current &&
+          dragRef.current.moved < TAP_THRESHOLD
+        ) {
+          const canvas = fullCanvasRef.current
+          if (canvas) {
+            const rect = canvas.getBoundingClientRect()
+            const sx = e.clientX - rect.left
+            const sy = e.clientY - rect.top
+            const [lon, lat] = screenToLonLat(sx, sy, vpRef.current, rect.width, rect.height)
+            let flights = flightsRef.current
+            if (!reduceMotion && pollTimeRef.current > 0) {
+              const dt = (Date.now() - pollTimeRef.current) / 1000
+              flights = interpolateFlights(flights, dt)
+            }
+            const hit = findFlightAt(flights, lon, lat, HIT_THRESHOLD / vpRef.current.scale)
+            if (hit) setSelectedFlight(hit)
+          }
+        }
+        dragRef.current.active = false
+        multitouchRef.current = false
+      }
     },
     [reduceMotion]
   )
