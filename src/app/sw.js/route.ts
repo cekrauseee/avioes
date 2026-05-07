@@ -41,7 +41,8 @@ const OFFLINE_ASSETS = [
   '/flying-airplane-light.png',
   '/flying-airplane-dark.png',
   '/favicon-light.png',
-  '/favicon-dark.png'
+  '/favicon-dark.png',
+  '/world-110m.json'
 ]
 const PRECACHE = ['/manifest.webmanifest', ...OFFLINE_ASSETS]
 

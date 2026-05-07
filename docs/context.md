@@ -20,6 +20,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-07 — Real-time airplane map on /world
+
+The `/world` page now has two top-level tabs: **Map** (default) and **Ranking** (existing ranking content with nested all-time/week tabs). The map is a custom Canvas-based component (`src/components/world-map.tsx`) using equirectangular projection over Natural Earth 110m GeoJSON (`public/world-110m.json`). Live flight data from OpenSky Network is proxied through `src/app/api/flights/route.ts` (10s cache, graceful degradation). Flights poll every 12s; positions interpolate at 60fps between polls. Preview card → fullscreen portal on tap; fullscreen supports drag-to-pan, wheel/pinch zoom (scale 0.5–8×). Tapping an airplane opens `FlightDetailSheet` (`src/components/flight-detail-sheet.tsx`) with callsign, origin country, altitude, speed, heading, vertical rate, and coordinates. Projection and drawing utilities live in `src/lib/geo.ts`. Reduced motion: no interpolation, instant transitions. New i18n keys: `world.view.*`, `world.map.*`.
+
 ### 2026-05-07 — Multi-step `/onboarding` wizard (name → username → photo → group)
 
 Profile collection moved out of the auth wizard into a dedicated post-creation flow. `auth-screen.tsx` ends right after the password step — `signUp.email({ email, password, name: t(locale, 'auth.namePlaceholderName') })` ("Novo usuário" / "New user"). `firstName` is `required: false` in better-auth additionalFields. OAuth (Google) still maps `given_name`/`family_name` into the user row at signup. Both paths land on `/onboarding` because `users.onboardingStatus` is `'pending'` for any newly-created user.

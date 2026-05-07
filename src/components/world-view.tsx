@@ -10,6 +10,14 @@ import { AppShell } from './app-shell'
 import { SyncStatus } from './sync-status'
 import { ThemeToggle } from './theme-toggle'
 import { ToolbarTabs, type ToolbarTabItem } from './toolbar-tabs'
+import { WorldMap } from './world-map'
+
+type ViewTab = 'map' | 'ranking'
+
+const VIEWS: ToolbarTabItem<ViewTab>[] = [
+  { id: 'map', labelKey: 'world.view.map' },
+  { id: 'ranking', labelKey: 'world.view.ranking' }
+]
 
 const WINDOWS: ToolbarTabItem<WorldRankingWindow>[] = [
   { id: 'all', labelKey: 'world.window.all' },
@@ -21,6 +29,7 @@ const MEDALS = ['🥇', '🥈', '🥉']
 export function WorldView({ initial }: { initial: WorldRankingResult }) {
   const state = useOfflineState()
   const locale = selectLocale(state)
+  const [view, setView] = useState<ViewTab>('map')
   const [data, setData] = useState(initial)
   const [windowSel, setWindowSel] = useState<WorldRankingWindow>(initial.window)
   const [pending, startTransition] = useTransition()
@@ -56,9 +65,11 @@ export function WorldView({ initial }: { initial: WorldRankingResult }) {
             <h1 className='font-display text-3xl tracking-tight'>{t(locale, 'world.title')}</h1>
             <div className='flex items-center gap-2'>
               <SyncStatus />
-              <span className='text-ink-faint text-xs'>
-                {data.rows.length} {t(locale, 'world.groups')}
-              </span>
+              {view === 'ranking' && (
+                <span className='text-ink-faint text-xs'>
+                  {data.rows.length} {t(locale, 'world.groups')}
+                </span>
+              )}
               <ThemeToggle />
             </div>
           </div>
@@ -66,46 +77,65 @@ export function WorldView({ initial }: { initial: WorldRankingResult }) {
 
           <div className='-mx-5 mt-3'>
             <ToolbarTabs
-              items={WINDOWS}
-              activeId={windowSel}
+              items={VIEWS}
+              activeId={view}
               accentClass='bg-sage'
               locale={locale}
-              indicatorLayoutId='world-window'
-              onSelect={selectWindow}
+              indicatorLayoutId='world-view'
+              onSelect={setView}
             />
           </div>
         </header>
 
-        <div
-          ref={listRef}
-          className='scroll-area fade-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-8'
-        >
-          {data.userGroupRanks.length > 0 && (
-            <UserGroupsJumpBar
-              entries={data.userGroupRanks}
-              locale={locale}
-              onJump={jumpTo}
-            />
-          )}
+        {view === 'map' && <WorldMap locale={locale} />}
 
-          {data.rows.length === 0 ?
-            <WorldEmpty locale={locale} />
-          : <div className={`transition-opacity duration-150 ${pending ? 'opacity-60' : 'opacity-100'}`}>
-              {top.length > 0 && (
-                <Podium
-                  rows={top}
+        {view === 'ranking' && (
+          <>
+            <div className='-mx-0 px-5'>
+              <div className='-mx-5'>
+                <ToolbarTabs
+                  items={WINDOWS}
+                  activeId={windowSel}
+                  accentClass='bg-sage'
                   locale={locale}
+                  indicatorLayoutId='world-window'
+                  onSelect={selectWindow}
                 />
-              )}
-              {rest.length > 0 && (
-                <RestList
-                  rows={rest}
-                  locale={locale}
-                />
-              )}
+              </div>
             </div>
-          }
-        </div>
+
+            <div
+              ref={listRef}
+              className='scroll-area fade-scroll min-h-0 flex-1 overflow-y-auto px-5 pb-8'
+            >
+              {data.userGroupRanks.length > 0 && (
+                <UserGroupsJumpBar
+                  entries={data.userGroupRanks}
+                  locale={locale}
+                  onJump={jumpTo}
+                />
+              )}
+
+              {data.rows.length === 0 ?
+                <WorldEmpty locale={locale} />
+              : <div className={`transition-opacity duration-150 ${pending ? 'opacity-60' : 'opacity-100'}`}>
+                  {top.length > 0 && (
+                    <Podium
+                      rows={top}
+                      locale={locale}
+                    />
+                  )}
+                  {rest.length > 0 && (
+                    <RestList
+                      rows={rest}
+                      locale={locale}
+                    />
+                  )}
+                </div>
+              }
+            </div>
+          </>
+        )}
       </div>
     </AppShell>
   )
