@@ -12,9 +12,9 @@ import { applyLocalIdentity, selectLocale, useOfflineState } from '../lib/offlin
 import { OTP_ALLOWED_ATTEMPTS, OTP_LENGTH } from '../lib/otp-constants'
 import { Button } from './button'
 
-type Step = 'welcome' | 'email' | 'method' | 'password' | 'otp' | 'no-password' | 'name' | 'error'
+type Step = 'welcome' | 'email' | 'method' | 'password' | 'otp' | 'no-password' | 'error'
 
-const STEP_ORDER: Record<Step, number> = { welcome: 0, error: 0, email: 1, method: 2, password: 3, otp: 3, 'no-password': 3, name: 4 }
+const STEP_ORDER: Record<Step, number> = { welcome: 0, error: 0, email: 1, method: 2, password: 3, otp: 3, 'no-password': 3 }
 
 const RESEND_COOLDOWN_MS = 30 * 1000
 const timestamp: () => number = Date.now
@@ -22,9 +22,6 @@ const timestamp: () => number = Date.now
 const emailSchema = z.email()
 const passwordSchemaMin = z.string().min(8)
 const passwordSchemaMax = z.string().max(128)
-const firstNameSchemaMin = z.string().trim().min(1)
-const firstNameSchemaMax = z.string().trim().max(60)
-const lastNameSchema = z.string().trim().max(60)
 
 const slideVariants = {
   enter: (dir: number) => ({ x: dir * 24, opacity: 0 }),
@@ -43,8 +40,6 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
   const [direction, setDirection] = useState(1)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
   const [accountExists, setAccountExists] = useState<boolean | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -254,36 +249,13 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
       setError(t(locale, 'auth.passwordTooLong'))
       return
     }
-    setError(null)
-    advanceTo('name')
-  }
 
-  const handleSignUpWithName = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const trimmedFirst = firstName.trim()
-    const trimmedLast = lastName.trim()
-    if (!firstNameSchemaMin.safeParse(trimmedFirst).success) {
-      setError(t(locale, 'auth.nameRequired'))
-      return
-    }
-    if (!firstNameSchemaMax.safeParse(trimmedFirst).success) {
-      setError(t(locale, 'auth.nameTooLong'))
-      return
-    }
-    if (!lastNameSchema.safeParse(trimmedLast).success) {
-      setError(t(locale, 'auth.lastNameTooLong'))
-      return
-    }
     setLoading(true)
     setError(null)
-
-    const composed = trimmedLast ? `${trimmedFirst} ${trimmedLast}` : trimmedFirst
     const result = await authClient.signUp.email({
       email: email.trim().toLowerCase(),
       password,
-      name: composed,
-      firstName: trimmedFirst,
-      ...(trimmedLast ? { lastName: trimmedLast } : {})
+      name: t(locale, 'auth.namePlaceholderName')
     })
 
     if (!result.error) {
@@ -296,8 +268,6 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
     if (result.error.status === 422 || result.error.status === 409) {
       setAccountExists(true)
       setError(t(locale, 'auth.accountExists'))
-      setDirection(-1)
-      setStep('password')
       return
     }
     setError(t(locale, 'auth.genericError'))
@@ -473,13 +443,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 transition={slideTransition}
               >
                 <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
-                  {step === 'name' ?
-                    <>
-                      {t(locale, 'auth.nameLine1')}
-                      <br />
-                      <span className='text-sage italic'>{t(locale, 'auth.nameItalic')}</span>
-                    </>
-                  : step === 'method' ?
+                  {step === 'method' ?
                     <>
                       {t(locale, 'auth.welcomeBackLine1')}
                       <br />
@@ -522,7 +486,6 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                   {step === 'otp' && tf(locale, 'auth.otpSentTo', { email })}
                   {step === 'password' && email}
                   {step === 'no-password' && t(locale, 'auth.noPasswordBody')}
-                  {step === 'name' && t(locale, 'auth.nameSubtitle')}
                 </p>
               </motion.div>
             </AnimatePresence>
@@ -534,8 +497,6 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
             transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
             onSubmit={
               step === 'email' ? submitEmail
-              : step === 'name' ?
-                handleSignUpWithName
               : step === 'otp' ?
                 handleOtpSubmit
               : step === 'method' || step === 'no-password' ?
@@ -732,41 +693,6 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                   </>
                 )}
 
-                {step === 'name' && (
-                  <>
-                    <Field
-                      label={t(locale, 'auth.nameLabel')}
-                      type='text'
-                      value={firstName}
-                      onChange={setFirstName}
-                      placeholder={t(locale, 'auth.namePlaceholder')}
-                      autoFocus
-                      autoComplete='given-name'
-                    />
-                    <Field
-                      label={t(locale, 'auth.lastNameLabel')}
-                      type='text'
-                      value={lastName}
-                      onChange={setLastName}
-                      placeholder={t(locale, 'auth.lastNamePlaceholder')}
-                      autoComplete='family-name'
-                    />
-                    <Button
-                      variant='secondary'
-                      size='sm'
-                      shape='pill'
-                      className='self-start'
-                      onClick={() => {
-                        advanceTo('password')
-                        setError(null)
-                      }}
-                      leading={<span aria-hidden>←</span>}
-                    >
-                      {t(locale, 'auth.back')}
-                    </Button>
-                  </>
-                )}
-
                 {step === 'no-password' && (
                   <>
                     {noPasswordSent ?
@@ -839,21 +765,21 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 disabled={step === 'otp' && otpExhausted}
                 status={loading ? 'pending' : 'idle'}
                 pendingLabel={
-                  step === 'name' ? t(locale, 'auth.creatingAccount')
-                  : step === 'otp' ? t(locale, 'auth.verifying')
-                  : step === 'password' && accountExists ? t(locale, 'auth.loading')
+                  step === 'otp' ? t(locale, 'auth.verifying')
+                  : step === 'password' && accountExists ?
+                    t(locale, 'auth.loading')
+                  : step === 'password' && accountExists === false ?
+                    t(locale, 'auth.creatingAccount')
                   : t(locale, 'auth.waiting')
                 }
               >
                 {step === 'email' ?
                   t(locale, 'auth.submitContinue')
-                : step === 'name' ?
-                  t(locale, 'auth.submitCreate')
                 : step === 'otp' ?
                   t(locale, 'auth.submitSignIn')
                 : accountExists ?
                   t(locale, 'auth.submitSignIn')
-                : t(locale, 'auth.submitContinue')}
+                : t(locale, 'auth.submitCreate')}
               </Button>
             )}
           </motion.form>

@@ -9,6 +9,7 @@ const base: OfflineSnapshot = {
   baseTheme: 'system',
   basePalette: 'default',
   baseLocale: 'pt',
+  onboardingStatus: 'complete',
   baseEvents: [{ id: 'server:1', who: 'user-a', ts: 10 }],
   pendingOps: []
 }

@@ -20,6 +20,7 @@ const base: OfflineSnapshot = {
   baseTheme: 'system',
   basePalette: 'default',
   baseLocale: 'pt',
+  onboardingStatus: 'complete',
   baseEvents: [
     { id: 'server:1', who: USER_A, ts: 10 },
     { id: 'server:2', who: USER_B, ts: 20 }
@@ -68,6 +69,7 @@ describe('offline model', () => {
       theme: 'system',
       palette: 'default',
       locale: 'pt',
+      onboardingStatus: 'complete',
       settled: [addA.id]
     })
 
@@ -89,6 +91,7 @@ describe('offline model', () => {
       theme: 'system',
       palette: 'default',
       locale: 'pt',
+      onboardingStatus: 'complete',
       settled: []
     })
 
@@ -107,6 +110,7 @@ describe('offline model', () => {
       theme: 'system',
       palette: 'default',
       locale: 'pt',
+      onboardingStatus: 'complete',
       settled: []
     })
 
@@ -118,6 +122,7 @@ describe('offline model', () => {
       baseTheme: 'system',
       basePalette: 'default',
       baseLocale: 'pt',
+      onboardingStatus: 'complete',
       pendingOps: []
     })
   })

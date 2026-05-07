@@ -1,10 +1,13 @@
 'use server'
 
+import { del, put } from '@vercel/blob'
 import crypto from 'crypto'
 import { headers } from 'next/headers'
 import { auth } from './lib/auth'
+import { isCountryCode } from './lib/countries'
 import { sendInviteEmail, sendPasswordEmail } from './lib/email'
 import type { SyncSnapshot } from './lib/offline-model'
+import type { UserProfile } from './lib/store'
 import {
   acceptInvitation as acceptInvitationInStore,
   applyOps,
@@ -17,6 +20,7 @@ import {
   deleteGroup as deleteGroupInStore,
   findUserByEmail,
   getCredentialPasswordHash,
+  isUsernameTaken,
   leaveGroup as leaveGroupInStore,
   readActiveGroupId,
   readEventsForMember,
@@ -26,19 +30,24 @@ import {
   readGroupsForUser,
   readInvitationByToken,
   readLocale,
+  readOnboardingStatus,
   readPalette,
   readPendingInvitationsForGroup,
   readTheme,
+  readUserProfile,
   recordPasswordAttempt,
   rejectInvitation as rejectInvitationInStore,
   removeGroupMember,
   updateGroup as updateGroupInStore,
+  updateUserProfile,
   userHasCredentialAccount,
   userHasPasskeys as userHasPasskeysInStore,
+  usernameExists,
   validatePasswordToken,
-  writeActiveGroupId
+  writeActiveGroupId,
+  writeOnboardingStatus
 } from './lib/store'
-import type { Group, GroupMember, PendingOp } from './lib/types'
+import type { Group, GroupMember, OnboardingStatus, PendingOp } from './lib/types'
 
 const INVITE_EXPIRY_MS = 24 * 60 * 60 * 1000
 const MAX_INVITES_PER_HOUR = 10
@@ -53,20 +62,20 @@ async function getSessionUser() {
 
 export async function bootstrapState(): Promise<SyncSnapshot> {
   const user = await getSessionUser()
-  if (!user) return emptySnapshot(null, null, [], [])
+  if (!user) return emptySnapshot(null, null, [], [], 'complete')
 
-  const activeGroupId = await readActiveGroupId(user.id)
-  if (!activeGroupId) return emptySnapshot(user.id, null, [], [])
+  const [activeGroupId, onboardingStatus] = await Promise.all([readActiveGroupId(user.id), readOnboardingStatus(user.id)])
+  if (!activeGroupId) return emptySnapshot(user.id, null, [], [], onboardingStatus)
 
-  return snapshotForMember(user.id, activeGroupId, [], true)
+  return snapshotForMember(user.id, activeGroupId, [], true, onboardingStatus)
 }
 
 export async function syncOps(ops: unknown[]): Promise<SyncSnapshot> {
   const user = await getSessionUser()
-  if (!user) return emptySnapshot(null, null, [], [])
+  if (!user) return emptySnapshot(null, null, [], [], 'complete')
 
-  const activeGroupId = await readActiveGroupId(user.id)
-  if (!activeGroupId) return emptySnapshot(user.id, null, [], [])
+  const [activeGroupId, onboardingStatus] = await Promise.all([readActiveGroupId(user.id), readOnboardingStatus(user.id)])
+  if (!activeGroupId) return emptySnapshot(user.id, null, [], [], onboardingStatus)
 
   const validOps: PendingOp[] = []
   const rejected: string[] = []
@@ -83,22 +92,120 @@ export async function syncOps(ops: unknown[]): Promise<SyncSnapshot> {
   const membership = await readGroupMembership(activeGroupId, user.id)
   if (!membership) {
     await writeActiveGroupId(user.id, null)
-    return emptySnapshot(user.id, null, [], rejected)
+    return emptySnapshot(user.id, null, [], rejected, onboardingStatus)
   }
 
   const applied = validOps.length > 0 ? await applyOps(validOps, user.id, activeGroupId) : []
-  return snapshotForMember(user.id, activeGroupId, [...rejected, ...applied], true)
+  return snapshotForMember(user.id, activeGroupId, [...rejected, ...applied], true, onboardingStatus)
 }
 
 export async function setActiveGroup(groupId: string): Promise<SyncSnapshot> {
   const user = await getSessionUser()
-  if (!user) return emptySnapshot(null, null, [], [])
+  if (!user) return emptySnapshot(null, null, [], [], 'complete')
 
   const membership = await readGroupMembership(groupId, user.id)
-  if (!membership) return emptySnapshot(user.id, null, [], [])
+  if (!membership) return emptySnapshot(user.id, null, [], [], 'complete')
 
   await writeActiveGroupId(user.id, groupId)
-  return snapshotForMember(user.id, groupId, [], true)
+  const onboardingStatus = await readOnboardingStatus(user.id)
+  return snapshotForMember(user.id, groupId, [], true, onboardingStatus)
+}
+
+export type OnboardingState = {
+  email: string
+  firstName: string | null
+  lastName: string | null
+  username: string | null
+  image: string | null
+  suggestedUsernames: string[]
+}
+
+export async function getOnboardingState(): Promise<OnboardingState | null> {
+  const user = await getSessionUser()
+  if (!user) return null
+
+  const profile = await readUserProfile(user.id)
+  if (!profile) return null
+
+  const rawFirstName = user.firstName ?? null
+  const firstName = rawFirstName && rawFirstName.trim().length > 0 ? rawFirstName : null
+  const rawLastName = user.lastName ?? null
+  const lastName = rawLastName && rawLastName.trim().length > 0 ? rawLastName : null
+
+  const { suggestions } = await suggestUsernamesForSignup(profile.email, firstName ?? '')
+  return {
+    email: profile.email,
+    firstName,
+    lastName,
+    username: profile.username,
+    image: profile.image,
+    suggestedUsernames: suggestions
+  }
+}
+
+export async function saveOnboardingProfile(input: {
+  firstName: string
+  lastName: string | null
+  username: string
+  image: string | null
+}): Promise<{ ok: true } | { ok: false; error: 'username_taken' | 'username_invalid' | 'first_name_required' | 'image_invalid' | 'unknown' }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false, error: 'unknown' }
+
+  const firstName = input.firstName.trim()
+  if (!firstName) return { ok: false, error: 'first_name_required' }
+  if (firstName.length > 60) return { ok: false, error: 'first_name_required' }
+
+  const lastNameRaw = (input.lastName ?? '').trim()
+  const lastName = lastNameRaw.length === 0 ? null : lastNameRaw.slice(0, 60)
+
+  const username = input.username.trim().toLowerCase()
+  if (!USERNAME_RE.test(username)) return { ok: false, error: 'username_invalid' }
+  if (await isUsernameTaken(username, user.id)) return { ok: false, error: 'username_taken' }
+
+  const imageCheck = validateProfileImage(input.image, user.id)
+  if (!imageCheck.ok) return { ok: false, error: 'image_invalid' }
+  const image = imageCheck.value
+
+  const previous = await readUserProfile(user.id)
+  const result = await updateUserProfile(user.id, {
+    firstName,
+    lastName,
+    username,
+    image,
+    country: previous?.country ?? null,
+    city: previous?.city ?? null
+  })
+  if (!result.ok) return { ok: false, error: result.reason }
+
+  const previousImage = previous?.image ?? null
+  if (previousImage && previousImage !== image && isOwnedProfileBlob(previousImage, user.id)) {
+    await deleteBlobQuiet(previousImage)
+  }
+
+  return { ok: true }
+}
+
+export async function finishOnboarding(input: {
+  groupName: string
+}): Promise<{ ok: true; snapshot: SyncSnapshot } | { ok: false; error: 'name_invalid' | 'profile_incomplete' | 'unknown' }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false, error: 'unknown' }
+
+  const name = input.groupName.trim()
+  if (!name) return { ok: false, error: 'name_invalid' }
+  if (name.length > 60) return { ok: false, error: 'name_invalid' }
+
+  const profile = await readUserProfile(user.id)
+  if (!profile || !profile.username) return { ok: false, error: 'profile_incomplete' }
+
+  const groupId = crypto.randomUUID()
+  await createGroup(groupId, name, user.id)
+  await writeActiveGroupId(user.id, groupId)
+  await writeOnboardingStatus(user.id, 'complete')
+
+  const snapshot = await snapshotForMember(user.id, groupId, [], true, 'complete')
+  return { ok: true, snapshot }
 }
 
 export async function getUserGroups(): Promise<(Group & { memberCount: number })[]> {
@@ -231,7 +338,8 @@ export async function acceptInvitation(
   const result = await acceptInvitationInStore(token, user.id)
   if (!result.ok) return result
 
-  const snapshot = await snapshotForMember(user.id, result.groupId, [], true)
+  await writeOnboardingStatus(user.id, 'complete')
+  const snapshot = await snapshotForMember(user.id, result.groupId, [], true, 'complete')
   return { ok: true, groupId: result.groupId, groupName: result.groupName, snapshot }
 }
 
@@ -320,15 +428,27 @@ export async function removeMember(groupId: string, userId: string): Promise<{ s
   return { success: true }
 }
 
-function emptySnapshot(identity: string | null, activeGroupId: string | null, groupMembers: GroupMember[], settled: string[]): SyncSnapshot {
-  return { identity, activeGroupId, groupMembers, events: [], theme: 'system', palette: 'default', locale: 'pt', settled }
+function emptySnapshot(
+  identity: string | null,
+  activeGroupId: string | null,
+  groupMembers: GroupMember[],
+  settled: string[],
+  onboardingStatus: OnboardingStatus
+): SyncSnapshot {
+  return { identity, activeGroupId, groupMembers, events: [], theme: 'system', palette: 'default', locale: 'pt', onboardingStatus, settled }
 }
 
-async function snapshotForMember(userId: string, groupId: string, settled: string[], clearStaleActiveGroup: boolean): Promise<SyncSnapshot> {
+async function snapshotForMember(
+  userId: string,
+  groupId: string,
+  settled: string[],
+  clearStaleActiveGroup: boolean,
+  onboardingStatus: OnboardingStatus
+): Promise<SyncSnapshot> {
   const membership = await readGroupMembership(groupId, userId)
   if (!membership) {
     if (clearStaleActiveGroup) await writeActiveGroupId(userId, null)
-    return emptySnapshot(userId, null, [], settled)
+    return emptySnapshot(userId, null, [], settled, onboardingStatus)
   }
 
   const [groupMembers, events, theme, palette, locale] = await Promise.all([
@@ -341,7 +461,7 @@ async function snapshotForMember(userId: string, groupId: string, settled: strin
 
   if (!groupMembers.some((m) => m.userId === userId)) {
     if (clearStaleActiveGroup) await writeActiveGroupId(userId, null)
-    return emptySnapshot(userId, null, [], settled)
+    return emptySnapshot(userId, null, [], settled, onboardingStatus)
   }
 
   return {
@@ -352,8 +472,195 @@ async function snapshotForMember(userId: string, groupId: string, settled: strin
     theme,
     palette,
     locale,
+    onboardingStatus,
     settled
   }
+}
+
+// --- Profile ---
+
+const USERNAME_RE = /^[a-z0-9_.]{3,24}$/
+const USERNAME_MIN = 3
+const USERNAME_MAX = 24
+const USERNAME_SUGGESTION_COUNT = 3
+const USERNAME_SUGGESTION_TRIES = 60
+
+function sanitizeUsername(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9_.]/g, '')
+    .replace(/^[_.]+/, '')
+    .slice(0, USERNAME_MAX)
+}
+
+function padUsername(base: string): string {
+  if (base.length >= USERNAME_MIN) return base
+  const filler = 'sky'
+  return (base + filler).slice(0, USERNAME_MAX).padEnd(USERNAME_MIN, '_')
+}
+
+function trim(value: string, room: number): string {
+  return value.slice(0, Math.max(USERNAME_MIN, room))
+}
+
+function generateUsernameCandidates(email: string, firstName: string): string[] {
+  const handle = sanitizeUsername((email.split('@')[0] ?? '').replace(/\+.*$/, ''))
+  const first = sanitizeUsername(firstName)
+  const seeds = [handle, first].filter((s) => s.length > 0).map(padUsername)
+  const candidates: string[] = []
+  for (const seed of seeds) candidates.push(seed)
+  for (const seed of seeds) {
+    for (let i = 0; i < 12; i++) {
+      const n = 1 + Math.floor(Math.random() * 9999)
+      const numStr = String(n)
+      const trimmed = trim(seed, USERNAME_MAX - numStr.length)
+      candidates.push(trimmed + numStr)
+    }
+    for (const sep of ['_', '.']) {
+      candidates.push(trim(seed, USERNAME_MAX - 4) + sep + 'sky')
+      candidates.push(trim(seed, USERNAME_MAX - 4) + sep + 'air')
+    }
+  }
+  return Array.from(new Set(candidates)).filter((c) => USERNAME_RE.test(c))
+}
+
+export async function checkUsernameAvailable(value: string): Promise<'available' | 'invalid' | 'taken'> {
+  const trimmed = (value ?? '').trim().toLowerCase()
+  if (!trimmed) return 'invalid'
+  if (!USERNAME_RE.test(trimmed)) return 'invalid'
+  return (await usernameExists(trimmed)) ? 'taken' : 'available'
+}
+
+export async function suggestUsernamesForSignup(email: string, firstName: string): Promise<{ suggestions: string[] }> {
+  const candidates = generateUsernameCandidates(email, firstName)
+  const out: string[] = []
+  for (const candidate of candidates) {
+    if (out.length >= USERNAME_SUGGESTION_COUNT) break
+    if (out.includes(candidate)) continue
+    if (!(await usernameExists(candidate))) out.push(candidate)
+    if (out.length === 0 && candidates.indexOf(candidate) >= USERNAME_SUGGESTION_TRIES) break
+  }
+  return { suggestions: out }
+}
+const BLOB_HOST_RE = /^[a-z0-9-]+\.(public|private)\.blob\.vercel-storage\.com$/i
+const MAX_IMAGE_BYTES = 200_000
+
+function isOwnedProfileBlob(url: string | null, userId: string): url is string {
+  if (typeof url !== 'string') return false
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return false
+  }
+  if (parsed.protocol !== 'https:') return false
+  if (!BLOB_HOST_RE.test(parsed.host)) return false
+  return parsed.pathname.startsWith(`/profile/${userId}/`)
+}
+
+function validateProfileImage(input: unknown, userId: string): { ok: true; value: string | null } | { ok: false } {
+  if (input === null || input === undefined || input === '') return { ok: true, value: null }
+  if (typeof input !== 'string') return { ok: false }
+  if (!isOwnedProfileBlob(input, userId)) return { ok: false }
+  return { ok: true, value: input }
+}
+
+async function deleteBlobQuiet(url: string): Promise<void> {
+  try {
+    await del(url)
+  } catch {
+    // best-effort cleanup; orphaned blobs are not fatal
+  }
+}
+
+export async function uploadProfileImage(formData: FormData): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false, error: 'unauthenticated' }
+
+  const file = formData.get('file')
+  if (!(file instanceof File)) return { ok: false, error: 'image_invalid' }
+  if (file.type !== 'image/jpeg') return { ok: false, error: 'image_invalid' }
+  if (file.size === 0 || file.size > MAX_IMAGE_BYTES) return { ok: false, error: 'image_too_large' }
+
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    console.error('[uploadProfileImage] BLOB_READ_WRITE_TOKEN is not set')
+    return { ok: false, error: 'image_upload_failed' }
+  }
+
+  try {
+    const blob = await put(`profile/${user.id}/avatar.jpg`, file, {
+      access: 'private',
+      contentType: 'image/jpeg',
+      addRandomSuffix: true,
+      cacheControlMaxAge: 60 * 60 * 24 * 30
+    })
+    return { ok: true, url: blob.url }
+  } catch (e) {
+    console.error('[uploadProfileImage] put failed:', e)
+    return { ok: false, error: 'image_upload_failed' }
+  }
+}
+
+export async function getMyProfile(): Promise<UserProfile | null> {
+  const user = await getSessionUser()
+  if (!user) return null
+  return readUserProfile(user.id)
+}
+
+export type ProfileUpdate = {
+  firstName: string
+  lastName: string | null
+  username: string | null
+  image: string | null
+  country: string | null
+  city: string | null
+}
+
+export async function updateMyProfile(input: ProfileUpdate): Promise<{ ok: true; profile: UserProfile } | { ok: false; error: string }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false, error: 'unauthenticated' }
+
+  const firstName = (input.firstName ?? '').trim()
+  if (!firstName) return { ok: false, error: 'first_name_required' }
+  if (firstName.length > 60) return { ok: false, error: 'first_name_too_long' }
+
+  const lastNameRaw = (input.lastName ?? '').trim()
+  const lastName = lastNameRaw.length === 0 ? null : lastNameRaw
+  if (lastName && lastName.length > 60) return { ok: false, error: 'last_name_too_long' }
+
+  const usernameRaw = (input.username ?? '').trim().toLowerCase()
+  const username = usernameRaw.length === 0 ? null : usernameRaw
+  if (username) {
+    if (!USERNAME_RE.test(username)) return { ok: false, error: 'username_invalid' }
+    if (await isUsernameTaken(username, user.id)) return { ok: false, error: 'username_taken' }
+  }
+
+  const countryRaw = (input.country ?? '').trim().toUpperCase()
+  let country: string | null = null
+  if (countryRaw.length > 0) {
+    if (!isCountryCode(countryRaw)) return { ok: false, error: 'country_invalid' }
+    country = countryRaw
+  }
+
+  const cityRaw = (input.city ?? '').trim()
+  const city = cityRaw.length === 0 ? null : cityRaw.slice(0, 60)
+
+  const imageCheck = validateProfileImage(input.image, user.id)
+  if (!imageCheck.ok) return { ok: false, error: 'image_invalid' }
+  const image = imageCheck.value
+
+  const previous = await readUserProfile(user.id)
+  const result = await updateUserProfile(user.id, { firstName, lastName, username, image, country, city })
+  if (!result.ok) return { ok: false, error: result.reason }
+
+  const previousImage = previous?.image ?? null
+  if (previousImage && previousImage !== image && isOwnedProfileBlob(previousImage, user.id)) {
+    await deleteBlobQuiet(previousImage)
+  }
+
+  const profile = await readUserProfile(user.id)
+  if (!profile) return { ok: false, error: 'unknown' }
+  return { ok: true, profile }
 }
 
 export async function setNewPassword(newPassword: string): Promise<{ ok: true } | { ok: false; error: string }> {

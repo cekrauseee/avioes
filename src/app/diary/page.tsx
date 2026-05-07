@@ -1,5 +1,5 @@
 import { DiaryView } from '../../components/diary-view'
-import { requireActiveGroup } from '../../lib/auth-guards'
+import { requireOnboardedUser } from '../../lib/auth-guards'
 import { readLocale } from '../../lib/cookies'
 import { t } from '../../lib/i18n'
 
@@ -9,6 +9,6 @@ export async function generateMetadata() {
 }
 
 export default async function DiaryPage() {
-  await requireActiveGroup('/diary')
+  await requireOnboardedUser('/diary')
   return <DiaryView />
 }

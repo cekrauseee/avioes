@@ -1,17 +1,18 @@
 'use client'
 
 import { AnimatePresence, motion, useReducedMotion, type PanInfo } from 'motion/react'
-import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { getUserGroups } from '../actions'
 import { authClient } from '../lib/auth-client'
+import { resolveAvatarUrl } from '../lib/avatar'
 import { useArrowKeyNavigation, useHorizontalWheelNavigation } from '../lib/horizontal-wheel-navigation'
 import { t, type TKey } from '../lib/i18n'
 import { useNavDirection } from '../lib/nav-direction'
 import { applyLocalIdentity, queuePalette, queueTheme, selectLocale, selectPalette, selectTheme, switchLocale, useOfflineState } from '../lib/offline-store'
 import { getMemberColor, getMemberFirstName, getMemberFullName, PALETTES, type Locale, type Palette, type Theme } from '../lib/types'
 import { AppShell } from './app-shell'
+import { Avatar } from './avatar'
 import { Button, ButtonLink, usePromiseStatus } from './button'
 import { ConnectionsSheet } from './connections-sheet'
 import { Onboarding } from './onboarding'
@@ -372,7 +373,7 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
   const myFullName = getMemberFullName(who, state.groupMembers)
   const myMember = state.groupMembers.find((m) => m.userId === who)
   const myEmail = myMember?.email ?? ''
-  const myImage = myMember?.image ?? null
+  const myImage = resolveAvatarUrl(myMember?.image ?? null)
   const [passkeysOpen, setPasskeysOpen] = useState(false)
   const [connectionsOpen, setConnectionsOpen] = useState(false)
   const signOut = usePromiseStatus({ resetMs: 1400 })
@@ -390,26 +391,29 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
 
   return (
     <div className='flex flex-col gap-4 pb-[max(env(safe-area-inset-bottom),1rem)]'>
-      <div className='border-line flex items-center gap-4 rounded-2xl border px-5 py-4'>
-        {myImage ?
-          <Image
-            src={myImage}
-            alt=''
-            width={48}
-            height={48}
-            unoptimized
-            referrerPolicy='no-referrer'
-            className='h-12 w-12 shrink-0 rounded-full object-cover'
+      <ButtonLink
+        href='/settings/profile'
+        variant='row'
+        size='lg'
+        shape='rounded'
+        fullWidth
+        className='gap-4 px-5 py-4'
+        leading={
+          <Avatar
+            image={myImage}
+            firstName={myFirstName}
+            accentBg={me.bg}
+            size={48}
+            initialClassName='text-lg font-medium'
           />
-        : <div className={`h-12 w-12 shrink-0 rounded-full ${me.bg} flex items-center justify-center`}>
-            <span className='text-bg text-lg font-medium'>{myFirstName.slice(0, 1).toUpperCase()}</span>
-          </div>
         }
-        <div className='min-w-0'>
-          <p className='text-ink font-display text-lg leading-tight'>{myFullName}</p>
-          <p className='text-ink-faint mt-0.5 truncate text-xs'>{myEmail}</p>
-        </div>
-      </div>
+        trailing={rowArrow}
+      >
+        <span className='flex min-w-0 flex-1 flex-col items-start'>
+          <span className='text-ink font-display text-lg leading-tight'>{myFullName}</span>
+          <span className='text-ink-faint mt-0.5 truncate text-xs'>{myEmail}</span>
+        </span>
+      </ButtonLink>
 
       <ButtonLink
         href='/settings/password'

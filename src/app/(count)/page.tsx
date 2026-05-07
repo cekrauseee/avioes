@@ -1,5 +1,5 @@
 import { Counter } from '../../components/counter'
-import { requireActiveGroup } from '../../lib/auth-guards'
+import { requireOnboardedUser } from '../../lib/auth-guards'
 import { readLocale } from '../../lib/cookies'
 import { t } from '../../lib/i18n'
 
@@ -9,6 +9,6 @@ export async function generateMetadata() {
 }
 
 export default async function Page() {
-  await requireActiveGroup('/')
+  await requireOnboardedUser('/')
   return <Counter />
 }

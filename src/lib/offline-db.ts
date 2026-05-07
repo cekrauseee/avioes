@@ -132,6 +132,9 @@ function isPersistedState(value: unknown): value is PersistedOfflineState {
   if (!Array.isArray(item.groupMembers) || !item.groupMembers.every(isGroupMember)) return false
   if (item.basePalette === undefined) (item as Record<string, unknown>).basePalette = 'default'
   if (item.baseLocale === undefined) (item as Record<string, unknown>).baseLocale = 'pt'
+  if (item.onboardingStatus !== 'pending' && item.onboardingStatus !== 'complete') {
+    ;(item as Record<string, unknown>).onboardingStatus = 'complete'
+  }
   return true
 }
 

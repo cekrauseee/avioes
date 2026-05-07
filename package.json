@@ -22,6 +22,7 @@
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.0.8",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/blob": "^2.3.3",
     "@vercel/speed-insights": "^2.0.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "better-auth": "^1.6.9",

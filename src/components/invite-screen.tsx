@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { acceptInvitation, rejectInvitation } from '../actions'
+import { resolveAvatarUrl } from '../lib/avatar'
 import { t, tf } from '../lib/i18n'
 import { applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import { Button, ButtonLink } from './button'
@@ -192,7 +193,7 @@ export function InviteScreen({
               variant='secondary'
               size='sm'
               shape='pill'
-              className='mt-8 font-display'
+              className='font-display mt-8'
             >
               {t(locale, 'invite.rejectedCta')}
             </ButtonLink>
@@ -213,7 +214,7 @@ export function InviteScreen({
             <div className='mt-6 flex items-center gap-3'>
               {invitedByImage ?
                 <Image
-                  src={invitedByImage}
+                  src={resolveAvatarUrl(invitedByImage) ?? invitedByImage}
                   alt=''
                   width={40}
                   height={40}
@@ -345,8 +346,15 @@ function ErrorScreen({ locale, line1Key, italicKey, bodyKey }: { locale: 'pt' | 
         variant='secondary'
         size='sm'
         shape='pill'
-        className='mt-4 self-center font-display'
-        leading={<span aria-hidden className='text-base leading-none'>←</span>}
+        className='font-display mt-4 self-center'
+        leading={
+          <span
+            aria-hidden
+            className='text-base leading-none'
+          >
+            ←
+          </span>
+        }
       >
         {t(locale, 'invite.backToApp')}
       </ButtonLink>

@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { resolveAvatarUrl } from '../lib/avatar'
 import { DATE_LOCALE, t } from '../lib/i18n'
 import { selectEvents, selectLocale, useOfflineState } from '../lib/offline-store'
 import { computeStreaks, totals } from '../lib/streaks'
@@ -161,7 +162,7 @@ function Score({
     <div className={`flex flex-col gap-2 ${align === 'right' ? 'items-end text-right' : 'items-start text-left'}`}>
       {image ?
         <Image
-          src={image}
+          src={resolveAvatarUrl(image) ?? image}
           alt=''
           width={48}
           height={48}

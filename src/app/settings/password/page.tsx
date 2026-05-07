@@ -1,10 +1,10 @@
 import { PasswordScreen } from '@/components/password-screen'
-import { requireUser } from '@/lib/auth-guards'
+import { requireOnboardedUser } from '@/lib/auth-guards'
 import { Suspense } from 'react'
 import Loading from './loading'
 
 export default async function PasswordPage() {
-  await requireUser('/settings/password')
+  await requireOnboardedUser('/settings/password')
   return (
     <Suspense fallback={<Loading />}>
       <PasswordScreen />

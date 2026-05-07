@@ -15,6 +15,8 @@ export type Streak = {
   endTs: number
 }
 
+export type OnboardingStatus = 'pending' | 'complete'
+
 export type Theme = 'light' | 'dark' | 'system'
 
 export type Palette = 'default' | 'ocean' | 'lavender' | 'earth' | 'blossom' | 'sky'
