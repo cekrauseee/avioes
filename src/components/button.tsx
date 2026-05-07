@@ -127,7 +127,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       {...rest}
     >
       {leading}
-      <ButtonStatusContent status={status} label={labelByStatus[status]} />
+      <ButtonStatusContent
+        status={status}
+        label={labelByStatus[status]}
+      />
       {trailing}
     </motion.button>
   )

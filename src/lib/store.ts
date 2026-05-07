@@ -4,7 +4,7 @@ import crypto from 'crypto'
 import { and, eq, gt, like, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { accounts, db, events, groupInvitations, groupMembers, groups, passkeys, preferences, processedOps, users, verifications } from './db'
-import type { AirplaneEvent, Group, GroupMember, GroupRole, Locale, Palette, PendingOp, Theme } from './types'
+import type { AirplaneEvent, Group, GroupMember, GroupRole, Locale, OnboardingStatus, Palette, PendingOp, Theme } from './types'
 
 const groupMembersForCount = alias(groupMembers, 'group_members_for_count')
 
@@ -344,6 +344,91 @@ export async function expirePendingInvitations(now = Date.now()): Promise<number
   return rows.length
 }
 
+export type UserProfile = {
+  firstName: string
+  lastName: string | null
+  username: string | null
+  email: string
+  image: string | null
+  country: string | null
+  city: string | null
+}
+
+export async function readUserProfile(userId: string): Promise<UserProfile | null> {
+  const row = await db
+    .select({
+      firstName: users.firstName,
+      lastName: users.lastName,
+      name: users.name,
+      username: users.username,
+      email: users.email,
+      image: users.image,
+      country: users.country,
+      city: users.city
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1)
+  const found = row[0]
+  if (!found) return null
+  return {
+    firstName: found.firstName ?? found.name.split(' ')[0] ?? found.name,
+    lastName: found.lastName ?? deriveLastName(found.name, found.firstName),
+    username: found.username,
+    email: found.email,
+    image: found.image,
+    country: found.country,
+    city: found.city
+  }
+}
+
+export async function isUsernameTaken(username: string, exceptUserId: string): Promise<boolean> {
+  const row = await db.select({ id: users.id }).from(users).where(eq(users.username, username)).limit(1)
+  const found = row[0]
+  if (!found) return false
+  return found.id !== exceptUserId
+}
+
+export async function usernameExists(username: string): Promise<boolean> {
+  const row = await db.select({ id: users.id }).from(users).where(eq(users.username, username)).limit(1)
+  return row.length > 0
+}
+
+export async function updateUserProfile(
+  userId: string,
+  patch: { firstName: string; lastName: string | null; username: string | null; image: string | null; country: string | null; city: string | null }
+): Promise<{ ok: true } | { ok: false; reason: 'username_taken' }> {
+  const composedName = patch.lastName ? `${patch.firstName} ${patch.lastName}` : patch.firstName
+  try {
+    await db
+      .update(users)
+      .set({
+        firstName: patch.firstName,
+        lastName: patch.lastName,
+        username: patch.username,
+        image: patch.image,
+        country: patch.country,
+        city: patch.city,
+        name: composedName,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId))
+    return { ok: true }
+  } catch (e: unknown) {
+    if (isUniqueViolation(e, 'username')) return { ok: false, reason: 'username_taken' }
+    throw e
+  }
+}
+
+function isUniqueViolation(e: unknown, column: string): boolean {
+  if (typeof e !== 'object' || e === null) return false
+  const err = e as { code?: unknown; constraint?: unknown; constraint_name?: unknown; message?: unknown }
+  if (err.code !== '23505') return false
+  const constraint = String(err.constraint ?? err.constraint_name ?? '')
+  if (constraint && constraint.includes(column)) return true
+  return typeof err.message === 'string' && err.message.includes(column)
+}
+
 export async function findUserByEmail(email: string): Promise<{ id: string; firstName: string; lastName: string | null; email: string } | null> {
   const row = await db
     .select({ id: users.id, firstName: users.firstName, lastName: users.lastName, name: users.name, email: users.email })
@@ -391,6 +476,15 @@ export async function readLocale(userId: string | null): Promise<Locale> {
   if (!userId) return 'pt'
   const row = await db.select({ locale: preferences.locale }).from(preferences).where(eq(preferences.userId, userId)).limit(1)
   return row[0]?.locale ?? 'pt'
+}
+
+export async function readOnboardingStatus(userId: string): Promise<OnboardingStatus> {
+  const row = await db.select({ onboardingStatus: users.onboardingStatus }).from(users).where(eq(users.id, userId)).limit(1)
+  return row[0]?.onboardingStatus === 'pending' ? 'pending' : 'complete'
+}
+
+export async function writeOnboardingStatus(userId: string, status: OnboardingStatus): Promise<void> {
+  await db.update(users).set({ onboardingStatus: status, updatedAt: new Date() }).where(eq(users.id, userId))
 }
 
 export async function readActiveGroupId(userId: string): Promise<string | null> {

@@ -24,7 +24,13 @@ export function AppRuntime({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const locale = selectLocale(state)
   const inApp = state.identity && state.activeGroupId
-  const showAppNav = Boolean(inApp) && pathname !== '/auth' && !pathname.startsWith('/design') && !pathname.startsWith('/groups') && !pathname.startsWith('/settings/')
+  const showAppNav =
+    Boolean(inApp) &&
+    pathname !== '/auth' &&
+    !pathname.startsWith('/design') &&
+    !pathname.startsWith('/groups') &&
+    !pathname.startsWith('/settings/') &&
+    !pathname.startsWith('/onboarding')
 
   useEffect(() => {
     const key = PAGE_TITLE_KEY[pathname]

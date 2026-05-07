@@ -3,7 +3,7 @@ import 'server-only'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { auth, type Session } from './auth'
-import { readActiveGroupId, readGroupMembership, writeActiveGroupId } from './store'
+import { readActiveGroupId, readGroupMembership, readOnboardingStatus, writeActiveGroupId } from './store'
 
 type User = Session['user']
 
@@ -36,27 +36,22 @@ export async function requireUser(nextPath: string): Promise<User> {
   return user
 }
 
-export async function requireActiveGroup(nextPath: string): Promise<{ user: User; activeGroupId: string }> {
+export async function requireOnboardedUser(nextPath: string): Promise<User> {
   const user = await requireUser(nextPath)
-  const activeGroupId = await readActiveGroupId(user.id)
-  if (!activeGroupId) redirect('/groups')
-  const membership = await readGroupMembership(activeGroupId, user.id)
-  if (!membership) {
-    await writeActiveGroupId(user.id, null)
-    redirect('/groups')
-  }
-  return { user, activeGroupId }
+  const status = await readOnboardingStatus(user.id)
+  if (status === 'pending') redirect('/onboarding')
+  return user
 }
 
 export async function requireGroupMember(groupId: string, nextPath: string): Promise<User> {
-  const user = await requireUser(nextPath)
+  const user = await requireOnboardedUser(nextPath)
   const membership = await readGroupMembership(groupId, user.id)
   if (!membership) redirect('/groups')
   return user
 }
 
 export async function requireGroupOwner(groupId: string, nextPath: string): Promise<User> {
-  const user = await requireUser(nextPath)
+  const user = await requireOnboardedUser(nextPath)
   const membership = await readGroupMembership(groupId, user.id)
   if (membership?.role !== 'owner') redirect('/groups')
   return user
@@ -71,11 +66,11 @@ export async function redirectAuthenticatedUser(nextPathValue: unknown): Promise
   if (nextPath === '/groups') redirect('/groups')
 
   const activeGroupId = await readActiveGroupId(user.id)
-  if (!activeGroupId) redirect('/groups')
+  if (!activeGroupId) redirect('/')
   const membership = await readGroupMembership(activeGroupId, user.id)
   if (!membership) {
     await writeActiveGroupId(user.id, null)
-    redirect('/groups')
+    redirect('/')
   }
   redirect(nextPath)
 }

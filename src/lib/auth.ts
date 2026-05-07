@@ -27,8 +27,10 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      firstName: { type: 'string', required: true },
-      lastName: { type: 'string', required: false }
+      firstName: { type: 'string', required: false },
+      lastName: { type: 'string', required: false },
+      username: { type: 'string', required: false },
+      onboardingStatus: { type: 'string', required: false, defaultValue: 'pending', input: false }
     }
   },
   account: {

@@ -26,7 +26,7 @@ import {
   type OfflineSnapshot,
   type SyncSnapshot
 } from '../offline-model'
-import type { AirplaneEvent, GroupMember, Identity, Locale, Palette, PendingOp, Theme } from '../types'
+import type { AirplaneEvent, GroupMember, Identity, Locale, OnboardingStatus, Palette, PendingOp, Theme } from '../types'
 
 // ---------------------------------------------------------------------------
 // State shape
@@ -40,6 +40,7 @@ export type AppState = {
   baseTheme: Theme
   basePalette: Palette
   baseLocale: Locale
+  onboardingStatus: OnboardingStatus
   pendingOps: PendingOp[]
 
   hydrated: boolean
@@ -133,6 +134,7 @@ function persistSnapshot(state: AppState): void {
     baseTheme: state.baseTheme,
     basePalette: state.basePalette,
     baseLocale: state.baseLocale,
+    onboardingStatus: state.onboardingStatus,
     pendingOps: state.pendingOps
   }
   writeBootState({
@@ -160,7 +162,7 @@ let bc: BroadcastChannel | null = null
 
 type BroadcastPayload = Pick<
   AppState,
-  'identity' | 'activeGroupId' | 'groupMembers' | 'baseEvents' | 'baseTheme' | 'basePalette' | 'baseLocale' | 'lastSyncOk'
+  'identity' | 'activeGroupId' | 'groupMembers' | 'baseEvents' | 'baseTheme' | 'basePalette' | 'baseLocale' | 'onboardingStatus' | 'lastSyncOk'
 >
 
 function broadcastState(state: AppState): void {
@@ -172,6 +174,7 @@ function broadcastState(state: AppState): void {
     baseTheme: state.baseTheme,
     basePalette: state.basePalette,
     baseLocale: state.baseLocale,
+    onboardingStatus: state.onboardingStatus,
     lastSyncOk: state.lastSyncOk
   } satisfies BroadcastPayload)
 }
@@ -195,6 +198,7 @@ function parseBroadcast(value: unknown): BroadcastPayload | null {
     baseTheme: v.baseTheme,
     basePalette: v.basePalette,
     baseLocale: isLocale(v.baseLocale) ? v.baseLocale : 'pt',
+    onboardingStatus: v.onboardingStatus === 'pending' ? 'pending' : 'complete',
     lastSyncOk: v.lastSyncOk ?? null
   }
 }
@@ -297,6 +301,7 @@ function createAppStore() {
       baseTheme: 'system' as Theme,
       basePalette: 'default' as Palette,
       baseLocale: 'pt' as Locale,
+      onboardingStatus: 'complete' as OnboardingStatus,
       pendingOps: EMPTY_OPS,
 
       // Status
@@ -367,6 +372,7 @@ function createAppStore() {
             baseTheme: 'system',
             basePalette: 'default',
             baseLocale: 'pt',
+            onboardingStatus: 'complete',
             pendingOps: EMPTY_OPS,
             offlineSyncPending: false,
             offlineSyncInFlight: false
@@ -407,6 +413,7 @@ function createAppStore() {
                   baseTheme: boot.theme,
                   basePalette: boot.palette,
                   baseLocale: boot.locale,
+                  onboardingStatus: 'complete',
                   pendingOps: EMPTY_OPS
                 })
                 set({ ...next, storageReady: true, offlineSyncPending: next.pendingOps.length > 0 })
@@ -420,6 +427,7 @@ function createAppStore() {
                 baseTheme: persisted.baseTheme,
                 basePalette: persisted.basePalette,
                 baseLocale: persisted.baseLocale ?? 'pt',
+                onboardingStatus: persisted.onboardingStatus ?? 'complete',
                 pendingOps: persisted.pendingOps
               })
               set({ ...next, storageReady: true, storageError: false, offlineSyncPending: next.pendingOps.length > 0 })

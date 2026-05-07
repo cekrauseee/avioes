@@ -1,7 +1,7 @@
 import { NewGroupScreen } from '@/components/new-group-screen'
-import { requireUser } from '@/lib/auth-guards'
+import { requireOnboardedUser } from '@/lib/auth-guards'
 
 export default async function NewGroupPage() {
-  await requireUser('/groups/new')
+  await requireOnboardedUser('/groups/new')
   return <NewGroupScreen />
 }

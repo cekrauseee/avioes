@@ -1,15 +1,16 @@
 'use client'
 
 import { AnimatePresence, motion } from 'motion/react'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
 import { createPortal } from 'react-dom'
 import { getUserGroups, setActiveGroup } from '../actions'
 import { authClient } from '../lib/auth-client'
+import { resolveAvatarUrl } from '../lib/avatar'
 import { t } from '../lib/i18n'
 import { applyLocalIdentity, applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import { getMemberColor, getMemberFirstName, getMemberFullName } from '../lib/types'
+import { Avatar } from './avatar'
 import { Button, ButtonLink } from './button'
 
 type GroupEntry = { id: string; name: string; ownerId: string; memberCount: number }
@@ -26,7 +27,7 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
   const myFullName = getMemberFullName(who, state.groupMembers)
   const myMember = state.groupMembers.find((m) => m.userId === who)
   const myEmail = myMember?.email ?? ''
-  const myImage = myMember?.image ?? null
+  const myImage = resolveAvatarUrl(myMember?.image ?? null)
 
   const [groups, setGroups] = useState<GroupEntry[]>([])
   const [switchingId, setSwitchingId] = useState<string | null>(null)
@@ -97,20 +98,13 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
 
             {/* user identity */}
             <div className='flex items-center gap-4 px-6 pt-3 pb-5'>
-              {myImage ?
-                <Image
-                  src={myImage}
-                  alt=''
-                  width={44}
-                  height={44}
-                  unoptimized
-                  referrerPolicy='no-referrer'
-                  className='h-11 w-11 shrink-0 rounded-full object-cover'
-                />
-              : <div className={`h-11 w-11 shrink-0 rounded-full ${me.bg} flex items-center justify-center`}>
-                  <span className='text-bg text-base font-medium'>{myFirstName.slice(0, 1).toUpperCase()}</span>
-                </div>
-              }
+              <Avatar
+                image={myImage}
+                firstName={myFirstName}
+                accentBg={me.bg}
+                size={44}
+                initialClassName='text-base font-medium'
+              />
               <div className='min-w-0'>
                 <p className='text-ink font-display text-lg leading-tight'>{myFullName}</p>
                 <p className='text-ink-faint truncate text-xs'>{myEmail}</p>

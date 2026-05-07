@@ -20,6 +20,33 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-07 — Multi-step `/onboarding` wizard (name → username → photo → group)
+
+Profile collection moved out of the auth wizard into a dedicated post-creation flow. `auth-screen.tsx` ends right after the password step — `signUp.email({ email, password, name: t(locale, 'auth.namePlaceholderName') })` ("Novo usuário" / "New user"). `firstName` is `required: false` in better-auth additionalFields. OAuth (Google) still maps `given_name`/`family_name` into the user row at signup. Both paths land on `/onboarding` because `users.onboardingStatus` is `'pending'` for any newly-created user.
+
+`/onboarding` (`src/app/onboarding/page.tsx`) is a server component that `requireUser`s, redirects to `/` when status is complete, fetches `getOnboardingState()`, and renders `<OnboardingWizard initial={...} />`. The wizard (`src/components/onboarding-wizard.tsx`) has 4 steps with slide transitions, a 4-dot progress indicator, and an "etapa N de 4" counter:
+
+1. **Name** — first/last; pre-filled from `users.firstName` / `users.lastName` (so OAuth users see Google's data; email users see empty inputs).
+2. **Username** — chip suggestions from `suggestUsernamesForSignup(email, firstName)` + `@`-prefixed input with the 350 ms-debounced `'idle' | 'pending' | 'available' | 'taken' | 'invalid'` state machine. Saves on advance via `saveOnboardingProfile`.
+3. **Photo** — `<Avatar>` for the smooth fade-in placeholder, hidden file input, inline `fileToResizedJpeg` (canvas, 384 px, JPEG q 0.85), `uploadProfileImage` server action. Skip allowed.
+4. **Group** — group name input. Submit calls `finishOnboarding({ groupName })`: one round-trip that creates the group, sets it active, flips `onboardingStatus = 'complete'`, and returns a fresh `SyncSnapshot`. Client `applyServerSnapshot` + `router.replace('/')`.
+
+Step 1's footer is a sign-out escape (`ghost-destructive`); steps 2–4 use a back pill (crossfaded via keyed `AnimatePresence`).
+
+Server actions in `src/actions.ts`: new `getOnboardingState()` (reads raw `user.firstName`/`user.lastName` from the session so the "Novo usuário" placeholder cannot leak as `lastName`), `saveOnboardingProfile({ firstName, lastName, username, image })` (preserves existing country/city), `finishOnboarding({ groupName })`. Removed `completeOnboarding()` (folded in).
+
+Routing: new `requireOnboardedUser` guard (`src/lib/auth-guards.ts`) redirects pending users to `/onboarding`. Applied to `/`, `/diary`, `/scoreboard`, `/settings`, `/settings/password`, `/settings/profile`, `/groups`, `/groups/new`. `requireGroupOwner` / `requireGroupMember` now also gate onboarding so `/groups/[id]/edit|manage` are covered. `/invite/[token]` and `/settings/password/verify/[token]` stay on plain `requireUser`. `redirectAuthenticatedUser` sends groupless users to `/`. `app-runtime.tsx`'s `showAppNav` excludes `/onboarding` so the wizard reads as a fresh shell.
+
+`Onboarding` (`src/components/onboarding.tsx`) reverted to a "no active group" fallback that renders `GroupsScreen`. `NewGroupScreen` reverted — no `onboarding` prop, no sign-out hatch; the wizard owns its own group step. New i18n keys `onboarding.*` (PT + EN) and `auth.namePlaceholderName`. **Run `npm run db:push` after pulling** for the `onboarding_status` column.
+
+### 2026-05-06 — Profile editing page
+
+New `/settings/profile` route renders `ProfileScreen` (`src/components/profile-screen.tsx`) — a real page, not a sheet, built on top of the `Button` design system (back-pill header, photo + form, `usePromiseStatus` driving the save CTA). Account tab's user card is now a `ButtonLink` to the editor. Editable fields: first name, last name (optional), `username` (new unique field, lowercase `^[a-z0-9_.]{3,24}$`), profile photo, country (ISO-2 codes localized via `Intl.DisplayNames` from `src/lib/countries.ts`), city.
+
+Photo picker resizes client-side via canvas to ≤384 px JPEG, uploads via `uploadProfileImage` server action which `put()`s to a **private** Vercel Blob store under `profile/<userId>/`. Reads go through `/api/avatars/[...path]/route.ts`, which `requireUser`s, validates the path is `profile/<id>/<file>`, and streams via `get(pathname, { access: 'private' })`. `src/lib/avatar.ts` exports `resolveAvatarUrl` that maps stored private blob URLs to `/api/avatars/<pathname>` (Google CDN URLs pass through unchanged); every avatar render goes through `<Avatar>` (`src/components/avatar.tsx`), which preloads via `window.Image` and crossfades over a colored-initial underlay so swaps don't flash empty. Validation accepts public **and** private blob hosts so legacy URLs still validate; previous owned blobs are `del()`'d on save. Inline field-scoped errors render in each `Field`'s hint slot with a clay focus ring; only unmapped errors land near the submit button.
+
+Schema: `user` table gained `username text unique`, `country text`, `city text`. New env var `BLOB_READ_WRITE_TOKEN`. Run `npm run db:push` after pulling.
+
 ### 2026-05-07 — Route transitions wait on exit
 
 Route enter/exit animation now lives in `src/components/swipeable-content.tsx`, not `src/app/template.tsx`. `AnimatePresence` uses `mode="wait"` with clipped absolute route layers so the incoming page cannot paint over the outgoing page mid-exit; exit is a quick opacity-only fade, and route blur was removed to avoid mobile repaint flicker. The transition key comes from committed layout segments instead of optimistic `usePathname()`, so an old page cannot be re-keyed as the new route before the RSC payload lands.

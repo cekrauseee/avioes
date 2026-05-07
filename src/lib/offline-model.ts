@@ -1,5 +1,5 @@
 import { totals } from './streaks'
-import type { AirplaneEvent, GroupMember, Identity, Locale, Palette, PendingOp, Theme } from './types'
+import type { AirplaneEvent, GroupMember, Identity, Locale, OnboardingStatus, Palette, PendingOp, Theme } from './types'
 
 export type AddEventOp = Extract<PendingOp, { kind: 'add-event' }>
 export type DeleteEventOp = Extract<PendingOp, { kind: 'delete-event' }>
@@ -15,6 +15,7 @@ export type OfflineSnapshot = {
   baseTheme: Theme
   basePalette: Palette
   baseLocale: Locale
+  onboardingStatus: OnboardingStatus
   pendingOps: PendingOp[]
 }
 
@@ -26,6 +27,7 @@ export type SyncSnapshot = {
   theme: Theme
   palette: Palette
   locale: Locale
+  onboardingStatus: OnboardingStatus
   settled: string[]
 }
 
@@ -118,6 +120,7 @@ export function settleSnapshot(snapshot: OfflineSnapshot, sync: SyncSnapshot): O
     baseTheme: sync.theme,
     basePalette: sync.palette,
     baseLocale: sync.locale,
+    onboardingStatus: sync.onboardingStatus,
     pendingOps
   }
 }

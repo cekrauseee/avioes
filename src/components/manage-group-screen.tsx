@@ -1,15 +1,16 @@
 'use client'
 
 import { AnimatePresence, motion } from 'motion/react'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { cancelInvitation, createInvitation, getGroupDetailsWithInvites, removeMember } from '../actions'
+import { resolveAvatarUrl } from '../lib/avatar'
 import { t } from '../lib/i18n'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 import type { GroupMember, Locale } from '../lib/types'
 import { MEMBER_COLORS } from '../lib/types'
 import { AnimatedList, AnimatedListItem } from './animated-list'
+import { Avatar } from './avatar'
 import { Button } from './button'
 import { InviteShareSheet } from './invite-share-sheet'
 
@@ -292,20 +293,13 @@ function MemberRow({
     <div className='border-line bg-paper overflow-hidden rounded-xl border'>
       <div className='flex items-stretch'>
         <div className='flex flex-1 items-center gap-3 px-4 py-3'>
-          {member.image ?
-            <Image
-              src={member.image}
-              alt=''
-              width={28}
-              height={28}
-              unoptimized
-              referrerPolicy='no-referrer'
-              className='h-7 w-7 shrink-0 rounded-full object-cover'
-            />
-          : <div className={`h-7 w-7 shrink-0 rounded-full ${color.bg} flex items-center justify-center`}>
-              <span className='text-bg text-xs font-medium'>{member.firstName.slice(0, 1).toUpperCase()}</span>
-            </div>
-          }
+          <Avatar
+            image={resolveAvatarUrl(member.image)}
+            firstName={member.firstName}
+            accentBg={color.bg}
+            size={28}
+            initialClassName='text-xs font-medium'
+          />
           <div className='min-w-0 flex-1'>
             <p className='text-ink truncate text-sm font-medium'>{member.lastName ? `${member.firstName} ${member.lastName}` : member.firstName}</p>
             <p className='text-ink-faint truncate text-xs'>{member.email}</p>
