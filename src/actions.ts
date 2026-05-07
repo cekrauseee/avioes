@@ -604,11 +604,7 @@ function isOwnedProfileBlob(url: string | null, userId: string): url is string {
   return parsed.pathname.startsWith(`/profile/${userId}/`)
 }
 
-function validateProfileImage(
-  input: unknown,
-  userId: string,
-  previousImage: string | null
-): { ok: true; value: string | null } | { ok: false } {
+function validateProfileImage(input: unknown, userId: string, previousImage: string | null): { ok: true; value: string | null } | { ok: false } {
   if (input === null || input === undefined || input === '') return { ok: true, value: null }
   if (typeof input !== 'string') return { ok: false }
   if (input === previousImage) return { ok: true, value: input }
