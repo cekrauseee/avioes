@@ -163,11 +163,11 @@ export async function saveOnboardingProfile(input: {
   if (!USERNAME_RE.test(username)) return { ok: false, error: 'username_invalid' }
   if (await isUsernameTaken(username, user.id)) return { ok: false, error: 'username_taken' }
 
-  const imageCheck = validateProfileImage(input.image, user.id)
+  const previous = await readUserProfile(user.id)
+  const imageCheck = validateProfileImage(input.image, user.id, previous?.image ?? null)
   if (!imageCheck.ok) return { ok: false, error: 'image_invalid' }
   const image = imageCheck.value
 
-  const previous = await readUserProfile(user.id)
   const result = await updateUserProfile(user.id, {
     firstName,
     lastName,
@@ -558,9 +558,14 @@ function isOwnedProfileBlob(url: string | null, userId: string): url is string {
   return parsed.pathname.startsWith(`/profile/${userId}/`)
 }
 
-function validateProfileImage(input: unknown, userId: string): { ok: true; value: string | null } | { ok: false } {
+function validateProfileImage(
+  input: unknown,
+  userId: string,
+  previousImage: string | null
+): { ok: true; value: string | null } | { ok: false } {
   if (input === null || input === undefined || input === '') return { ok: true, value: null }
   if (typeof input !== 'string') return { ok: false }
+  if (input === previousImage) return { ok: true, value: input }
   if (!isOwnedProfileBlob(input, userId)) return { ok: false }
   return { ok: true, value: input }
 }
@@ -645,11 +650,11 @@ export async function updateMyProfile(input: ProfileUpdate): Promise<{ ok: true;
   const cityRaw = (input.city ?? '').trim()
   const city = cityRaw.length === 0 ? null : cityRaw.slice(0, 60)
 
-  const imageCheck = validateProfileImage(input.image, user.id)
+  const previous = await readUserProfile(user.id)
+  const imageCheck = validateProfileImage(input.image, user.id, previous?.image ?? null)
   if (!imageCheck.ok) return { ok: false, error: 'image_invalid' }
   const image = imageCheck.value
 
-  const previous = await readUserProfile(user.id)
   const result = await updateUserProfile(user.id, { firstName, lastName, username, image, country, city })
   if (!result.ok) return { ok: false, error: result.reason }
 
