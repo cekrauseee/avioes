@@ -3,7 +3,6 @@
 import { motion, useReducedMotion } from 'motion/react'
 import type { Identity } from '../lib/types'
 import { Nav } from './nav'
-import { WorldFab } from './world-fab'
 
 export function NavBar({ who }: { who: Identity }) {
   const reduceMotion = useReducedMotion()
@@ -17,7 +16,6 @@ export function NavBar({ who }: { who: Identity }) {
       <div className='mx-auto w-full max-w-[420px]'>
         <Nav who={who} />
       </div>
-      <WorldFab />
     </motion.div>
   )
 }
