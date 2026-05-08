@@ -37,12 +37,18 @@ yarn-error.log*
 # vercel
 .vercel
 
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
 # claude code worktrees
 .claude/
 
 # codex worktrees
 .codex/
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# worktree-local docker compose override (per-worktree port/volume isolation)
+docker-compose.override.yml
+docker-compose.override.yaml
+compose.override.yml
+compose.override.yaml
