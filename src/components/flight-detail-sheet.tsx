@@ -11,19 +11,11 @@ import type { Locale } from '../lib/types'
 const COMPASS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const
 
 function compassDir(deg: number): string {
-  const idx = Math.round(((deg % 360) + 360) % 360 / 45) % 8
+  const idx = Math.round((((deg % 360) + 360) % 360) / 45) % 8
   return COMPASS[idx]
 }
 
-export function FlightDetailSheet({
-  flight,
-  onClose,
-  locale
-}: {
-  flight: Flight | null
-  onClose: () => void
-  locale: Locale
-}) {
+export function FlightDetailSheet({ flight, onClose, locale }: { flight: Flight | null; onClose: () => void; locale: Locale }) {
   useEffect(() => {
     if (!flight) return
     const onKey = (e: KeyboardEvent) => {
@@ -61,12 +53,13 @@ export function FlightDetailSheet({
             </div>
 
             <div className='px-6 pt-3 pb-4'>
-              <p className='font-display text-2xl tracking-tight'>
-                {flight.callsign || flight.icao24}
-              </p>
+              <p className='font-display text-2xl tracking-tight'>{flight.callsign || flight.icao24}</p>
 
               <div className='mt-4 grid grid-cols-2 gap-x-6 gap-y-3'>
-                <InfoRow label={t(locale, 'world.map.country')} value={flight.originCountry} />
+                <InfoRow
+                  label={t(locale, 'world.map.country')}
+                  value={flight.originCountry}
+                />
                 <InfoRow
                   label={t(locale, 'world.map.altitude')}
                   value={`${Math.round(flight.altitude).toLocaleString()} m`}
@@ -81,7 +74,11 @@ export function FlightDetailSheet({
                 />
                 <InfoRow
                   label={t(locale, 'world.map.verticalRate')}
-                  value={`${flight.verticalRate > 0 ? '↑' : flight.verticalRate < 0 ? '↓' : '—'} ${Math.abs(Math.round(flight.verticalRate))} m/s`}
+                  value={`${
+                    flight.verticalRate > 0 ? '↑'
+                    : flight.verticalRate < 0 ? '↓'
+                    : '—'
+                  } ${Math.abs(Math.round(flight.verticalRate))} m/s`}
                 />
                 <InfoRow
                   label={t(locale, 'world.map.coords')}

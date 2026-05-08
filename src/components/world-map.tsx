@@ -1,10 +1,12 @@
 'use client'
 
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { useReducedMotion } from 'motion/react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import {
+  BASE_PIX_PER_DEG,
+  centerViewportOn,
   drawAirplanes,
+  drawUserLocation,
   drawWorldOutline,
   findFlightAt,
   interpolateFlights,
@@ -15,31 +17,35 @@ import {
   type Viewport
 } from '../lib/geo'
 import { t } from '../lib/i18n'
-import { MOTION_TRANSITION } from '../lib/motion'
 import type { Locale } from '../lib/types'
 import { FlightDetailSheet } from './flight-detail-sheet'
 
 const POLL_INTERVAL = 12_000
-const DEFAULT_VP: Viewport = { x: 0, y: 0, scale: 1 }
-const SCALE_MIN = 0.5
-const SCALE_MAX = 8
+const SCALE_MIN = 5
+const SCALE_MAX = 20_000
+const DEFAULT_USER_SCALE = 500
 const TAP_THRESHOLD = 5
-const HIT_THRESHOLD = 3
+const HIT_RADIUS_PX = 14
+
+type LocationStatus = 'idle' | 'requesting' | 'granted' | 'denied'
 
 export function WorldMap({ locale }: { locale: Locale }) {
   const reduceMotion = useReducedMotion()
-  const [fullscreen, setFullscreen] = useState(false)
   const [flightCount, setFlightCount] = useState(0)
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null)
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>(() => {
+    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) return 'denied'
+    return 'idle'
+  })
 
-  const previewCanvasRef = useRef<HTMLCanvasElement>(null)
-  const fullCanvasRef = useRef<HTMLCanvasElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const geojsonRef = useRef<GeoJSON | null>(null)
   const flightsRef = useRef<Flight[]>([])
   const pollTimeRef = useRef(0)
-  const vpRef = useRef<Viewport>({ ...DEFAULT_VP })
+  const vpRef = useRef<Viewport>({ x: 0, y: 0, scale: 1 })
   const rafRef = useRef(0)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const userLocationRef = useRef<{ lat: number; lon: number } | null>(null)
+  const vpInitializedRef = useRef(false)
 
   const dragRef = useRef({
     active: false,
@@ -67,12 +73,14 @@ export function WorldMap({ locale }: { locale: Locale }) {
   useEffect(() => {
     fetch('/world-110m.json')
       .then((r) => r.json())
-      .then((data) => { geojsonRef.current = data })
+      .then((data) => {
+        geojsonRef.current = data
+      })
       .catch(() => {})
   }, [])
 
-  const fetchFlights = useCallback(() => {
-    fetch('/api/flights')
+  const fetchFlights = useCallback((lat: number, lon: number) => {
+    fetch(`/api/flights?lat=${lat}&lon=${lon}&dist=250`)
       .then((r) => r.json())
       .then((data: { flights: Flight[]; time: number }) => {
         flightsRef.current = data.flights
@@ -83,68 +91,122 @@ export function WorldMap({ locale }: { locale: Locale }) {
   }, [])
 
   useEffect(() => {
-    fetchFlights()
-    const id = setInterval(fetchFlights, POLL_INTERVAL)
+    if (locationStatus !== 'granted') return
+    const run = () => {
+      const loc = userLocationRef.current
+      if (loc) fetchFlights(loc.lat, loc.lon)
+    }
+    run()
+    const id = setInterval(run, POLL_INTERVAL)
     return () => clearInterval(id)
-  }, [fetchFlights])
+  }, [locationStatus, fetchFlights])
 
-  const draw = useCallback(
-    (canvas: HTMLCanvasElement, vp: Viewport, interpolate: boolean) => {
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return
+  const requestLocation = useCallback(() => {
+    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+      setLocationStatus('denied')
+      return
+    }
+    setLocationStatus('requesting')
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        userLocationRef.current = { lat: pos.coords.latitude, lon: pos.coords.longitude }
+        vpInitializedRef.current = false
+        setLocationStatus('granted')
+      },
+      () => {
+        setLocationStatus('denied')
+      },
+      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 60_000 }
+    )
+  }, [])
 
-      const dpr = window.devicePixelRatio || 1
-      const rect = canvas.getBoundingClientRect()
-      const w = rect.width
-      const h = rect.height
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) return
+    if (!('permissions' in navigator)) {
+      Promise.resolve().then(() => requestLocation())
+      return
+    }
+    navigator.permissions
+      .query({ name: 'geolocation' })
+      .then((res) => {
+        if (res.state === 'granted') requestLocation()
+        else if (res.state === 'denied') setLocationStatus('denied')
+      })
+      .catch(() => {})
+  }, [requestLocation])
 
-      if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
-        canvas.width = w * dpr
-        canvas.height = h * dpr
-      }
+  const recenter = useCallback(() => {
+    const canvas = canvasRef.current
+    const loc = userLocationRef.current
+    if (!canvas || !loc) return
+    const rect = canvas.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) return
+    vpRef.current = centerViewportOn(loc.lon, loc.lat, DEFAULT_USER_SCALE, rect.width, rect.height)
+  }, [])
 
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  const draw = useCallback((canvas: HTMLCanvasElement, vp: Viewport, interpolate: boolean) => {
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
 
-      const el = canvas.closest('[data-palette]') as HTMLElement || document.documentElement
-      const colors = readMapColors(el)
+    const dpr = window.devicePixelRatio || 1
+    const rect = canvas.getBoundingClientRect()
+    const w = rect.width
+    const h = rect.height
 
-      ctx.fillStyle = colors.bg
-      ctx.fillRect(0, 0, w, h)
+    if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+      canvas.width = w * dpr
+      canvas.height = h * dpr
+    }
 
-      if (geojsonRef.current) {
-        drawWorldOutline(ctx, geojsonRef.current, vp, w, h, colors)
-      }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-      let flights = flightsRef.current
-      if (interpolate && pollTimeRef.current > 0) {
-        const dt = (Date.now() - pollTimeRef.current) / 1000
-        flights = interpolateFlights(flights, dt)
-      }
-      drawAirplanes(ctx, flights, vp, w, h, colors)
-    },
-    []
-  )
+    const el = (canvas.closest('[data-palette]') as HTMLElement) || document.documentElement
+    const colors = readMapColors(el)
+
+    ctx.fillStyle = colors.bg
+    ctx.fillRect(0, 0, w, h)
+
+    if (geojsonRef.current) {
+      drawWorldOutline(ctx, geojsonRef.current, vp, colors)
+    }
+
+    let flights = flightsRef.current
+    if (interpolate && pollTimeRef.current > 0) {
+      const dt = (Date.now() - pollTimeRef.current) / 1000
+      flights = interpolateFlights(flights, dt)
+    }
+    drawAirplanes(ctx, flights, vp, w, h, colors)
+
+    const loc = userLocationRef.current
+    if (loc) {
+      drawUserLocation(ctx, loc.lon, loc.lat, vp, w, h, colors)
+    }
+  }, [])
 
   useEffect(() => {
     const tick = () => {
-      const previewCanvas = previewCanvasRef.current
-      if (previewCanvas && !fullscreen) {
-        draw(previewCanvas, DEFAULT_VP, !reduceMotion)
-      }
-      const fullCanvas = fullCanvasRef.current
-      if (fullCanvas && fullscreen) {
-        draw(fullCanvas, vpRef.current, !reduceMotion)
+      const canvas = canvasRef.current
+      if (canvas) {
+        if (locationStatus === 'granted' && !vpInitializedRef.current && userLocationRef.current) {
+          const rect = canvas.getBoundingClientRect()
+          if (rect.width > 0 && rect.height > 0) {
+            const loc = userLocationRef.current
+            vpRef.current = centerViewportOn(loc.lon, loc.lat, DEFAULT_USER_SCALE, rect.width, rect.height)
+            vpInitializedRef.current = true
+          }
+        }
+        draw(canvas, vpRef.current, !reduceMotion)
       }
       rafRef.current = requestAnimationFrame(tick)
     }
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [draw, fullscreen, reduceMotion])
+  }, [draw, locationStatus, reduceMotion])
 
-  const onPointerDownFull = useCallback((e: React.PointerEvent) => {
-    const canvas = fullCanvasRef.current
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    const canvas = canvasRef.current
     if (!canvas) return
-    ;(canvas as HTMLElement).setPointerCapture(e.pointerId)
+    canvas.setPointerCapture(e.pointerId)
 
     pinchRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     const size = pinchRef.current.size
@@ -176,7 +238,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
     }
   }, [])
 
-  const onPointerMoveFull = useCallback((e: React.PointerEvent) => {
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
     pinchRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
     if (pinchStateRef.current.active && pinchRef.current.size >= 2) {
@@ -187,10 +249,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
       const cx = (p1.x + p2.x) / 2
       const cy = (p1.y + p2.y) / 2
       const s = pinchStateRef.current
-      const newScale = Math.max(
-        SCALE_MIN,
-        Math.min(SCALE_MAX, s.startScale * (dist / s.startDist))
-      )
+      const newScale = Math.max(SCALE_MIN, Math.min(SCALE_MAX, s.startScale * (dist / s.startDist)))
       const ratio = newScale / s.startScale
       vpRef.current = {
         x: cx - (s.startCx - s.startVpX) * ratio,
@@ -212,7 +271,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
     }
   }, [])
 
-  const onPointerUpFull = useCallback(
+  const onPointerUp = useCallback(
     (e: React.PointerEvent) => {
       pinchRef.current.delete(e.pointerId)
 
@@ -221,23 +280,20 @@ export function WorldMap({ locale }: { locale: Locale }) {
       }
 
       if (pinchRef.current.size === 0) {
-        if (
-          dragRef.current.active &&
-          !multitouchRef.current &&
-          dragRef.current.moved < TAP_THRESHOLD
-        ) {
-          const canvas = fullCanvasRef.current
+        if (dragRef.current.active && !multitouchRef.current && dragRef.current.moved < TAP_THRESHOLD) {
+          const canvas = canvasRef.current
           if (canvas) {
             const rect = canvas.getBoundingClientRect()
             const sx = e.clientX - rect.left
             const sy = e.clientY - rect.top
-            const [lon, lat] = screenToLonLat(sx, sy, vpRef.current, rect.width, rect.height)
+            const [lon, lat] = screenToLonLat(sx, sy, vpRef.current)
             let flights = flightsRef.current
             if (!reduceMotion && pollTimeRef.current > 0) {
               const dt = (Date.now() - pollTimeRef.current) / 1000
               flights = interpolateFlights(flights, dt)
             }
-            const hit = findFlightAt(flights, lon, lat, HIT_THRESHOLD / vpRef.current.scale)
+            const thresholdDeg = HIT_RADIUS_PX / (BASE_PIX_PER_DEG * vpRef.current.scale)
+            const hit = findFlightAt(flights, lon, lat, thresholdDeg)
             if (hit) setSelectedFlight(hit)
           }
         }
@@ -248,9 +304,9 @@ export function WorldMap({ locale }: { locale: Locale }) {
     [reduceMotion]
   )
 
-  const onWheelFull = useCallback((e: React.WheelEvent) => {
+  const onWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault()
-    const canvas = fullCanvasRef.current
+    const canvas = canvasRef.current
     if (!canvas) return
 
     const rect = canvas.getBoundingClientRect()
@@ -269,109 +325,98 @@ export function WorldMap({ locale }: { locale: Locale }) {
     }
   }, [])
 
-  useEffect(() => {
-    if (!fullscreen) {
-      vpRef.current = { ...DEFAULT_VP }
-    }
-  }, [fullscreen])
-
-  useEffect(() => {
-    if (!fullscreen) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setSelectedFlight(null)
-        setFullscreen(false)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [fullscreen])
-
-  const transitionDuration = reduceMotion ? { duration: 0 } : undefined
+  const granted = locationStatus === 'granted'
 
   return (
-    <div ref={containerRef} className='px-5 pt-4'>
-      <button
-        type='button'
-        onClick={() => setFullscreen(true)}
-        className='border-line bg-paper relative w-full overflow-hidden rounded-2xl border'
-      >
-        <div className='relative aspect-[16/9] w-full'>
-          <canvas
-            ref={previewCanvasRef}
-            className='absolute inset-0 h-full w-full'
-          />
+    <div className='relative min-h-0 flex-1 overflow-hidden'>
+      <canvas
+        ref={canvasRef}
+        className='absolute inset-0 h-full w-full touch-none'
+        onPointerDown={granted ? onPointerDown : undefined}
+        onPointerMove={granted ? onPointerMove : undefined}
+        onPointerUp={granted ? onPointerUp : undefined}
+        onPointerCancel={granted ? onPointerUp : undefined}
+        onWheel={granted ? onWheel : undefined}
+      />
+
+      {granted && flightCount > 0 && (
+        <div className='text-ink-faint pointer-events-none absolute bottom-[max(env(safe-area-inset-bottom),1rem)] left-4 z-10 text-xs'>
+          {flightCount.toLocaleString()} {t(locale, 'world.map.planes')}
         </div>
-        <div className='flex items-center justify-between px-4 py-2.5'>
-          <span className='text-ink-faint text-xs'>
-            {flightCount > 0 ? `${flightCount.toLocaleString()} ${t(locale, 'world.map.planes')}` : ''}
-          </span>
-          <span className='text-ink-faint text-xs italic'>
-            {t(locale, 'world.map.explore')}
-          </span>
+      )}
+
+      {granted && (
+        <button
+          type='button'
+          onClick={recenter}
+          aria-label={t(locale, 'world.map.recenter')}
+          className='border-line bg-paper text-ink absolute right-4 bottom-[max(env(safe-area-inset-bottom),1rem)] z-10 flex h-10 w-10 items-center justify-center rounded-full border shadow-sm active:scale-95'
+        >
+          <svg
+            width='18'
+            height='18'
+            viewBox='0 0 24 24'
+            fill='none'
+            stroke='currentColor'
+            strokeWidth='2'
+            strokeLinecap='round'
+            strokeLinejoin='round'
+          >
+            <circle
+              cx='12'
+              cy='12'
+              r='3'
+            />
+            <line
+              x1='12'
+              y1='2'
+              x2='12'
+              y2='5'
+            />
+            <line
+              x1='12'
+              y1='19'
+              x2='12'
+              y2='22'
+            />
+            <line
+              x1='2'
+              y1='12'
+              x2='5'
+              y2='12'
+            />
+            <line
+              x1='19'
+              y1='12'
+              x2='22'
+              y2='12'
+            />
+          </svg>
+        </button>
+      )}
+
+      {!granted && (
+        <div className='bg-bg/85 absolute inset-0 z-20 flex flex-col items-center justify-center px-6 text-center backdrop-blur-sm'>
+          <p className='font-display text-ink max-w-xs text-base leading-snug'>{t(locale, 'world.map.locationCta')}</p>
+          {locationStatus === 'denied' ?
+            <p className='text-ink-faint mt-3 max-w-xs text-xs'>{t(locale, 'world.map.locationDenied')}</p>
+          : <button
+              type='button'
+              onClick={requestLocation}
+              disabled={locationStatus === 'requesting'}
+              className='border-line bg-paper text-ink font-display mt-5 rounded-full border px-5 py-2 text-sm transition active:scale-95 disabled:opacity-60'
+            >
+              {locationStatus === 'requesting' ? t(locale, 'world.map.locating') : t(locale, 'world.map.allowLocation')}
+            </button>
+          }
         </div>
-      </button>
+      )}
 
-      {typeof document !== 'undefined' &&
-        createPortal(
-          <AnimatePresence>
-            {fullscreen && (
-              <>
-                <motion.div
-                  key='map-backdrop'
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={transitionDuration ?? MOTION_TRANSITION.sheetBackdrop}
-                  className='bg-bg fixed inset-0 z-40'
-                />
-                <motion.div
-                  key='map-panel'
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={transitionDuration ?? MOTION_TRANSITION.sheetPanel}
-                  className='bg-bg fixed inset-0 z-50 flex flex-col'
-                >
-                  <canvas
-                    ref={fullCanvasRef}
-                    className='h-full w-full touch-none'
-                    onPointerDown={onPointerDownFull}
-                    onPointerMove={onPointerMoveFull}
-                    onPointerUp={onPointerUpFull}
-                    onPointerCancel={onPointerUpFull}
-                    onWheel={onWheelFull}
-                  />
-
-                  <button
-                    type='button'
-                    onClick={() => {
-                      setSelectedFlight(null)
-                      setFullscreen(false)
-                    }}
-                    aria-label={t(locale, 'world.map.close')}
-                    className='text-ink-faint absolute top-[max(env(safe-area-inset-top),1rem)] right-4 z-10 flex h-11 w-11 items-center justify-center text-xl'
-                  >
-                    ✕
-                  </button>
-
-                  {flightCount > 0 && (
-                    <div className='text-ink-faint absolute bottom-[max(env(safe-area-inset-bottom),1rem)] left-4 z-10 text-xs'>
-                      {flightCount.toLocaleString()} {t(locale, 'world.map.planes')}
-                    </div>
-                  )}
-
-                  <FlightDetailSheet
-                    flight={selectedFlight}
-                    onClose={() => setSelectedFlight(null)}
-                    locale={locale}
-                  />
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>,
-          document.body
-        )}
+      <FlightDetailSheet
+        flight={selectedFlight}
+        onClose={() => setSelectedFlight(null)}
+        locale={locale}
+      />
     </div>
   )
 }
