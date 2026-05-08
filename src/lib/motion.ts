@@ -27,6 +27,7 @@ export const MOTION_TRANSITION = {
   confirmation: { duration: 0.4, ease: MOTION_EASE },
   check: { duration: 0.32, ease: MOTION_EASE },
   avatar: { duration: 0.32, ease: MOTION_EASE },
+  mapExpand: { duration: 0.4, ease: MOTION_EASE },
   sheetBackdrop: { duration: 0.2 },
   sheetPanel: { duration: 0.35, ease: MOTION_EASE },
   sheetLayout: { duration: 0.24, ease: MOTION_EASE },

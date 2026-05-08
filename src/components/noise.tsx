@@ -2,7 +2,7 @@ export function Noise() {
   return (
     <svg
       aria-hidden
-      className='pointer-events-none fixed inset-0 z-50 h-full w-full opacity-[0.06] mix-blend-multiply dark:opacity-[0.08] dark:mix-blend-screen'
+      className='app-noise pointer-events-none fixed inset-0 z-50 h-full w-full opacity-[0.06] mix-blend-multiply dark:opacity-[0.08] dark:mix-blend-screen'
     >
       <filter id='grain'>
         <feTurbulence

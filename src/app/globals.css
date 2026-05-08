@@ -427,6 +427,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+body:has([data-disable-app-noise]) .app-noise {
+  opacity: 0;
+}
+
 ::selection {
   background: var(--sage-soft);
   color: var(--ink);
