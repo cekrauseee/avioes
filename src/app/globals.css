@@ -395,6 +395,7 @@ body {
 }
 
 html {
+  --map-bg: color-mix(in srgb, var(--bg) 88%, black);
   background: var(--bg);
   color: var(--ink);
   transition:
@@ -427,9 +428,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-body:has([data-disable-app-noise]) .app-noise {
-  opacity: 0;
-}
 
 ::selection {
   background: var(--sage-soft);

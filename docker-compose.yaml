@@ -46,7 +46,6 @@ services:
       timeout: 3s
       retries: 5
 
-
 volumes:
   data:
 

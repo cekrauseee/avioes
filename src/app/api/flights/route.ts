@@ -3,10 +3,13 @@ import type { Flight } from '../../../lib/geo'
 
 const TOKEN_URL = 'https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token'
 const STATES_URL = 'https://opensky-network.org/api/states/all'
-const CACHE_TTL_S = 90
+const CACHE_TTL_S = 22
 const REDIS_KEY = 'opensky:states'
+const ROTATION_KEY = 'opensky:rotation'
 const NM_TO_KM = 1.852
 const EARTH_R_KM = 6371
+
+type OpenSkyClient = { id: string; secret: string }
 
 function getRedis(): Redis | null {
   const url = process.env.KV_REST_API_URL
@@ -15,21 +18,37 @@ function getRedis(): Redis | null {
   return new Redis({ url, token })
 }
 
-let tokenCache: { token: string; expiresAt: number } | null = null
+let clientsCache: OpenSkyClient[] | null = null
 
-async function getAccessToken(): Promise<string | null> {
+function getClients(): OpenSkyClient[] {
+  if (clientsCache) return clientsCache
+  const json = process.env.OPENSKY_CLIENTS
+  if (json) {
+    try {
+      clientsCache = JSON.parse(json) as OpenSkyClient[]
+      return clientsCache
+    } catch {
+      // fall through
+    }
+  }
   const id = process.env.OPENSKY_CLIENT_ID
   const secret = process.env.OPENSKY_CLIENT_SECRET
-  if (!id || !secret) return null
+  clientsCache = id && secret ? [{ id, secret }] : []
+  return clientsCache
+}
 
-  if (tokenCache && tokenCache.expiresAt > Date.now() + 30_000) {
-    return tokenCache.token
+const tokenCaches = new Map<string, { token: string; expiresAt: number }>()
+
+async function getAccessToken(client: OpenSkyClient): Promise<string | null> {
+  const cached = tokenCaches.get(client.id)
+  if (cached && cached.expiresAt > Date.now() + 30_000) {
+    return cached.token
   }
 
   const body = new URLSearchParams({
     grant_type: 'client_credentials',
-    client_id: id,
-    client_secret: secret
+    client_id: client.id,
+    client_secret: client.secret
   })
   const res = await fetch(TOKEN_URL, {
     method: 'POST',
@@ -39,15 +58,36 @@ async function getAccessToken(): Promise<string | null> {
   })
   if (!res.ok) return null
   const data = (await res.json()) as { access_token: string; expires_in: number }
-  tokenCache = {
+  tokenCaches.set(client.id, {
     token: data.access_token,
     expiresAt: Date.now() + data.expires_in * 1000
-  }
-  return tokenCache.token
+  })
+  return data.access_token
 }
 
-async function fetchStatesFromOpenSky(): Promise<{ flights: Flight[]; time: number }> {
-  const token = await getAccessToken()
+async function pickClient(redis: Redis | null): Promise<OpenSkyClient | null> {
+  const clients = getClients()
+  if (clients.length === 0) return null
+  if (clients.length === 1) return clients[0]
+
+  let idx = 0
+  if (redis) {
+    try {
+      idx = await redis.incr(ROTATION_KEY)
+    } catch {
+      idx = Math.floor(Math.random() * clients.length)
+    }
+  } else {
+    idx = Math.floor(Math.random() * clients.length)
+  }
+  return clients[idx % clients.length]
+}
+
+async function fetchStatesFromOpenSky(redis: Redis | null): Promise<{ flights: Flight[]; time: number }> {
+  const client = await pickClient(redis)
+  if (!client) return { flights: [], time: Date.now() }
+
+  const token = await getAccessToken(client)
   if (!token) return { flights: [], time: Date.now() }
 
   const res = await fetch(STATES_URL, {
@@ -83,29 +123,32 @@ async function fetchStatesFromOpenSky(): Promise<{ flights: Flight[]; time: numb
   return { flights, time: data.time ? data.time * 1000 : Date.now() }
 }
 
-async function getAllStates(force = false): Promise<{ flights: Flight[]; time: number }> {
+type StatesResult = { flights: Flight[]; time: number; cachedAt: number; cached: boolean }
+
+async function getAllStates(force = false): Promise<StatesResult> {
   const redis = getRedis()
 
   if (!force && redis) {
     try {
-      const cached = await redis.get<{ flights: Flight[]; time: number }>(REDIS_KEY)
-      if (cached) return cached
+      const entry = await redis.get<{ flights: Flight[]; time: number; cachedAt: number }>(REDIS_KEY)
+      if (entry) return { ...entry, cached: true }
     } catch {
       // Upstash unavailable — fall through to live fetch
     }
   }
 
-  const result = await fetchStatesFromOpenSky()
+  const result = await fetchStatesFromOpenSky(redis)
+  const now = Date.now()
 
-  if (redis) {
+  if (redis && result.flights.length > 0) {
     try {
-      await redis.set(REDIS_KEY, result, { ex: CACHE_TTL_S })
+      await redis.set(REDIS_KEY, { ...result, cachedAt: now }, { ex: CACHE_TTL_S })
     } catch {
       // Upstash unavailable — no-op
     }
   }
 
-  return result
+  return { ...result, cachedAt: now, cached: false }
 }
 
 export async function GET(req: Request) {
@@ -116,15 +159,16 @@ export async function GET(req: Request) {
   const distRaw = parseFloat(url.searchParams.get('dist') ?? '')
   const distNm = Number.isFinite(distRaw) && distRaw > 0 ? Math.min(distRaw, 1000) : 250
 
-  const { flights, time } = await getAllStates(force)
+  const { flights, time, cached, cachedAt } = await getAllStates(force)
+  const meta = { time, cached, cachedAt, ttl: CACHE_TTL_S }
 
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-    return Response.json({ flights, time }, { headers: cacheHeaders() })
+    return Response.json({ flights, ...meta }, { headers: cacheHeaders() })
   }
 
   const distKm = distNm * NM_TO_KM
   const filtered = flights.filter((f) => haversineKm(lat, lon, f.lat, f.lon) <= distKm)
-  return Response.json({ flights: filtered, time }, { headers: cacheHeaders() })
+  return Response.json({ flights: filtered, ...meta }, { headers: cacheHeaders() })
 }
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {

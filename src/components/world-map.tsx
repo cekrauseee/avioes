@@ -10,7 +10,6 @@ import {
   drawUserLocation,
   drawWorldOutline,
   findFlightAt,
-  interpolateFlights,
   readMapColors,
   screenToLonLat,
   type Flight,
@@ -20,9 +19,13 @@ import {
 import { t } from '../lib/i18n'
 import { MOTION_OFFSET, MOTION_TRANSITION } from '../lib/motion'
 import type { Locale } from '../lib/types'
+import { Button, usePromiseStatus } from './button'
 import { FlightDetailSheet } from './flight-detail-sheet'
 
 const POLL_INTERVAL = 12_000
+const DEG_TO_RAD = Math.PI / 180
+const RAD_TO_DEG = 180 / Math.PI
+const EARTH_R = 6_371_000
 const SCALE_MIN = 90
 const SCALE_MAX = 500
 const WORLD_OVERSCAN = 1.3
@@ -54,13 +57,18 @@ function clampScaleForViewport(scale: number, w: number, h: number): number {
 
 export function WorldMap({ locale }: { locale: Locale }) {
   const reduceMotion = useReducedMotion()
+  const reduceMotionRef = useRef(reduceMotion)
+  useEffect(() => {
+    reduceMotionRef.current = reduceMotion
+  }, [reduceMotion])
   const [expanded, setExpanded] = useState(false)
   const [controlsVisible, setControlsVisible] = useState(false)
   const [flightCount, setFlightCount] = useState(0)
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null)
-  const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle')
+  const locationStatusRef = useRef<LocationStatus>('idle')
   const [originRect, setOriginRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
   const [firstPollDone, setFirstPollDone] = useState(false)
+  const firstPollDoneRef = useRef(false)
 
   const cardRef = useRef<HTMLDivElement>(null)
   const cardCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -68,6 +76,8 @@ export function WorldMap({ locale }: { locale: Locale }) {
   const geojsonRef = useRef<GeoJSON | null>(null)
   const flightsRef = useRef<Flight[]>([])
   const displayFlightsRef = useRef<Flight[]>([])
+  const lastRawRef = useRef<Flight[]>([])
+  const cacheMetaRef = useRef<{ cached: boolean; cachedAt: number; ttl: number } | null>(null)
   const pollTimeRef = useRef(0)
   const vpRef = useRef<Viewport>({ x: 0, y: 0, scale: 1 })
   const rafRef = useRef(0)
@@ -99,6 +109,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
   const momentumRef = useRef({ vx: 0, vy: 0 })
   const lastDragRef = useRef({ x: 0, y: 0, t: 0 })
   const zoomAnimRef = useRef({ targetScale: 0, cx: 0, cy: 0, active: false })
+  const flyToRef = useRef({ x: 0, y: 0, scale: 1, active: false })
 
   /* ---- data fetching ---- */
 
@@ -111,52 +122,47 @@ export function WorldMap({ locale }: { locale: Locale }) {
       .catch(() => {})
   }, [])
 
-  const fetchFlights = useCallback((lat: number, lon: number, force = false) => {
-    const params = new URLSearchParams({ lat: String(lat), lon: String(lon), dist: '250' })
-    if (force) params.set('force', '1')
-    fetch(`/api/flights?${params}`)
-      .then((r) => r.json())
-      .then((data: { flights: Flight[]; time: number }) => {
-        flightsRef.current = data.flights
-        pollTimeRef.current = Date.now()
-        setFlightCount(data.flights.length)
+  const fetchFlights = useCallback((force = false) => {
+    const url = force ? '/api/flights?force=1' : '/api/flights'
+    return fetch(url).then((r) => {
+      if (!r.ok) throw new Error('fetch failed')
+      return r.json() as Promise<{ flights: Flight[]; time: number; cached: boolean; cachedAt: number; ttl: number }>
+    }).then((data) => {
+      flightsRef.current = data.flights
+      pollTimeRef.current = Date.now()
+      cacheMetaRef.current = { cached: data.cached, cachedAt: data.cachedAt, ttl: data.ttl }
+      setFlightCount((prev) => (prev === data.flights.length ? prev : data.flights.length))
+      if (!firstPollDoneRef.current) {
+        firstPollDoneRef.current = true
         setFirstPollDone(true)
-      })
-      .catch(() => {})
+      }
+    })
   }, [])
 
-  const syncFlights = useCallback(() => {
-    const loc = userLocationRef.current
-    if (loc) fetchFlights(loc.lat, loc.lon, true)
-  }, [fetchFlights])
+  const syncFlights = useCallback(() => fetchFlights(true), [fetchFlights])
 
   useEffect(() => {
-    if (locationStatus !== 'granted') return
-    const run = () => {
-      const loc = userLocationRef.current
-      if (loc) fetchFlights(loc.lat, loc.lon)
-    }
-    run()
-    const id = setInterval(run, POLL_INTERVAL)
+    fetchFlights().catch(() => {})
+    const id = setInterval(() => { fetchFlights().catch(() => {}) }, POLL_INTERVAL)
     return () => clearInterval(id)
-  }, [locationStatus, fetchFlights])
+  }, [fetchFlights])
 
   /* ---- geolocation ---- */
 
   const requestLocation = useCallback(() => {
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
-      setLocationStatus('denied')
+      locationStatusRef.current = 'denied'
       return
     }
-    setLocationStatus('requesting')
+    locationStatusRef.current = 'requesting'
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         userLocationRef.current = { lat: pos.coords.latitude, lon: pos.coords.longitude }
         vpInitializedRef.current = false
-        setLocationStatus('granted')
+        locationStatusRef.current = 'granted'
       },
       () => {
-        setLocationStatus('denied')
+        locationStatusRef.current = 'denied'
       },
       { enableHighAccuracy: false, timeout: 10_000, maximumAge: 60_000 }
     )
@@ -164,7 +170,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
 
   useEffect(() => {
     if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
-      setLocationStatus('denied')
+      locationStatusRef.current = 'denied'
       return
     }
     if (!('permissions' in navigator)) {
@@ -175,7 +181,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
       .query({ name: 'geolocation' })
       .then((res) => {
         if (res.state === 'granted') requestLocation()
-        else if (res.state === 'denied') setLocationStatus('denied')
+        else if (res.state === 'denied') locationStatusRef.current = 'denied'
       })
       .catch(() => {})
   }, [requestLocation])
@@ -184,13 +190,16 @@ export function WorldMap({ locale }: { locale: Locale }) {
 
   const recenter = useCallback(() => {
     const canvas = activeCanvasRef.current === 'full' ? fullCanvasRef.current : cardCanvasRef.current
-    const loc = userLocationRef.current
-    if (!canvas || !loc) return
+    if (!canvas) return
     const rect = canvas.getBoundingClientRect()
     if (rect.width === 0 || rect.height === 0) return
+    const loc = userLocationRef.current
+    const center = loc ?? { lon: 0, lat: 30 }
     const scale = clampScaleForViewport(DEFAULT_USER_SCALE, rect.width, rect.height)
-    vpRef.current = centerViewportOn(loc.lon, loc.lat, scale, rect.width, rect.height)
+    const target = centerViewportOn(center.lon, center.lat, scale, rect.width, rect.height)
+    flyToRef.current = { x: target.x, y: target.y, scale: target.scale, active: true }
     zoomAnimRef.current.active = false
+    momentumRef.current = { vx: 0, vy: 0 }
   }, [])
 
   const zoomBy = useCallback((factor: number) => {
@@ -210,65 +219,103 @@ export function WorldMap({ locale }: { locale: Locale }) {
 
   /* ---- drawing ---- */
 
-  const draw = useCallback(
-    (canvas: HTMLCanvasElement, vp: Viewport, interpolate: boolean) => {
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return
+  const draw = useCallback((canvas: HTMLCanvasElement, vp: Viewport) => {
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
 
-      const dpr = window.devicePixelRatio || 1
-      const rect = canvas.getBoundingClientRect()
-      const w = rect.width
-      const h = rect.height
-      if (w === 0 || h === 0) return
+    const dpr = window.devicePixelRatio || 1
+    const rect = canvas.getBoundingClientRect()
+    const w = rect.width
+    const h = rect.height
+    if (w === 0 || h === 0) return
 
-      if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
-        canvas.width = w * dpr
-        canvas.height = h * dpr
-      }
+    if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+      canvas.width = w * dpr
+      canvas.height = h * dpr
+    }
 
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
-      const colors = readMapColors(document.documentElement)
+    const colors = readMapColors(document.documentElement)
 
-      ctx.fillStyle = colors.bg
-      ctx.fillRect(0, 0, w, h)
+    ctx.fillStyle = colors.mapBg
+    ctx.fillRect(0, 0, w, h)
 
-      if (geojsonRef.current) {
-        drawWorldOutline(ctx, geojsonRef.current, vp, colors)
-      }
+    if (geojsonRef.current) {
+      drawWorldOutline(ctx, geojsonRef.current, vp, colors)
+    }
 
-      let targets = flightsRef.current
-      if (interpolate && pollTimeRef.current > 0) {
-        const dt = (Date.now() - pollTimeRef.current) / 1000
-        targets = interpolateFlights(targets, dt)
-      }
+    drawAirplanes(ctx, displayFlightsRef.current, vp, w, h, colors)
 
-      const prev = displayFlightsRef.current
-      if (reduceMotion || prev.length === 0) {
-        displayFlightsRef.current = targets.map((f) => ({ ...f }))
-      } else {
-        displayFlightsRef.current = targets.map((target) => {
-          const old = prev.find((d) => d.icao24 === target.icao24)
-          if (!old) return { ...target }
-          return {
-            ...target,
-            lat: old.lat + (target.lat - old.lat) * LERP_FACTOR,
-            lon: old.lon + (target.lon - old.lon) * LERP_FACTOR,
-            heading: angleLerp(old.heading, target.heading, LERP_FACTOR)
-          }
-        })
-      }
-      drawAirplanes(ctx, displayFlightsRef.current, vp, w, h, colors)
-
-      const loc = userLocationRef.current
-      if (loc) drawUserLocation(ctx, loc.lon, loc.lat, vp, w, h, colors)
-    },
-    [reduceMotion]
-  )
+    const loc = userLocationRef.current
+    if (loc) drawUserLocation(ctx, loc.lon, loc.lat, vp, w, h, colors)
+  }, [])
 
   useEffect(() => {
     const tick = () => {
       const loc = userLocationRef.current
+      const rm = reduceMotionRef.current
+
+      /* ---- update display flights (single pass, O(1) lookup) ---- */
+      const raw = flightsRef.current
+      const display = displayFlightsRef.current
+      if (raw.length > 0) {
+        const dt = !rm && pollTimeRef.current > 0 ? (Date.now() - pollTimeRef.current) / 1000 : 0
+
+        if (raw !== lastRawRef.current) {
+          const prevMap = new Map<string, Flight>()
+          for (const d of display) prevMap.set(d.icao24, d)
+
+          display.length = raw.length
+          for (let i = 0; i < raw.length; i++) {
+            const f = raw[i]
+            let tLat = f.lat
+            let tLon = f.lon
+            if (dt > 0 && f.velocity > 0) {
+              const hRad = (f.heading || 0) * DEG_TO_RAD
+              const dist = f.velocity * dt
+              tLat += ((dist * Math.cos(hRad)) / EARTH_R) * RAD_TO_DEG
+              tLon += ((dist * Math.sin(hRad)) / (EARTH_R * Math.cos(f.lat * DEG_TO_RAD))) * RAD_TO_DEG
+            }
+            const old = prevMap.get(f.icao24)
+            if (old && !rm) {
+              display[i] = {
+                ...f,
+                lat: old.lat + (tLat - old.lat) * LERP_FACTOR,
+                lon: old.lon + (tLon - old.lon) * LERP_FACTOR,
+                heading: angleLerp(old.heading, f.heading, LERP_FACTOR)
+              }
+            } else {
+              display[i] = { ...f, lat: tLat, lon: tLon }
+            }
+          }
+          lastRawRef.current = raw
+        } else {
+          for (let i = 0; i < raw.length; i++) {
+            const f = raw[i]
+            let tLat = f.lat
+            let tLon = f.lon
+            if (dt > 0 && f.velocity > 0) {
+              const hRad = (f.heading || 0) * DEG_TO_RAD
+              const dist = f.velocity * dt
+              tLat += ((dist * Math.cos(hRad)) / EARTH_R) * RAD_TO_DEG
+              tLon += ((dist * Math.sin(hRad)) / (EARTH_R * Math.cos(f.lat * DEG_TO_RAD))) * RAD_TO_DEG
+            }
+            const d = display[i]
+            if (d && !rm) {
+              d.lat += (tLat - d.lat) * LERP_FACTOR
+              d.lon += (tLon - d.lon) * LERP_FACTOR
+              d.heading = angleLerp(d.heading, f.heading, LERP_FACTOR)
+            } else if (d) {
+              d.lat = tLat
+              d.lon = tLon
+              d.heading = f.heading
+            }
+          }
+        }
+      } else if (display.length > 0) {
+        display.length = 0
+      }
 
       /* ---- animated zoom ---- */
       if (zoomAnimRef.current.active) {
@@ -286,9 +333,25 @@ export function WorldMap({ locale }: { locale: Locale }) {
         }
       }
 
+      /* ---- fly-to (recenter) ---- */
+      if (flyToRef.current.active) {
+        const ft = flyToRef.current
+        const vp = vpRef.current
+        const dx = ft.x - vp.x
+        const dy = ft.y - vp.y
+        const ds = ft.scale - vp.scale
+        if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5 && Math.abs(ds) / Math.max(ft.scale, 1) < 0.002) {
+          vpRef.current = { x: ft.x, y: ft.y, scale: ft.scale }
+          flyToRef.current.active = false
+        } else {
+          const t = 0.1
+          vpRef.current = { x: vp.x + dx * t, y: vp.y + dy * t, scale: vp.scale + ds * t }
+        }
+      }
+
       /* ---- momentum ---- */
       const m = momentumRef.current
-      if (!lockCenterRef.current && pinchRef.current.size === 0 && !dragRef.current.active) {
+      if (!flyToRef.current.active && !lockCenterRef.current && pinchRef.current.size === 0 && !dragRef.current.active) {
         if (Math.abs(m.vx) > 0.1 || Math.abs(m.vy) > 0.1) {
           vpRef.current = { ...vpRef.current, x: vpRef.current.x + m.vx, y: vpRef.current.y + m.vy }
           m.vx *= FRICTION
@@ -305,9 +368,10 @@ export function WorldMap({ locale }: { locale: Locale }) {
         const w = rect.width
         const h = rect.height
 
-        if (locationStatus === 'granted' && !vpInitializedRef.current && loc && w > 0 && h > 0) {
+        if (!vpInitializedRef.current && w > 0 && h > 0) {
+          const center = loc ?? { lon: 0, lat: 30 }
           const scale = clampScaleForViewport(DEFAULT_USER_SCALE, w, h)
-          vpRef.current = centerViewportOn(loc.lon, loc.lat, scale, w, h)
+          vpRef.current = centerViewportOn(center.lon, center.lat, scale, w, h)
           vpInitializedRef.current = true
         }
 
@@ -316,15 +380,16 @@ export function WorldMap({ locale }: { locale: Locale }) {
           vpRef.current = centerViewportOn(loc.lon, loc.lat, scale, w, h)
         }
 
-        draw(primary, vpRef.current, !reduceMotion)
+        draw(primary, vpRef.current)
       }
 
-      if (activeCanvasRef.current === 'full' && cardCanvasRef.current && loc) {
+      if (activeCanvasRef.current === 'full' && cardCanvasRef.current) {
         const rect = cardCanvasRef.current.getBoundingClientRect()
         if (rect.width > 0 && rect.height > 0) {
+          const center = loc ?? { lon: 0, lat: 30 }
           const scale = clampScaleForViewport(vpRef.current.scale, rect.width, rect.height)
-          const cardVp = centerViewportOn(loc.lon, loc.lat, scale, rect.width, rect.height)
-          draw(cardCanvasRef.current, cardVp, !reduceMotion)
+          const cardVp = centerViewportOn(center.lon, center.lat, scale, rect.width, rect.height)
+          draw(cardCanvasRef.current, cardVp)
         }
       }
 
@@ -332,7 +397,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
     }
     rafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [draw, locationStatus, reduceMotion])
+  }, [draw])
 
   /* ---- pointer handlers (fullscreen only) ---- */
 
@@ -342,6 +407,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
     canvas.setPointerCapture(e.pointerId)
 
     zoomAnimRef.current.active = false
+    flyToRef.current.active = false
     pinchRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     const size = pinchRef.current.size
 
@@ -564,20 +630,16 @@ export function WorldMap({ locale }: { locale: Locale }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [expanded, selectedFlight, handleCollapse])
 
-  const granted = locationStatus === 'granted'
   const isDev = process.env.NODE_ENV === 'development'
 
   return (
     <>
       {/* Card preview — fills remaining space */}
-      <div
-        data-disable-app-noise
-        className='flex min-h-0 flex-1 flex-col px-5 py-3'
-      >
+      <div className='flex min-h-0 flex-1 flex-col px-5 py-3'>
         <div
           ref={cardRef}
-          onClick={granted ? handleExpand : undefined}
-          className={`bg-bg relative min-h-0 flex-1 overflow-hidden rounded-xl transition-[transform,filter] duration-200 ${collapsing ? 'border-transparent shadow-none' : 'border-line border shadow-lg'} ${granted && firstPollDone && !expanded && !collapsing ? 'cursor-pointer hover:scale-[1.01] hover:shadow-xl hover:brightness-95 active:scale-[0.99]' : ''}`}
+          onClick={firstPollDone ? handleExpand : undefined}
+          className={`bg-bg relative min-h-0 flex-1 overflow-hidden rounded-xl transition-[transform,filter] duration-200 ${collapsing ? 'border-transparent shadow-none' : 'border-line border shadow-lg'} ${firstPollDone && !expanded && !collapsing ? 'cursor-pointer hover:scale-[1.01] hover:shadow-xl hover:brightness-95 active:scale-[0.99]' : ''}`}
         >
           {firstPollDone && (
             <canvas
@@ -586,9 +648,9 @@ export function WorldMap({ locale }: { locale: Locale }) {
             />
           )}
 
-          {!firstPollDone && !expanded && locationStatus !== 'denied' && <div className='bg-line/60 absolute inset-0 z-10 animate-pulse' />}
+          {!firstPollDone && !expanded && <div className='bg-line/60 absolute inset-0 z-10 animate-pulse' />}
 
-          {granted && !expanded && (
+          {!expanded && (
             <div
               className={`pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-3 transition-opacity duration-300 ${firstPollDone ? 'opacity-100' : 'opacity-0'}`}
             >
@@ -598,13 +660,6 @@ export function WorldMap({ locale }: { locale: Locale }) {
                 </span>
               )}
               <span className='text-ink-faint font-display ml-auto text-xs'>{t(locale, 'world.map.explore')}</span>
-            </div>
-          )}
-
-          {locationStatus === 'denied' && (
-            <div className='bg-bg/85 absolute inset-0 z-20 flex flex-col items-center justify-center px-6 text-center backdrop-blur-sm'>
-              <p className='font-display text-ink max-w-xs text-base leading-snug'>{t(locale, 'world.map.locationCta')}</p>
-              <p className='text-ink-faint mt-3 max-w-xs text-xs'>{t(locale, 'world.map.locationDenied')}</p>
             </div>
           )}
         </div>
@@ -620,7 +675,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
             className={`bg-bg ${collapsing ? 'border-line border shadow-lg' : ''}`}
             style={{
               position: 'fixed',
-              zIndex: 50,
+              zIndex: 40,
               overflow: 'hidden',
               transition:
                 reduceMotion ? 'none' : (
@@ -653,9 +708,13 @@ export function WorldMap({ locale }: { locale: Locale }) {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -MOTION_OFFSET.token, scale: 0.96 }}
                     transition={MOTION_TRANSITION.inline}
-                    className='pointer-events-auto pt-[max(env(safe-area-inset-top),1rem)] pl-4'
+                    className='pointer-events-auto flex items-start justify-between px-4 pt-[max(env(safe-area-inset-top),1rem)]'
                   >
-                    <MapButton
+                    <Button
+                      variant='secondary'
+                      size='xs'
+                      shape='pill'
+                      className='w-10 !px-0 !bg-paper/90 hover:!bg-paper !text-ink shadow-sm backdrop-blur-sm'
                       onClick={handleCollapse}
                       aria-label={t(locale, 'world.map.close')}
                     >
@@ -677,7 +736,15 @@ export function WorldMap({ locale }: { locale: Locale }) {
                         />
                         <polyline points='12 19 5 12 12 5' />
                       </svg>
-                    </MapButton>
+                    </Button>
+                    {isDev && (
+                      <DevPanel
+                        flightCount={flightCount}
+                        cacheMetaRef={cacheMetaRef}
+                        pollTimeRef={pollTimeRef}
+                        onSync={syncFlights}
+                      />
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -701,7 +768,11 @@ export function WorldMap({ locale }: { locale: Locale }) {
                     : <span />}
 
                     <div className='flex flex-col gap-2'>
-                      <MapButton
+                      <Button
+                        variant='secondary'
+                        size='xs'
+                        shape='pill'
+                        className='w-10 !px-0 !bg-paper/90 hover:!bg-paper !text-ink shadow-sm backdrop-blur-sm'
                         onClick={() => zoomBy(1.5)}
                         aria-label={t(locale, 'world.map.zoomIn')}
                       >
@@ -727,8 +798,12 @@ export function WorldMap({ locale }: { locale: Locale }) {
                             y2='12'
                           />
                         </svg>
-                      </MapButton>
-                      <MapButton
+                      </Button>
+                      <Button
+                        variant='secondary'
+                        size='xs'
+                        shape='pill'
+                        className='w-10 !px-0 !bg-paper/90 hover:!bg-paper !text-ink shadow-sm backdrop-blur-sm'
                         onClick={() => zoomBy(1 / 1.5)}
                         aria-label={t(locale, 'world.map.zoomOut')}
                       >
@@ -748,8 +823,12 @@ export function WorldMap({ locale }: { locale: Locale }) {
                             y2='12'
                           />
                         </svg>
-                      </MapButton>
-                      <MapButton
+                      </Button>
+                      <Button
+                        variant='secondary'
+                        size='xs'
+                        shape='pill'
+                        className='w-10 !px-0 !bg-paper/90 hover:!bg-paper !text-ink shadow-sm backdrop-blur-sm'
                         onClick={recenter}
                         aria-label={t(locale, 'world.map.recenter')}
                       >
@@ -793,29 +872,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
                             y2='12'
                           />
                         </svg>
-                      </MapButton>
-                      {isDev && (
-                        <MapButton
-                          onClick={syncFlights}
-                          aria-label='Sync flights'
-                        >
-                          <svg
-                            width='18'
-                            height='18'
-                            viewBox='0 0 24 24'
-                            fill='none'
-                            stroke='currentColor'
-                            strokeWidth='2'
-                            strokeLinecap='round'
-                            strokeLinejoin='round'
-                          >
-                            <path d='M21 2v6h-6' />
-                            <path d='M3 12a9 9 0 0 1 15-6.7L21 8' />
-                            <path d='M3 22v-6h6' />
-                            <path d='M21 12a9 9 0 0 1-15 6.7L3 16' />
-                          </svg>
-                        </MapButton>
-                      )}
+                      </Button>
                     </div>
                   </motion.div>
                 )}
@@ -845,15 +902,93 @@ export function WorldMap({ locale }: { locale: Locale }) {
   )
 }
 
-function MapButton({ onClick, children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+type DevSnapshot = {
+  pollAge: string
+  cacheAge: string
+  cached: boolean | null
+  ttl: number | null
+}
+
+function DevPanel({
+  flightCount,
+  cacheMetaRef,
+  pollTimeRef,
+  onSync
+}: {
+  flightCount: number
+  cacheMetaRef: React.RefObject<{ cached: boolean; cachedAt: number; ttl: number } | null>
+  pollTimeRef: React.RefObject<number>
+  onSync: () => Promise<unknown>
+}) {
+  const [snap, setSnap] = useState<DevSnapshot>({ pollAge: '—', cacheAge: '—', cached: null, ttl: null })
+  const sync = usePromiseStatus({ successMs: 1200 })
+
+  useEffect(() => {
+    function sample() {
+      const now = Date.now()
+      const meta = cacheMetaRef.current
+      const pt = pollTimeRef.current
+      setSnap({
+        pollAge: pt > 0 ? ((now - pt) / 1000).toFixed(0) : '—',
+        cacheAge: meta?.cachedAt ? ((now - meta.cachedAt) / 1000).toFixed(0) : '—',
+        cached: meta?.cached ?? null,
+        ttl: meta?.ttl ?? null
+      })
+    }
+    sample()
+    const id = setInterval(sample, 1000)
+    return () => clearInterval(id)
+  }, [cacheMetaRef, pollTimeRef])
+
+  const sourceLabel = snap.cached === null ? '—' : snap.cached ? 'cache' : 'live'
+
   return (
-    <button
-      type='button'
-      onClick={onClick}
-      className='border-line bg-paper/90 text-ink flex h-10 w-10 items-center justify-center rounded-full border shadow-sm backdrop-blur-sm active:scale-95'
-      {...props}
-    >
-      {children}
-    </button>
+    <div className='border-line bg-paper/90 flex flex-col gap-3 rounded-2xl border px-4 py-3 backdrop-blur-sm'>
+      <div className='flex items-center gap-3'>
+        <div className='flex flex-col'>
+          <span className='text-ink font-mono text-lg leading-tight tabular-nums'>{flightCount.toLocaleString()}</span>
+          <span className='text-ink-faint text-xs'>flights</span>
+        </div>
+        <div className='bg-line mx-1 h-8 w-px' />
+        <div className='flex flex-col'>
+          <span className={`font-mono text-lg leading-tight tabular-nums ${snap.cached === false ? 'text-sage' : 'text-ink'}`}>{sourceLabel}</span>
+          <span className='text-ink-faint text-xs'>source</span>
+        </div>
+      </div>
+
+      <div className='bg-line h-px' />
+
+      <div className='grid grid-cols-2 gap-x-6 gap-y-2'>
+        <div className='flex flex-col'>
+          <span className='text-ink font-mono text-sm leading-tight tabular-nums'>{snap.cacheAge}s</span>
+          <span className='text-ink-faint text-[11px]'>data age</span>
+        </div>
+        <div className='flex flex-col'>
+          <span className='text-ink font-mono text-sm leading-tight tabular-nums'>{snap.pollAge}s</span>
+          <span className='text-ink-faint text-[11px]'>poll age</span>
+        </div>
+        <div className='flex flex-col'>
+          <span className='text-ink font-mono text-sm leading-tight tabular-nums'>{snap.ttl ?? '—'}s</span>
+          <span className='text-ink-faint text-[11px]'>ttl</span>
+        </div>
+        <div className='flex flex-col'>
+          <span className='text-ink font-mono text-sm leading-tight tabular-nums'>{POLL_INTERVAL / 1000}s</span>
+          <span className='text-ink-faint text-[11px]'>poll interval</span>
+        </div>
+      </div>
+
+      <Button
+        variant='secondary'
+        size='xs'
+        fullWidth
+        status={sync.status}
+        pendingLabel='syncing'
+        successLabel='synced'
+        errorLabel='failed'
+        onClick={() => sync.run(onSync)}
+      >
+        force sync
+      </Button>
+    </div>
   )
 }

@@ -15,6 +15,7 @@ export type Flight = {
 
 export type MapColors = {
   bg: string
+  mapBg: string
   ink: string
   inkFaint: string
   line: string
@@ -100,8 +101,14 @@ export function drawAirplanes(ctx: CanvasRenderingContext2D, flights: Flight[], 
   ctx.strokeStyle = colors.ink
   ctx.lineWidth = 0.5
 
-  for (const f of flights) {
-    const [sx, sy] = projectLonLat(f.lon, f.lat, vp)
+  const ppd = BASE_PIX_PER_DEG * vp.scale
+  const vpx = vp.x
+  const vpy = vp.y
+
+  for (let i = 0; i < flights.length; i++) {
+    const f = flights[i]
+    const sx = (f.lon + 180) * ppd + vpx
+    const sy = (90 - f.lat) * ppd + vpy
     if (sx < -20 || sx > w + 20 || sy < -20 || sy > h + 20) continue
 
     ctx.save()
@@ -124,6 +131,7 @@ export function readMapColors(el: HTMLElement): MapColors {
   const s = getComputedStyle(el)
   return {
     bg: s.getPropertyValue('--bg').trim(),
+    mapBg: s.getPropertyValue('--map-bg').trim(),
     ink: s.getPropertyValue('--ink').trim(),
     inkFaint: s.getPropertyValue('--ink-faint').trim(),
     line: s.getPropertyValue('--line').trim(),
