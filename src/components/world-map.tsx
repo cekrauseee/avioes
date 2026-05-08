@@ -58,11 +58,9 @@ export function WorldMap({ locale }: { locale: Locale }) {
   const [controlsVisible, setControlsVisible] = useState(false)
   const [flightCount, setFlightCount] = useState(0)
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null)
-  const [locationStatus, setLocationStatus] = useState<LocationStatus>(() => {
-    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) return 'denied'
-    return 'idle'
-  })
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle')
   const [originRect, setOriginRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
+  const [firstPollDone, setFirstPollDone] = useState(false)
 
   const cardRef = useRef<HTMLDivElement>(null)
   const cardCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -122,6 +120,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
         flightsRef.current = data.flights
         pollTimeRef.current = Date.now()
         setFlightCount(data.flights.length)
+        setFirstPollDone(true)
       })
       .catch(() => {})
   }, [])
@@ -164,7 +163,10 @@ export function WorldMap({ locale }: { locale: Locale }) {
   }, [])
 
   useEffect(() => {
-    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) return
+    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+      setLocationStatus('denied')
+      return
+    }
     if (!('permissions' in navigator)) {
       Promise.resolve().then(() => requestLocation())
       return
@@ -474,6 +476,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
 
   const overlayRef = useRef<HTMLDivElement>(null)
   const collapsingRef = useRef(false)
+  const [collapsing, setCollapsing] = useState(false)
 
   function handleExpand() {
     const card = cardRef.current
@@ -500,12 +503,18 @@ export function WorldMap({ locale }: { locale: Locale }) {
       el.style.height = '100vh'
       el.style.borderRadius = '0px'
     }, 0)
-    const controlsTid = setTimeout(() => {
-      setControlsVisible(true)
-    }, reduceMotion ? 0 : 120)
-    const unlockTid = setTimeout(() => {
-      lockCenterRef.current = false
-    }, reduceMotion ? 0 : EXPAND_DURATION)
+    const controlsTid = setTimeout(
+      () => {
+        setControlsVisible(true)
+      },
+      reduceMotion ? 0 : 120
+    )
+    const unlockTid = setTimeout(
+      () => {
+        lockCenterRef.current = false
+      },
+      reduceMotion ? 0 : EXPAND_DURATION
+    )
     return () => {
       clearTimeout(expandTid)
       clearTimeout(controlsTid)
@@ -530,11 +539,16 @@ export function WorldMap({ locale }: { locale: Locale }) {
       el.style.height = `${rect.height}px`
       el.style.borderRadius = '12px'
       collapsingRef.current = true
-      setTimeout(() => {
-        collapsingRef.current = false
-        activeCanvasRef.current = 'card'
-        setExpanded(false)
-      }, reduceMotion ? 0 : EXPAND_DURATION)
+      setCollapsing(true)
+      setTimeout(
+        () => {
+          collapsingRef.current = false
+          setCollapsing(false)
+          activeCanvasRef.current = 'card'
+          setExpanded(false)
+        },
+        reduceMotion ? 0 : EXPAND_DURATION
+      )
     } else {
       activeCanvasRef.current = 'card'
       setExpanded(false)
@@ -563,12 +577,21 @@ export function WorldMap({ locale }: { locale: Locale }) {
         <div
           ref={cardRef}
           onClick={granted ? handleExpand : undefined}
-          className={`relative min-h-0 flex-1 overflow-hidden rounded-xl border border-line bg-bg shadow-lg transition-shadow duration-200 ${granted ? 'cursor-pointer hover:shadow-xl' : ''} ${expanded ? 'invisible' : ''}`}
+          className={`bg-bg relative min-h-0 flex-1 overflow-hidden rounded-xl transition-[transform,filter] duration-200 ${collapsing ? 'border-transparent shadow-none' : 'border-line border shadow-lg'} ${granted && firstPollDone && !expanded && !collapsing ? 'cursor-pointer hover:shadow-xl hover:scale-[1.01] hover:brightness-95 active:scale-[0.99]' : ''}`}
         >
-          {!expanded && <canvas ref={cardCanvasRef} className='absolute inset-0 h-full w-full' />}
+          {firstPollDone && (
+            <canvas
+              ref={cardCanvasRef}
+              className='absolute inset-0 h-full w-full'
+            />
+          )}
+
+          {!firstPollDone && !expanded && locationStatus !== 'denied' && (
+            <div className='bg-line/60 absolute inset-0 z-10 animate-pulse' />
+          )}
 
           {granted && !expanded && (
-            <div className='pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-3'>
+            <div className={`pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-3 transition-opacity duration-300 ${firstPollDone ? 'opacity-100' : 'opacity-0'}`}>
               {flightCount > 0 && (
                 <span className='text-ink-faint text-xs'>
                   {flightCount.toLocaleString()} {t(locale, 'world.map.planes')}
@@ -578,20 +601,10 @@ export function WorldMap({ locale }: { locale: Locale }) {
             </div>
           )}
 
-          {!granted && (
+          {locationStatus === 'denied' && (
             <div className='bg-bg/85 absolute inset-0 z-20 flex flex-col items-center justify-center px-6 text-center backdrop-blur-sm'>
               <p className='font-display text-ink max-w-xs text-base leading-snug'>{t(locale, 'world.map.locationCta')}</p>
-              {locationStatus === 'denied' ?
-                <p className='text-ink-faint mt-3 max-w-xs text-xs'>{t(locale, 'world.map.locationDenied')}</p>
-              : <button
-                  type='button'
-                  onClick={requestLocation}
-                  disabled={locationStatus === 'requesting'}
-                  className='border-line bg-paper text-ink font-display mt-5 rounded-full border px-5 py-2 text-sm transition active:scale-95 disabled:opacity-60'
-                >
-                  {locationStatus === 'requesting' ? t(locale, 'world.map.locating') : t(locale, 'world.map.allowLocation')}
-                </button>
-              }
+              <p className='text-ink-faint mt-3 max-w-xs text-xs'>{t(locale, 'world.map.locationDenied')}</p>
             </div>
           )}
         </div>
@@ -604,12 +617,15 @@ export function WorldMap({ locale }: { locale: Locale }) {
         createPortal(
           <div
             ref={overlayRef}
-            className='bg-bg'
+            className={`bg-bg ${collapsing ? 'border-line border shadow-lg' : ''}`}
             style={{
               position: 'fixed',
               zIndex: 50,
               overflow: 'hidden',
-              transition: reduceMotion ? 'none' : `top ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), left ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), width ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), height ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), border-radius ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1)`,
+              transition:
+                reduceMotion ? 'none' : (
+                  `top ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), left ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), width ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), height ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), border-radius ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1)`
+                ),
               top: originRect.top,
               left: originRect.left,
               width: originRect.width,
@@ -617,31 +633,171 @@ export function WorldMap({ locale }: { locale: Locale }) {
               borderRadius: 12
             }}
           >
-                <canvas
-                  ref={fullCanvasRef}
-                  className='absolute inset-0 h-full w-full touch-none'
-                  onPointerDown={onPointerDown}
-                  onPointerMove={onPointerMove}
-                  onPointerUp={onPointerUp}
-                  onPointerCancel={onPointerUp}
-                  onWheel={onWheel}
-                />
+            <canvas
+              ref={fullCanvasRef}
+              className='absolute inset-0 h-full w-full touch-none'
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerCancel={onPointerUp}
+              onWheel={onWheel}
+            />
 
-                {/* Floating controls — constrained to container width */}
-                <div className='pointer-events-none absolute inset-0 z-10 mx-auto flex max-w-[630px] flex-col'>
-                  <AnimatePresence>
-                    {controlsVisible && (
-                      <motion.div
-                        key='map-close'
-                        initial={reduceMotion ? false : { opacity: 0, y: -MOTION_OFFSET.token, scale: 0.96 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -MOTION_OFFSET.token, scale: 0.96 }}
-                        transition={MOTION_TRANSITION.inline}
-                        className='pointer-events-auto pt-[max(env(safe-area-inset-top),1rem)] pl-4'
+            {/* Floating controls — constrained to container width */}
+            <div className='pointer-events-none absolute inset-0 z-10 mx-auto flex max-w-[630px] flex-col'>
+              <AnimatePresence>
+                {controlsVisible && (
+                  <motion.div
+                    key='map-close'
+                    initial={reduceMotion ? false : { opacity: 0, y: -MOTION_OFFSET.token, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -MOTION_OFFSET.token, scale: 0.96 }}
+                    transition={MOTION_TRANSITION.inline}
+                    className='pointer-events-auto pt-[max(env(safe-area-inset-top),1rem)] pl-4'
+                  >
+                    <MapButton
+                      onClick={handleCollapse}
+                      aria-label={t(locale, 'world.map.close')}
+                    >
+                      <svg
+                        width='18'
+                        height='18'
+                        viewBox='0 0 24 24'
+                        fill='none'
+                        stroke='currentColor'
+                        strokeWidth='2'
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
                       >
+                        <line
+                          x1='19'
+                          y1='12'
+                          x2='5'
+                          y2='12'
+                        />
+                        <polyline points='12 19 5 12 12 5' />
+                      </svg>
+                    </MapButton>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className='flex-1' />
+
+              <AnimatePresence>
+                {controlsVisible && (
+                  <motion.div
+                    key='map-controls'
+                    initial={reduceMotion ? false : { opacity: 0, y: MOTION_OFFSET.token, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: MOTION_OFFSET.token, scale: 0.98 }}
+                    transition={MOTION_TRANSITION.inline}
+                    className='pointer-events-auto flex items-end justify-between px-4 pb-[max(env(safe-area-inset-bottom),1rem)]'
+                  >
+                    {flightCount > 0 ?
+                      <span className='text-ink-faint text-xs'>
+                        {flightCount.toLocaleString()} {t(locale, 'world.map.planes')}
+                      </span>
+                    : <span />}
+
+                    <div className='flex flex-col gap-2'>
+                      <MapButton
+                        onClick={() => zoomBy(1.5)}
+                        aria-label={t(locale, 'world.map.zoomIn')}
+                      >
+                        <svg
+                          width='18'
+                          height='18'
+                          viewBox='0 0 24 24'
+                          fill='none'
+                          stroke='currentColor'
+                          strokeWidth='2'
+                          strokeLinecap='round'
+                        >
+                          <line
+                            x1='12'
+                            y1='5'
+                            x2='12'
+                            y2='19'
+                          />
+                          <line
+                            x1='5'
+                            y1='12'
+                            x2='19'
+                            y2='12'
+                          />
+                        </svg>
+                      </MapButton>
+                      <MapButton
+                        onClick={() => zoomBy(1 / 1.5)}
+                        aria-label={t(locale, 'world.map.zoomOut')}
+                      >
+                        <svg
+                          width='18'
+                          height='18'
+                          viewBox='0 0 24 24'
+                          fill='none'
+                          stroke='currentColor'
+                          strokeWidth='2'
+                          strokeLinecap='round'
+                        >
+                          <line
+                            x1='5'
+                            y1='12'
+                            x2='19'
+                            y2='12'
+                          />
+                        </svg>
+                      </MapButton>
+                      <MapButton
+                        onClick={recenter}
+                        aria-label={t(locale, 'world.map.recenter')}
+                      >
+                        <svg
+                          width='18'
+                          height='18'
+                          viewBox='0 0 24 24'
+                          fill='none'
+                          stroke='currentColor'
+                          strokeWidth='2'
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                        >
+                          <circle
+                            cx='12'
+                            cy='12'
+                            r='3'
+                          />
+                          <line
+                            x1='12'
+                            y1='2'
+                            x2='12'
+                            y2='5'
+                          />
+                          <line
+                            x1='12'
+                            y1='19'
+                            x2='12'
+                            y2='22'
+                          />
+                          <line
+                            x1='2'
+                            y1='12'
+                            x2='5'
+                            y2='12'
+                          />
+                          <line
+                            x1='19'
+                            y1='12'
+                            x2='22'
+                            y2='12'
+                          />
+                        </svg>
+                      </MapButton>
+                      {isDev && (
                         <MapButton
-                          onClick={handleCollapse}
-                          aria-label={t(locale, 'world.map.close')}
+                          onClick={syncFlights}
+                          aria-label='Sync flights'
                         >
                           <svg
                             width='18'
@@ -653,164 +809,35 @@ export function WorldMap({ locale }: { locale: Locale }) {
                             strokeLinecap='round'
                             strokeLinejoin='round'
                           >
-                            <line
-                              x1='19'
-                              y1='12'
-                              x2='5'
-                              y2='12'
-                            />
-                            <polyline points='12 19 5 12 12 5' />
+                            <path d='M21 2v6h-6' />
+                            <path d='M3 12a9 9 0 0 1 15-6.7L21 8' />
+                            <path d='M3 22v-6h6' />
+                            <path d='M21 12a9 9 0 0 1-15 6.7L3 16' />
                           </svg>
                         </MapButton>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-                  <div className='flex-1' />
+            {collapsing && (
+              <div className='pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-between p-3'>
+                {flightCount > 0 && (
+                  <span className='text-ink-faint text-xs'>
+                    {flightCount.toLocaleString()} {t(locale, 'world.map.planes')}
+                  </span>
+                )}
+                <span className='text-ink-faint font-display ml-auto text-xs'>{t(locale, 'world.map.explore')}</span>
+              </div>
+            )}
 
-                  <AnimatePresence>
-                    {controlsVisible && (
-                      <motion.div
-                        key='map-controls'
-                        initial={reduceMotion ? false : { opacity: 0, y: MOTION_OFFSET.token, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: MOTION_OFFSET.token, scale: 0.98 }}
-                        transition={MOTION_TRANSITION.inline}
-                        className='pointer-events-auto flex items-end justify-between px-4 pb-[max(env(safe-area-inset-bottom),1rem)]'
-                      >
-                        {flightCount > 0 ?
-                          <span className='text-ink-faint text-xs'>
-                            {flightCount.toLocaleString()} {t(locale, 'world.map.planes')}
-                          </span>
-                        : <span />}
-
-                        <div className='flex flex-col gap-2'>
-                          <MapButton
-                            onClick={() => zoomBy(1.5)}
-                            aria-label={t(locale, 'world.map.zoomIn')}
-                          >
-                            <svg
-                              width='18'
-                              height='18'
-                              viewBox='0 0 24 24'
-                              fill='none'
-                              stroke='currentColor'
-                              strokeWidth='2'
-                              strokeLinecap='round'
-                            >
-                              <line
-                                x1='12'
-                                y1='5'
-                                x2='12'
-                                y2='19'
-                              />
-                              <line
-                                x1='5'
-                                y1='12'
-                                x2='19'
-                                y2='12'
-                              />
-                            </svg>
-                          </MapButton>
-                          <MapButton
-                            onClick={() => zoomBy(1 / 1.5)}
-                            aria-label={t(locale, 'world.map.zoomOut')}
-                          >
-                            <svg
-                              width='18'
-                              height='18'
-                              viewBox='0 0 24 24'
-                              fill='none'
-                              stroke='currentColor'
-                              strokeWidth='2'
-                              strokeLinecap='round'
-                            >
-                              <line
-                                x1='5'
-                                y1='12'
-                                x2='19'
-                                y2='12'
-                              />
-                            </svg>
-                          </MapButton>
-                          <MapButton
-                            onClick={recenter}
-                            aria-label={t(locale, 'world.map.recenter')}
-                          >
-                            <svg
-                              width='18'
-                              height='18'
-                              viewBox='0 0 24 24'
-                              fill='none'
-                              stroke='currentColor'
-                              strokeWidth='2'
-                              strokeLinecap='round'
-                              strokeLinejoin='round'
-                            >
-                              <circle
-                                cx='12'
-                                cy='12'
-                                r='3'
-                              />
-                              <line
-                                x1='12'
-                                y1='2'
-                                x2='12'
-                                y2='5'
-                              />
-                              <line
-                                x1='12'
-                                y1='19'
-                                x2='12'
-                                y2='22'
-                              />
-                              <line
-                                x1='2'
-                                y1='12'
-                                x2='5'
-                                y2='12'
-                              />
-                              <line
-                                x1='19'
-                                y1='12'
-                                x2='22'
-                                y2='12'
-                              />
-                            </svg>
-                          </MapButton>
-                          {isDev && (
-                            <MapButton
-                              onClick={syncFlights}
-                              aria-label='Sync flights'
-                            >
-                              <svg
-                                width='18'
-                                height='18'
-                                viewBox='0 0 24 24'
-                                fill='none'
-                                stroke='currentColor'
-                                strokeWidth='2'
-                                strokeLinecap='round'
-                                strokeLinejoin='round'
-                              >
-                                <path d='M21 2v6h-6' />
-                                <path d='M3 12a9 9 0 0 1 15-6.7L21 8' />
-                                <path d='M3 22v-6h6' />
-                                <path d='M21 12a9 9 0 0 1-15 6.7L3 16' />
-                              </svg>
-                            </MapButton>
-                          )}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <FlightDetailSheet
-                  flight={selectedFlight}
-                  onClose={() => setSelectedFlight(null)}
-                  locale={locale}
-                />
+            <FlightDetailSheet
+              flight={selectedFlight}
+              onClose={() => setSelectedFlight(null)}
+              locale={locale}
+            />
           </div>,
           document.body
         )}

@@ -1,14 +1,20 @@
 'use client'
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { useSyncExternalStore } from 'react'
 import { t } from '../lib/i18n'
 import { MOTION_OFFSET, MOTION_TRANSITION } from '../lib/motion'
 import { isOffline, selectLocale, selectPendingCount, useOfflineState } from '../lib/offline-store'
 
+const subscribe = () => () => {}
+const getTrue = () => true
+const getFalse = () => false
+
 export function SyncStatus() {
+  const mounted = useSyncExternalStore(subscribe, getTrue, getFalse)
   const state = useOfflineState()
   const locale = selectLocale(state)
-  const offline = isOffline(state)
+  const offline = mounted && isOffline(state)
   const reducedMotion = useReducedMotion()
   const pending = selectPendingCount(state)
 
