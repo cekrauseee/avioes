@@ -23,7 +23,9 @@ export default function Loading() {
       </header>
 
       <div className='flex min-h-0 flex-1 flex-col px-5 py-3'>
-        <Skel className='min-h-0 flex-1 rounded-xl' />
+        <div className='border-line bg-bg relative min-h-0 flex-1 overflow-hidden rounded-xl border shadow-lg'>
+          <div className='bg-line/60 absolute inset-0 animate-pulse' />
+        </div>
       </div>
     </div>
   )

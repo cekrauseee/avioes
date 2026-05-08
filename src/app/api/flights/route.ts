@@ -1,11 +1,19 @@
-import { unstable_cache } from 'next/cache'
+import { Redis } from '@upstash/redis'
 import type { Flight } from '../../../lib/geo'
 
 const TOKEN_URL = 'https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token'
 const STATES_URL = 'https://opensky-network.org/api/states/all'
 const CACHE_TTL_S = 90
+const REDIS_KEY = 'opensky:states'
 const NM_TO_KM = 1.852
 const EARTH_R_KM = 6371
+
+function getRedis(): Redis | null {
+  const url = process.env.KV_REST_API_URL
+  const token = process.env.KV_REST_API_TOKEN
+  if (!url || !token) return null
+  return new Redis({ url, token })
+}
 
 let tokenCache: { token: string; expiresAt: number } | null = null
 
@@ -75,10 +83,30 @@ async function fetchStatesFromOpenSky(): Promise<{ flights: Flight[]; time: numb
   return { flights, time: data.time ? data.time * 1000 : Date.now() }
 }
 
-const fetchAllStates = unstable_cache(fetchStatesFromOpenSky, ['opensky-states-all'], {
-  revalidate: CACHE_TTL_S,
-  tags: ['opensky']
-})
+async function getAllStates(force = false): Promise<{ flights: Flight[]; time: number }> {
+  const redis = getRedis()
+
+  if (!force && redis) {
+    try {
+      const cached = await redis.get<{ flights: Flight[]; time: number }>(REDIS_KEY)
+      if (cached) return cached
+    } catch {
+      // Upstash unavailable — fall through to live fetch
+    }
+  }
+
+  const result = await fetchStatesFromOpenSky()
+
+  if (redis) {
+    try {
+      await redis.set(REDIS_KEY, result, { ex: CACHE_TTL_S })
+    } catch {
+      // Upstash unavailable — no-op
+    }
+  }
+
+  return result
+}
 
 export async function GET(req: Request) {
   const url = new URL(req.url)
@@ -88,7 +116,7 @@ export async function GET(req: Request) {
   const distRaw = parseFloat(url.searchParams.get('dist') ?? '')
   const distNm = Number.isFinite(distRaw) && distRaw > 0 ? Math.min(distRaw, 1000) : 250
 
-  const { flights, time } = force ? await fetchStatesFromOpenSky() : await fetchAllStates()
+  const { flights, time } = await getAllStates(force)
 
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
     return Response.json({ flights, time }, { headers: cacheHeaders() })

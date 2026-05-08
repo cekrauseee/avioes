@@ -577,7 +577,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
         <div
           ref={cardRef}
           onClick={granted ? handleExpand : undefined}
-          className={`bg-bg relative min-h-0 flex-1 overflow-hidden rounded-xl transition-[transform,filter] duration-200 ${collapsing ? 'border-transparent shadow-none' : 'border-line border shadow-lg'} ${granted && firstPollDone && !expanded && !collapsing ? 'cursor-pointer hover:shadow-xl hover:scale-[1.01] hover:brightness-95 active:scale-[0.99]' : ''}`}
+          className={`bg-bg relative min-h-0 flex-1 overflow-hidden rounded-xl transition-[transform,filter] duration-200 ${collapsing ? 'border-transparent shadow-none' : 'border-line border shadow-lg'} ${granted && firstPollDone && !expanded && !collapsing ? 'cursor-pointer hover:scale-[1.01] hover:shadow-xl hover:brightness-95 active:scale-[0.99]' : ''}`}
         >
           {firstPollDone && (
             <canvas
@@ -586,12 +586,12 @@ export function WorldMap({ locale }: { locale: Locale }) {
             />
           )}
 
-          {!firstPollDone && !expanded && locationStatus !== 'denied' && (
-            <div className='bg-line/60 absolute inset-0 z-10 animate-pulse' />
-          )}
+          {!firstPollDone && !expanded && locationStatus !== 'denied' && <div className='bg-line/60 absolute inset-0 z-10 animate-pulse' />}
 
           {granted && !expanded && (
-            <div className={`pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-3 transition-opacity duration-300 ${firstPollDone ? 'opacity-100' : 'opacity-0'}`}>
+            <div
+              className={`pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between p-3 transition-opacity duration-300 ${firstPollDone ? 'opacity-100' : 'opacity-0'}`}
+            >
               {flightCount > 0 && (
                 <span className='text-ink-faint text-xs'>
                   {flightCount.toLocaleString()} {t(locale, 'world.map.planes')}

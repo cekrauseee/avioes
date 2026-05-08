@@ -1,6 +1,31 @@
 name: airplanes
 
 services:
+  redis:
+    image: hiett/serverless-redis-http:latest
+    container_name: airplanes_redis
+    restart: unless-stopped
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: local_token
+      SRH_CONNECTION_STRING: redis://redis_data:6379
+    ports:
+      - '8079:80'
+    networks:
+      - network
+
+  redis_data:
+    image: redis:7-alpine
+    container_name: airplanes_redis_data
+    restart: unless-stopped
+    networks:
+      - network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   postgres:
     image: postgres:17-alpine
     container_name: airplanes_postgres
@@ -20,6 +45,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+
 
 volumes:
   data:

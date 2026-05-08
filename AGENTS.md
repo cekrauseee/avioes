@@ -61,7 +61,7 @@ Before writing non-trivial code, skim the relevant doc inside `node_modules/next
 
 ## Local dev setup
 
-1. `npm run db:up` — `docker compose up -d`, starts Postgres on `localhost:5432` (matches `.env.example`).
+1. `npm run dev:up` — `docker compose up -d`, starts Postgres on `localhost:5432` and a local Upstash-compatible Redis REST server on `localhost:8079` (matches `.env.example`).
 2. `cp .env.example .env.local` if you don't have one.
 3. `npm run db:push` — applies the Drizzle schema. Re-run whenever `src/lib/db/schema.ts` changes.
 4. `npm run dev`.
