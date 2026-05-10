@@ -176,9 +176,9 @@ function ButtonStatusContent({ status, label }: { status: ButtonStatus; label: R
     >
       <motion.span
         key={status}
-        initial={reduce ? { opacity: 0 } : { opacity: 0, y: MOTION_OFFSET.buttonLabel, filter: 'blur(2px)' }}
-        animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, filter: 'blur(0px)' }}
-        exit={reduce ? { opacity: 0 } : { opacity: 0, y: -MOTION_OFFSET.buttonLabel, filter: 'blur(2px)' }}
+        initial={reduce ? { opacity: 0 } : { opacity: 0, y: MOTION_OFFSET.buttonLabel }}
+        animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
+        exit={reduce ? { opacity: 0 } : { opacity: 0, y: -MOTION_OFFSET.buttonLabel }}
         transition={MOTION_TRANSITION.inline}
         className='inline-flex items-center gap-2'
       >

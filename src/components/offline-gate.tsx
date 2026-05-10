@@ -48,7 +48,6 @@ export function OfflineGate() {
             width={480}
             height={480}
             priority
-            unoptimized
             className='theme-light-only h-auto w-full select-none'
             draggable={false}
           />
@@ -59,7 +58,6 @@ export function OfflineGate() {
             width={480}
             height={480}
             priority
-            unoptimized
             className='theme-dark-only h-auto w-full select-none'
             draggable={false}
           />
