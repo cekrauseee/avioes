@@ -90,7 +90,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
     })
     if (result.error) {
       setLoading(false)
-      setError(t(locale, 'auth.googleFailed'))
+      advanceTo('error')
     }
   }
 
