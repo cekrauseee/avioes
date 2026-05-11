@@ -326,8 +326,15 @@ function GroupTab({ locale, activeGroupId, isOwner }: { locale: Locale; activeGr
 
 // ─── Account tab ──────────────────────────────────────────────────────────────
 
+function resolveConnectionError(error: string | null, locale: Locale): string | null {
+  if (!error) return null
+  if (error === "email_doesn't_match") return t(locale, 'settings.googleEmailMismatch')
+  return t(locale, 'settings.googleLinkError')
+}
+
 function AccountTab({ locale, who }: { locale: Locale; who: string }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const state = useOfflineState()
   const me = getMemberColor(who, state.groupMembers)
   const myFirstName = getMemberFirstName(who, state.groupMembers)
@@ -338,6 +345,10 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
   const [passkeysOpen, setPasskeysOpen] = useState(false)
   const [connectionsOpen, setConnectionsOpen] = useState(false)
   const signOut = usePromiseStatus({ resetMs: 1400 })
+
+  const connectionError = resolveConnectionError(searchParams.get('error'), locale)
+  const connectionsFromUrl = searchParams.get('connections') === 'open'
+  const sheetOpen = connectionsOpen || connectionsFromUrl
 
   const rowArrow = <span className='text-ink-faint text-xs'>→</span>
   const signOutArrow = <span className='text-xs opacity-60'>→</span>
@@ -413,9 +424,13 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
       />
 
       <ConnectionsSheet
-        open={connectionsOpen}
-        onClose={() => setConnectionsOpen(false)}
+        open={sheetOpen}
+        onClose={() => {
+          setConnectionsOpen(false)
+          if (connectionsFromUrl) router.replace('/settings?tab=account', { scroll: false })
+        }}
         locale={locale}
+        initialError={connectionError}
       />
 
       <Button

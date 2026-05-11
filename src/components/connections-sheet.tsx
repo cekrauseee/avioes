@@ -15,11 +15,21 @@ import { Skel } from './skeleton'
 
 type LinkedAccount = { providerId: string }
 
-export function ConnectionsSheet({ open, onClose, locale }: { open: boolean; onClose: () => void; locale: Locale }) {
+export function ConnectionsSheet({
+  open,
+  onClose,
+  locale,
+  initialError
+}: {
+  open: boolean
+  onClose: () => void
+  locale: Locale
+  initialError?: string | null
+}) {
   const [accounts, setAccounts] = useState<LinkedAccount[] | null>(null)
   const [hasPasskey, setHasPasskey] = useState(false)
   const [unlinking, setUnlinking] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [unlinkError, setUnlinkError] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(false)
   const [confirming, setConfirming] = useState(false)
 
@@ -49,15 +59,15 @@ export function ConnectionsSheet({ open, onClose, locale }: { open: boolean; onC
   const toggleExpanded = () => {
     setExpanded((p) => !p)
     setConfirming(false)
-    setError(null)
+    setUnlinkError(null)
   }
 
   const handleUnlinkGoogle = async () => {
     setUnlinking(true)
-    setError(null)
+    setUnlinkError(null)
     const res = await authClient.unlinkAccount({ providerId: 'google' })
     if (res.error) {
-      setError(res.error.message ?? t(locale, 'settings.unlinkError'))
+      setUnlinkError(res.error.message ?? t(locale, 'settings.unlinkError'))
       setUnlinking(false)
       return
     }
@@ -70,7 +80,8 @@ export function ConnectionsSheet({ open, onClose, locale }: { open: boolean; onC
   const handleLinkGoogle = () => {
     authClient.linkSocial({
       provider: 'google',
-      callbackURL: '/settings?tab=account'
+      callbackURL: '/settings?tab=account&connections=open',
+      errorCallbackURL: '/settings?tab=account&connections=open'
     })
   }
 
@@ -153,7 +164,7 @@ export function ConnectionsSheet({ open, onClose, locale }: { open: boolean; onC
                       }
                     </ConfirmActionSlot>
                   }
-                  {error && <p className='text-clay border-line border-t px-5 py-2 text-[11px]'>{error}</p>}
+                  {unlinkError && <p className='text-clay border-line border-t px-5 py-2 text-[11px]'>{unlinkError}</p>}
                 </ExpandableItem>
               : <Button
                   variant='row'
@@ -171,6 +182,7 @@ export function ConnectionsSheet({ open, onClose, locale }: { open: boolean; onC
                   trailing={<span className='text-ink-faint text-xs'>→</span>}
                 />
               }
+              {initialError && !googleLinked && <p className='text-clay px-1 text-[11px]'>{initialError}</p>}
             </div>
 
             <div className='flex flex-col gap-2 px-6 pt-4'>

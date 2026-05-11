@@ -98,6 +98,8 @@ const pt = {
   'settings.noPasskeys': 'nenhuma chave de acesso cadastrada',
   'settings.passkeyCreated': 'criada em',
   'settings.unlinkError': 'Erro',
+  'settings.googleLinkError': 'Não foi possível conectar o Google.',
+  'settings.googleEmailMismatch': 'O e-mail do Google não corresponde ao da sua conta.',
 
   'password.back': 'voltar',
   'password.currentLabel': 'senha atual',
@@ -644,6 +646,8 @@ const en: Record<TranslationKey, string> = {
   'settings.noPasskeys': 'no passkeys registered',
   'settings.passkeyCreated': 'created',
   'settings.unlinkError': 'Error',
+  'settings.googleLinkError': 'Could not connect Google.',
+  'settings.googleEmailMismatch': 'The Google email does not match your account email.',
 
   'password.back': 'back',
   'password.currentLabel': 'current password',
