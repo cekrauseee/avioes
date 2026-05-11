@@ -1,7 +1,8 @@
 'use client'
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
+import { Component, useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   BASE_PIX_PER_DEG,
@@ -14,10 +15,12 @@ import {
   screenToLonLat,
   type Flight,
   type GeoJSON,
+  type PlaneEffectState,
   type Viewport
 } from '../lib/geo'
 import { t } from '../lib/i18n'
-import { MOTION_OFFSET, MOTION_TRANSITION } from '../lib/motion'
+import { MOTION_OFFSET, MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
+import { setRouteGestureLock } from '../lib/route-gesture-lock'
 import type { Locale } from '../lib/types'
 import { Button, usePromiseStatus } from './button'
 import { FlightDetailSheet } from './flight-detail-sheet'
@@ -31,7 +34,8 @@ const SCALE_MAX = 500
 const WORLD_OVERSCAN = 1.3
 const DEFAULT_USER_SCALE = 500
 const TAP_THRESHOLD = 5
-const HIT_RADIUS_PX = 14
+const HIT_RADIUS_PX = 18
+const HOVER_RADIUS_PX = 20
 const LERP_FACTOR = 0.08
 const ZOOM_LERP = 0.15
 const WHEEL_ZOOM_SENSITIVITY = 0.0025
@@ -55,7 +59,11 @@ function clampScaleForViewport(scale: number, w: number, h: number): number {
   return Math.max(getMinScaleForViewport(w, h), Math.min(SCALE_MAX, scale))
 }
 
-export function WorldMap({ locale }: { locale: Locale }) {
+// Snapshot written on every render so the error boundary can read it synchronously.
+let _preErrorExpanded = false
+let _preErrorOriginRect: { top: number; left: number; width: number; height: number } | null = null
+
+function WorldMapImpl({ locale }: { locale: Locale }) {
   const reduceMotion = useReducedMotion()
   const reduceMotionRef = useRef(reduceMotion)
   useEffect(() => {
@@ -63,14 +71,24 @@ export function WorldMap({ locale }: { locale: Locale }) {
   }, [reduceMotion])
   const [expanded, setExpanded] = useState(false)
   const [controlsVisible, setControlsVisible] = useState(false)
+  const [mapCursor, setMapCursor] = useState<'grab' | 'grabbing' | 'pointer'>('grab')
   const [flightCount, setFlightCount] = useState(0)
   const [selectedFlight, setSelectedFlight] = useState<Flight | null>(null)
   const locationStatusRef = useRef<LocationStatus>('idle')
   const [originRect, setOriginRect] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
+  _preErrorExpanded = expanded
+  _preErrorOriginRect = originRect
   const [firstPollDone, setFirstPollDone] = useState(false)
+  const [collapsing, setCollapsing] = useState(false)
   const firstPollDoneRef = useRef(false)
 
+  useEffect(() => {
+    setRouteGestureLock('world-map-fullscreen', expanded)
+    return () => setRouteGestureLock('world-map-fullscreen', false)
+  }, [expanded])
+
   const cardRef = useRef<HTMLDivElement>(null)
+  const overlayRef = useRef<HTMLDivElement>(null)
   const cardCanvasRef = useRef<HTMLCanvasElement>(null)
   const fullCanvasRef = useRef<HTMLCanvasElement>(null)
   const geojsonRef = useRef<GeoJSON | null>(null)
@@ -85,6 +103,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
   const vpInitializedRef = useRef(false)
   const lockCenterRef = useRef(true)
   const activeCanvasRef = useRef<'card' | 'full'>('card')
+  const collapsingRef = useRef(false)
 
   const dragRef = useRef({
     active: false,
@@ -95,6 +114,10 @@ export function WorldMap({ locale }: { locale: Locale }) {
     moved: 0
   })
   const pinchRef = useRef<Map<number, { x: number; y: number }>>(new Map())
+  const hoveredFlightIdRef = useRef<string | null>(null)
+  const selectedFlightIdRef = useRef<string | null>(null)
+  const planeEffectsRef = useRef<Map<string, PlaneEffectState>>(new Map())
+  const mapCursorRef = useRef<'grab' | 'grabbing' | 'pointer'>('grab')
   const pinchStateRef = useRef({
     active: false,
     startDist: 0,
@@ -111,6 +134,16 @@ export function WorldMap({ locale }: { locale: Locale }) {
   const zoomAnimRef = useRef({ targetScale: 0, cx: 0, cy: 0, active: false })
   const flyToRef = useRef({ x: 0, y: 0, scale: 1, active: false })
 
+  useEffect(() => {
+    selectedFlightIdRef.current = selectedFlight?.icao24 ?? null
+  }, [selectedFlight])
+
+  const setCanvasCursor = useCallback((cursor: 'grab' | 'grabbing' | 'pointer') => {
+    if (mapCursorRef.current === cursor) return
+    mapCursorRef.current = cursor
+    setMapCursor(cursor)
+  }, [])
+
   /* ---- data fetching ---- */
 
   useEffect(() => {
@@ -124,26 +157,30 @@ export function WorldMap({ locale }: { locale: Locale }) {
 
   const fetchFlights = useCallback((force = false) => {
     const url = force ? '/api/flights?force=1' : '/api/flights'
-    return fetch(url).then((r) => {
-      if (!r.ok) throw new Error('fetch failed')
-      return r.json() as Promise<{ flights: Flight[]; time: number; cached: boolean; cachedAt: number; ttl: number }>
-    }).then((data) => {
-      flightsRef.current = data.flights
-      pollTimeRef.current = Date.now()
-      cacheMetaRef.current = { cached: data.cached, cachedAt: data.cachedAt, ttl: data.ttl }
-      setFlightCount((prev) => (prev === data.flights.length ? prev : data.flights.length))
-      if (!firstPollDoneRef.current) {
-        firstPollDoneRef.current = true
-        setFirstPollDone(true)
-      }
-    })
+    return fetch(url)
+      .then((r) => {
+        if (!r.ok) throw new Error('fetch failed')
+        return r.json() as Promise<{ flights: Flight[]; time: number; cached: boolean; cachedAt: number; ttl: number }>
+      })
+      .then((data) => {
+        flightsRef.current = data.flights
+        pollTimeRef.current = Date.now()
+        cacheMetaRef.current = { cached: data.cached, cachedAt: data.cachedAt, ttl: data.ttl }
+        setFlightCount((prev) => (prev === data.flights.length ? prev : data.flights.length))
+        if (!firstPollDoneRef.current) {
+          firstPollDoneRef.current = true
+          setFirstPollDone(true)
+        }
+      })
   }, [])
 
   const syncFlights = useCallback(() => fetchFlights(true), [fetchFlights])
 
   useEffect(() => {
     fetchFlights().catch(() => {})
-    const id = setInterval(() => { fetchFlights().catch(() => {}) }, POLL_INTERVAL)
+    const id = setInterval(() => {
+      fetchFlights().catch(() => {})
+    }, POLL_INTERVAL)
     return () => clearInterval(id)
   }, [fetchFlights])
 
@@ -245,7 +282,12 @@ export function WorldMap({ locale }: { locale: Locale }) {
       drawWorldOutline(ctx, geojsonRef.current, vp, colors)
     }
 
-    drawAirplanes(ctx, displayFlightsRef.current, vp, w, h, colors)
+    drawAirplanes(ctx, displayFlightsRef.current, vp, w, h, colors, {
+      hoveredIcao24: hoveredFlightIdRef.current,
+      selectedIcao24: selectedFlightIdRef.current,
+      effects: planeEffectsRef.current,
+      immediate: Boolean(reduceMotionRef.current)
+    })
 
     const loc = userLocationRef.current
     if (loc) drawUserLocation(ctx, loc.lon, loc.lat, vp, w, h, colors)
@@ -380,6 +422,21 @@ export function WorldMap({ locale }: { locale: Locale }) {
           vpRef.current = centerViewportOn(loc.lon, loc.lat, scale, w, h)
         }
 
+        if (w > 0 && h > 0 && !lockCenterRef.current) {
+          const vp = vpRef.current
+          const mapW = 360 * vp.scale
+          const mapH = 180 * vp.scale
+          const cx = w / 2
+          const cy = h / 2
+          const x = Math.max(cx - mapW, Math.min(cx, vp.x))
+          const y = Math.max(cy - mapH, Math.min(cy, vp.y))
+          if (x !== vp.x || y !== vp.y) {
+            vpRef.current = { ...vp, x, y }
+            momentumRef.current.vx = 0
+            momentumRef.current.vy = 0
+          }
+        }
+
         draw(primary, vpRef.current)
       }
 
@@ -401,123 +458,198 @@ export function WorldMap({ locale }: { locale: Locale }) {
 
   /* ---- pointer handlers (fullscreen only) ---- */
 
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    const canvas = fullCanvasRef.current
-    if (!canvas) return
-    canvas.setPointerCapture(e.pointerId)
-
-    zoomAnimRef.current.active = false
-    flyToRef.current.active = false
-    pinchRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
-    const size = pinchRef.current.size
-
-    momentumRef.current = { vx: 0, vy: 0 }
-
-    if (size === 1) {
-      dragRef.current = {
-        active: true,
-        startX: e.clientX,
-        startY: e.clientY,
-        startVpX: vpRef.current.x,
-        startVpY: vpRef.current.y,
-        moved: 0
+  const updateHoveredFlight = useCallback(
+    (clientX: number, clientY: number) => {
+      const canvas = fullCanvasRef.current
+      if (!canvas) {
+        hoveredFlightIdRef.current = null
+        setCanvasCursor('grab')
+        return
       }
-      lastDragRef.current = { x: e.clientX, y: e.clientY, t: performance.now() }
-    } else if (size === 2) {
-      multitouchRef.current = true
-      dragRef.current.active = false
-      const [p1, p2] = [...pinchRef.current.values()]
-      const dx = p1.x - p2.x
-      const dy = p1.y - p2.y
-      pinchStateRef.current = {
-        active: true,
-        startDist: Math.hypot(dx, dy) || 1,
-        startCx: (p1.x + p2.x) / 2,
-        startCy: (p1.y + p2.y) / 2,
-        startScale: vpRef.current.scale,
-        startVpX: vpRef.current.x,
-        startVpY: vpRef.current.y
+
+      const rect = canvas.getBoundingClientRect()
+      const sx = clientX - rect.left
+      const sy = clientY - rect.top
+      if (sx < 0 || sx > rect.width || sy < 0 || sy > rect.height) {
+        hoveredFlightIdRef.current = null
+        setCanvasCursor('grab')
+        return
       }
-    }
-  }, [])
 
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!pinchRef.current.has(e.pointerId)) return
-    pinchRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      const [lon, lat] = screenToLonLat(sx, sy, vpRef.current)
+      const thresholdDeg = HOVER_RADIUS_PX / (BASE_PIX_PER_DEG * vpRef.current.scale)
+      const hit = findFlightAt(displayFlightsRef.current, lon, lat, thresholdDeg)
+      hoveredFlightIdRef.current = hit?.icao24 ?? null
+      setCanvasCursor(hit ? 'pointer' : 'grab')
+    },
+    [setCanvasCursor]
+  )
 
-    if (pinchStateRef.current.active && pinchRef.current.size >= 2) {
-      const [p1, p2] = [...pinchRef.current.values()]
-      const dx = p1.x - p2.x
-      const dy = p1.y - p2.y
-      const dist = Math.hypot(dx, dy) || 1
-      const cx = (p1.x + p2.x) / 2
-      const cy = (p1.y + p2.y) / 2
-      const s = pinchStateRef.current
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.stopPropagation()
       const canvas = fullCanvasRef.current
       if (!canvas) return
-      const rect = canvas.getBoundingClientRect()
-      const newScale = clampScaleForViewport(s.startScale * (dist / s.startDist), rect.width, rect.height)
-      const ratio = newScale / s.startScale
-      vpRef.current = {
-        x: cx - (s.startCx - s.startVpX) * ratio,
-        y: cy - (s.startCy - s.startVpY) * ratio,
-        scale: newScale
+      canvas.setPointerCapture(e.pointerId)
+
+      zoomAnimRef.current.active = false
+      flyToRef.current.active = false
+      hoveredFlightIdRef.current = null
+      setCanvasCursor('grabbing')
+      pinchRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      const size = pinchRef.current.size
+
+      momentumRef.current = { vx: 0, vy: 0 }
+
+      if (size === 1) {
+        dragRef.current = {
+          active: true,
+          startX: e.clientX,
+          startY: e.clientY,
+          startVpX: vpRef.current.x,
+          startVpY: vpRef.current.y,
+          moved: 0
+        }
+        lastDragRef.current = { x: e.clientX, y: e.clientY, t: performance.now() }
+      } else if (size === 2) {
+        multitouchRef.current = true
+        dragRef.current.active = false
+        const [p1, p2] = [...pinchRef.current.values()]
+        const dx = p1.x - p2.x
+        const dy = p1.y - p2.y
+        pinchStateRef.current = {
+          active: true,
+          startDist: Math.hypot(dx, dy) || 1,
+          startCx: (p1.x + p2.x) / 2,
+          startCy: (p1.y + p2.y) / 2,
+          startScale: vpRef.current.scale,
+          startVpX: vpRef.current.x,
+          startVpY: vpRef.current.y
+        }
       }
-      return
-    }
+    },
+    [setCanvasCursor]
+  )
 
-    if (dragRef.current.active) {
-      const dx = e.clientX - dragRef.current.startX
-      const dy = e.clientY - dragRef.current.startY
-      dragRef.current.moved = Math.max(dragRef.current.moved, Math.abs(dx) + Math.abs(dy))
-      vpRef.current = {
-        ...vpRef.current,
-        x: dragRef.current.startVpX + dx,
-        y: dragRef.current.startVpY + dy
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      e.stopPropagation()
+      if (!pinchRef.current.has(e.pointerId)) {
+        updateHoveredFlight(e.clientX, e.clientY)
+        return
       }
+      pinchRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
-      const now = performance.now()
-      const dt = now - lastDragRef.current.t
-      if (dt > 0 && dt < 100) {
-        momentumRef.current.vx = ((e.clientX - lastDragRef.current.x) / dt) * 16
-        momentumRef.current.vy = ((e.clientY - lastDragRef.current.y) / dt) * 16
-      }
-      lastDragRef.current = { x: e.clientX, y: e.clientY, t: now }
-    }
-  }, [])
-
-  const onPointerUp = useCallback((e: React.PointerEvent) => {
-    pinchRef.current.delete(e.pointerId)
-
-    if (pinchStateRef.current.active && pinchRef.current.size < 2) {
-      pinchStateRef.current.active = false
-    }
-
-    if (pinchRef.current.size === 0) {
-      if (dragRef.current.active && !multitouchRef.current && dragRef.current.moved < TAP_THRESHOLD) {
+      if (pinchStateRef.current.active && pinchRef.current.size >= 2) {
+        hoveredFlightIdRef.current = null
+        const [p1, p2] = [...pinchRef.current.values()]
+        const dx = p1.x - p2.x
+        const dy = p1.y - p2.y
+        const dist = Math.hypot(dx, dy) || 1
+        const cx = (p1.x + p2.x) / 2
+        const cy = (p1.y + p2.y) / 2
+        const s = pinchStateRef.current
         const canvas = fullCanvasRef.current
-        if (canvas) {
-          const rect = canvas.getBoundingClientRect()
-          const sx = e.clientX - rect.left
-          const sy = e.clientY - rect.top
-          const [lon, lat] = screenToLonLat(sx, sy, vpRef.current)
-          const thresholdDeg = HIT_RADIUS_PX / (BASE_PIX_PER_DEG * vpRef.current.scale)
-          const hit = findFlightAt(displayFlightsRef.current, lon, lat, thresholdDeg)
-          if (hit) setSelectedFlight(hit)
+        if (!canvas) return
+        const rect = canvas.getBoundingClientRect()
+        const newScale = clampScaleForViewport(s.startScale * (dist / s.startDist), rect.width, rect.height)
+        const ratio = newScale / s.startScale
+        vpRef.current = {
+          x: cx - (s.startCx - s.startVpX) * ratio,
+          y: cy - (s.startCy - s.startVpY) * ratio,
+          scale: newScale
         }
-        momentumRef.current = { vx: 0, vy: 0 }
-      } else if (dragRef.current.active) {
-        const timeSinceLastMove = performance.now() - lastDragRef.current.t
-        if (timeSinceLastMove > 80) {
+        return
+      }
+
+      if (dragRef.current.active) {
+        hoveredFlightIdRef.current = null
+        const dx = e.clientX - dragRef.current.startX
+        const dy = e.clientY - dragRef.current.startY
+        dragRef.current.moved = Math.max(dragRef.current.moved, Math.abs(dx) + Math.abs(dy))
+        vpRef.current = {
+          ...vpRef.current,
+          x: dragRef.current.startVpX + dx,
+          y: dragRef.current.startVpY + dy
+        }
+
+        const now = performance.now()
+        const dt = now - lastDragRef.current.t
+        if (dt > 0 && dt < 100) {
+          momentumRef.current.vx = ((e.clientX - lastDragRef.current.x) / dt) * 16
+          momentumRef.current.vy = ((e.clientY - lastDragRef.current.y) / dt) * 16
+        }
+        lastDragRef.current = { x: e.clientX, y: e.clientY, t: now }
+      }
+    },
+    [updateHoveredFlight]
+  )
+
+  const onPointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      e.stopPropagation()
+      pinchRef.current.delete(e.pointerId)
+
+      if (pinchStateRef.current.active && pinchRef.current.size < 2) {
+        pinchStateRef.current.active = false
+      }
+
+      if (pinchRef.current.size === 0) {
+        if (dragRef.current.active && !multitouchRef.current && dragRef.current.moved < TAP_THRESHOLD) {
+          const canvas = fullCanvasRef.current
+          if (canvas) {
+            const rect = canvas.getBoundingClientRect()
+            const sx = e.clientX - rect.left
+            const sy = e.clientY - rect.top
+            const [lon, lat] = screenToLonLat(sx, sy, vpRef.current)
+            const thresholdDeg = HIT_RADIUS_PX / (BASE_PIX_PER_DEG * vpRef.current.scale)
+            const hit = findFlightAt(displayFlightsRef.current, lon, lat, thresholdDeg)
+            if (hit) setSelectedFlight(hit)
+          }
           momentumRef.current = { vx: 0, vy: 0 }
+        } else if (dragRef.current.active) {
+          const timeSinceLastMove = performance.now() - lastDragRef.current.t
+          if (timeSinceLastMove > 80) {
+            momentumRef.current = { vx: 0, vy: 0 }
+          }
         }
+        dragRef.current.active = false
+        multitouchRef.current = false
+        updateHoveredFlight(e.clientX, e.clientY)
+      }
+    },
+    [updateHoveredFlight]
+  )
+
+  const onPointerLeave = useCallback(
+    (e: React.PointerEvent) => {
+      e.stopPropagation()
+      if (dragRef.current.active || pinchStateRef.current.active) return
+      hoveredFlightIdRef.current = null
+      setCanvasCursor('grab')
+    },
+    [setCanvasCursor]
+  )
+
+  const onLostPointerCapture = useCallback(
+    (e: React.PointerEvent) => {
+      e.stopPropagation()
+      if (!dragRef.current.active && !pinchStateRef.current.active && pinchRef.current.size === 0) {
+        setCanvasCursor(hoveredFlightIdRef.current ? 'pointer' : 'grab')
+        return
       }
       dragRef.current.active = false
+      pinchStateRef.current.active = false
+      pinchRef.current.clear()
       multitouchRef.current = false
-    }
-  }, [])
+      momentumRef.current = { vx: 0, vy: 0 }
+      setCanvasCursor('grab')
+    },
+    [setCanvasCursor]
+  )
 
   const onWheel = useCallback((e: React.WheelEvent) => {
+    e.stopPropagation()
     e.preventDefault()
     if (dragRef.current.active || pinchStateRef.current.active) return
     const canvas = fullCanvasRef.current
@@ -540,19 +672,18 @@ export function WorldMap({ locale }: { locale: Locale }) {
 
   /* ---- expand / collapse ---- */
 
-  const overlayRef = useRef<HTMLDivElement>(null)
-  const collapsingRef = useRef(false)
-  const [collapsing, setCollapsing] = useState(false)
-
   function handleExpand() {
     const card = cardRef.current
     if (!card) return
+    setRouteGestureLock('world-map-fullscreen', true)
     const rect = card.getBoundingClientRect()
     setOriginRect({ top: rect.top, left: rect.left, width: rect.width, height: rect.height })
     lockCenterRef.current = true
     activeCanvasRef.current = 'full'
     momentumRef.current = { vx: 0, vy: 0 }
     zoomAnimRef.current.active = false
+    hoveredFlightIdRef.current = null
+    setCanvasCursor('grab')
     collapsingRef.current = false
     setControlsVisible(false)
     setExpanded(true)
@@ -590,8 +721,14 @@ export function WorldMap({ locale }: { locale: Locale }) {
 
   const handleCollapse = useCallback(() => {
     lockCenterRef.current = true
+    dragRef.current.active = false
+    pinchStateRef.current.active = false
+    pinchRef.current.clear()
+    multitouchRef.current = false
     momentumRef.current = { vx: 0, vy: 0 }
     zoomAnimRef.current.active = false
+    hoveredFlightIdRef.current = null
+    setCanvasCursor('grab')
     setSelectedFlight(null)
     setControlsVisible(false)
 
@@ -609,6 +746,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
       setTimeout(
         () => {
           collapsingRef.current = false
+          lockCenterRef.current = true
           setCollapsing(false)
           activeCanvasRef.current = 'card'
           setExpanded(false)
@@ -616,10 +754,11 @@ export function WorldMap({ locale }: { locale: Locale }) {
         reduceMotion ? 0 : EXPAND_DURATION
       )
     } else {
+      lockCenterRef.current = true
       activeCanvasRef.current = 'card'
       setExpanded(false)
     }
-  }, [reduceMotion])
+  }, [reduceMotion, setCanvasCursor])
 
   useEffect(() => {
     if (!expanded || selectedFlight) return
@@ -668,7 +807,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
       {/* Fullscreen expanded view */}
       {typeof document !== 'undefined' &&
         expanded &&
-        originRect &&
+        originRect != null &&
         createPortal(
           <div
             ref={overlayRef}
@@ -681,20 +820,26 @@ export function WorldMap({ locale }: { locale: Locale }) {
                 reduceMotion ? 'none' : (
                   `top ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), left ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), width ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), height ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), border-radius ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1)`
                 ),
-              top: originRect.top,
-              left: originRect.left,
-              width: originRect.width,
-              height: originRect.height,
+              top: originRect!.top,
+              left: originRect!.left,
+              width: originRect!.width,
+              height: originRect!.height,
               borderRadius: 12
             }}
           >
             <canvas
               ref={fullCanvasRef}
-              className='absolute inset-0 h-full w-full touch-none'
+              className={`absolute inset-0 h-full w-full touch-none ${
+                mapCursor === 'grabbing' ? 'cursor-grabbing'
+                : mapCursor === 'pointer' ? 'cursor-pointer'
+                : 'cursor-grab'
+              }`}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
+              onPointerLeave={onPointerLeave}
+              onLostPointerCapture={onLostPointerCapture}
               onWheel={onWheel}
             />
 
@@ -708,13 +853,13 @@ export function WorldMap({ locale }: { locale: Locale }) {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -MOTION_OFFSET.token, scale: 0.96 }}
                     transition={MOTION_TRANSITION.inline}
-                    className='pointer-events-auto flex items-start justify-between px-4 pt-[max(env(safe-area-inset-top),1rem)]'
+                    className='pointer-events-none flex items-start justify-between px-4 pt-[max(env(safe-area-inset-top),1rem)]'
                   >
                     <Button
                       variant='secondary'
                       size='xs'
                       shape='pill'
-                      className='w-10 !px-0 !bg-paper/90 hover:!bg-paper !text-ink shadow-sm backdrop-blur-sm'
+                      className='!bg-paper/90 hover:!bg-paper !text-ink pointer-events-auto w-10 !px-0 shadow-sm backdrop-blur-sm'
                       onClick={handleCollapse}
                       aria-label={t(locale, 'world.map.close')}
                     >
@@ -729,21 +874,28 @@ export function WorldMap({ locale }: { locale: Locale }) {
                         strokeLinejoin='round'
                       >
                         <line
-                          x1='19'
-                          y1='12'
-                          x2='5'
-                          y2='12'
+                          x1='18'
+                          y1='6'
+                          x2='6'
+                          y2='18'
                         />
-                        <polyline points='12 19 5 12 12 5' />
+                        <line
+                          x1='6'
+                          y1='6'
+                          x2='18'
+                          y2='18'
+                        />
                       </svg>
                     </Button>
                     {isDev && (
-                      <DevPanel
-                        flightCount={flightCount}
-                        cacheMetaRef={cacheMetaRef}
-                        pollTimeRef={pollTimeRef}
-                        onSync={syncFlights}
-                      />
+                      <div className='pointer-events-auto'>
+                        <DevPanel
+                          flightCount={flightCount}
+                          cacheMetaRef={cacheMetaRef}
+                          pollTimeRef={pollTimeRef}
+                          onSync={syncFlights}
+                        />
+                      </div>
                     )}
                   </motion.div>
                 )}
@@ -759,7 +911,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: MOTION_OFFSET.token, scale: 0.98 }}
                     transition={MOTION_TRANSITION.inline}
-                    className='pointer-events-auto flex items-end justify-between px-4 pb-[max(env(safe-area-inset-bottom),1rem)]'
+                    className='pointer-events-none flex items-end justify-between px-4 pb-[max(env(safe-area-inset-bottom),1rem)]'
                   >
                     {flightCount > 0 ?
                       <span className='text-ink-faint text-xs'>
@@ -767,12 +919,12 @@ export function WorldMap({ locale }: { locale: Locale }) {
                       </span>
                     : <span />}
 
-                    <div className='flex flex-col gap-2'>
+                    <div className='pointer-events-auto flex flex-col gap-2'>
                       <Button
                         variant='secondary'
                         size='xs'
                         shape='pill'
-                        className='w-10 !px-0 !bg-paper/90 hover:!bg-paper !text-ink shadow-sm backdrop-blur-sm'
+                        className='!bg-paper/90 hover:!bg-paper !text-ink w-10 !px-0 shadow-sm backdrop-blur-sm'
                         onClick={() => zoomBy(1.5)}
                         aria-label={t(locale, 'world.map.zoomIn')}
                       >
@@ -803,7 +955,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
                         variant='secondary'
                         size='xs'
                         shape='pill'
-                        className='w-10 !px-0 !bg-paper/90 hover:!bg-paper !text-ink shadow-sm backdrop-blur-sm'
+                        className='!bg-paper/90 hover:!bg-paper !text-ink w-10 !px-0 shadow-sm backdrop-blur-sm'
                         onClick={() => zoomBy(1 / 1.5)}
                         aria-label={t(locale, 'world.map.zoomOut')}
                       >
@@ -828,7 +980,7 @@ export function WorldMap({ locale }: { locale: Locale }) {
                         variant='secondary'
                         size='xs'
                         shape='pill'
-                        className='w-10 !px-0 !bg-paper/90 hover:!bg-paper !text-ink shadow-sm backdrop-blur-sm'
+                        className='!bg-paper/90 hover:!bg-paper !text-ink w-10 !px-0 shadow-sm backdrop-blur-sm'
                         onClick={recenter}
                         aria-label={t(locale, 'world.map.recenter')}
                       >
@@ -902,6 +1054,142 @@ export function WorldMap({ locale }: { locale: Locale }) {
   )
 }
 
+function MapErrorFallback({ locale }: { locale: Locale }) {
+  return (
+    <motion.div
+      className='flex min-h-0 flex-1 flex-col px-5 py-3'
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={MOTION_TRANSITION.screen}
+    >
+      <div className='bg-bg border-line relative flex min-h-0 flex-1 flex-col items-center justify-center gap-3 overflow-hidden rounded-xl border p-6 shadow-lg'>
+        <motion.div
+          className='w-32'
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 6 }}
+          transition={withMotionDelay(MOTION_TRANSITION.sectionMedium, 0.06)}
+        >
+          <Image
+            src='/radar-error-light.png'
+            alt=''
+            aria-hidden
+            width={1254}
+            height={1254}
+            unoptimized
+            className='theme-light-only h-auto w-full select-none'
+            draggable={false}
+          />
+          <Image
+            src='/radar-error-dark.png'
+            alt=''
+            aria-hidden
+            width={1254}
+            height={1254}
+            unoptimized
+            className='theme-dark-only h-auto w-full select-none'
+            draggable={false}
+          />
+        </motion.div>
+        <motion.div
+          className='flex flex-col items-center gap-1 text-center'
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={withMotionDelay(MOTION_TRANSITION.screen, 0.14)}
+        >
+          <span className='text-ink text-sm'>{t(locale, 'world.map.errorTitle')}</span>
+          <span className='text-ink-faint text-xs'>{t(locale, 'world.map.errorSubtitle')}</span>
+        </motion.div>
+      </div>
+    </motion.div>
+  )
+}
+
+type CollapsingRect = { top: number; left: number; width: number; height: number }
+
+function CollapsingOverlay({ originRect }: { originRect: CollapsingRect }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const reduceMotion = useReducedMotion()
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const tid = setTimeout(() => {
+      el.style.top = `${originRect.top}px`
+      el.style.left = `${originRect.left}px`
+      el.style.width = `${originRect.width}px`
+      el.style.height = `${originRect.height}px`
+      el.style.borderRadius = '12px'
+    }, 0)
+    return () => clearTimeout(tid)
+  }, [originRect])
+
+  if (typeof document === 'undefined') return null
+  return createPortal(
+    <div
+      ref={ref}
+      className='bg-bg'
+      style={{
+        position: 'fixed',
+        zIndex: 40,
+        overflow: 'hidden',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        borderRadius: 0,
+        transition: reduceMotion ? 'none' : `top ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), left ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), width ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), height ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), border-radius ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1)`
+      }}
+    />,
+    document.body
+  )
+}
+
+type BoundaryState = { hasError: boolean; collapsing: boolean; collapsingRect: CollapsingRect | null }
+
+class MapErrorBoundary extends Component<{ locale: Locale; children: React.ReactNode }, BoundaryState> {
+  state: BoundaryState = { hasError: false, collapsing: false, collapsingRect: null }
+
+  static getDerivedStateFromError(): Partial<BoundaryState> {
+    return {
+      hasError: true,
+      collapsing: _preErrorExpanded,
+      collapsingRect: _preErrorExpanded ? _preErrorOriginRect : null
+    }
+  }
+
+  componentDidCatch() {
+    if (this.state.collapsing) {
+      setTimeout(() => {
+        this.setState({ collapsing: false })
+      }, EXPAND_DURATION)
+    }
+  }
+
+  render() {
+    const { hasError, collapsing, collapsingRect } = this.state
+    if (!hasError) return <>{this.props.children}</>
+    return (
+      <>
+        {collapsing && collapsingRect && <CollapsingOverlay originRect={collapsingRect} />}
+        <AnimatePresence>
+          {!collapsing && <MapErrorFallback key='error' locale={this.props.locale} />}
+        </AnimatePresence>
+      </>
+    )
+  }
+}
+
+export function WorldMap({ locale }: { locale: Locale }) {
+  return (
+    <MapErrorBoundary locale={locale}>
+      <WorldMapImpl locale={locale} />
+    </MapErrorBoundary>
+  )
+}
+
 type DevSnapshot = {
   pollAge: string
   cacheAge: string
@@ -940,7 +1228,10 @@ function DevPanel({
     return () => clearInterval(id)
   }, [cacheMetaRef, pollTimeRef])
 
-  const sourceLabel = snap.cached === null ? '—' : snap.cached ? 'cache' : 'live'
+  const sourceLabel =
+    snap.cached === null ? '—'
+    : snap.cached ? 'cache'
+    : 'live'
 
   return (
     <div className='border-line bg-paper/90 flex flex-col gap-3 rounded-2xl border px-4 py-3 backdrop-blur-sm'>

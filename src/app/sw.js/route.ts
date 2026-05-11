@@ -20,6 +20,8 @@ const OFFLINE_ASSETS = [
   '/airplane-offline-dark.png',
   '/airplane-error-light.png',
   '/airplane-error-dark.png',
+  '/radar-error-light.png',
+  '/radar-error-dark.png',
   '/airplane-not-found-light.png',
   '/airplane-not-found-dark.png',
   '/empty-counter-light.png',

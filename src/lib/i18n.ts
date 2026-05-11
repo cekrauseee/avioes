@@ -32,6 +32,8 @@ const pt = {
   'world.map.heading': 'Direção',
   'world.map.verticalRate': 'Taxa vertical',
   'world.map.coords': 'Coordenadas',
+  'world.map.errorTitle': 'radar fora do ar',
+  'world.map.errorSubtitle': 'o sinal se perdeu por aqui',
   'world.empty.title': 'Ainda sem aviões pelo mundo.',
   'world.empty.subtitle': 'comece a contar pra entrar no ranking',
 
@@ -618,6 +620,8 @@ const en: Record<TranslationKey, string> = {
   'world.map.heading': 'Heading',
   'world.map.verticalRate': 'Vertical rate',
   'world.map.coords': 'Coordinates',
+  'world.map.errorTitle': 'radar offline',
+  'world.map.errorSubtitle': 'the signal got lost out there',
   'world.empty.title': 'No airplanes in the world yet.',
   'world.empty.subtitle': 'start counting to join the ranking',
 

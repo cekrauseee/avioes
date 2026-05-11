@@ -22,6 +22,7 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ### 2026-05-11 — OG metadata + illustration for invite links
 
+
 Invite URLs now produce rich link previews for WhatsApp, Twitter, iMessage, etc. `src/app/(standalone)/invite/[token]/opengraph-image.tsx` generates a 1200×630 dynamic OG image via `ImageResponse` — two-column layout with text (group name, inviter name, tagline) on the left and a hand-drawn paper airplane + envelope illustration on the right. `generateMetadata` in the invite page returns dynamic title, description, `openGraph`, and `twitter` metadata. Root layout gained `metadataBase`. Illustrations: `public/og-invite-{light,dark}.png` (512×512, transparent RGBA). `navigator.share()` in `InviteShareSheet` now includes `title` + `text` with group name via `tf()`. New i18n keys: `invite.metaTitle`, `invite.ogDescription`, `invite.ogDescriptionGeneric`, `invite.share.shareTitle`, `invite.share.shareText`.
 
 ### 2026-05-11 — Invite flow: deferred email sending

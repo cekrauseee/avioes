@@ -428,7 +428,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-
 ::selection {
   background: var(--sage-soft);
   color: var(--ink);
