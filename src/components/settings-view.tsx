@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { type ReactNode, useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { getUserGroups } from '../actions'
 import { authClient } from '../lib/auth-client'
 import { resolveAvatarUrl } from '../lib/avatar'
@@ -13,8 +13,8 @@ import { getMemberColor, getMemberFirstName, getMemberFullName, PALETTES, type L
 import { AppShell } from './app-shell'
 import { Avatar } from './avatar'
 import { Button, ButtonLink, usePromiseStatus } from './button'
-import { IconCheck, IconChevronRight, IconKey, IconLink, IconLock, IconLogOut, IconMoon, IconSettings, IconSun, IconSunMoon, IconUsers } from './icons'
 import { ConnectionsSheet } from './connections-sheet'
+import { IconCheck, IconChevronRight, IconKey, IconLink, IconLock, IconLogOut, IconMoon, IconSettings, IconSun, IconSunMoon, IconUsers } from './icons'
 import { Onboarding } from './onboarding'
 import { PasskeysSheet } from './passkeys-sheet'
 import { Skel } from './skeleton'
@@ -288,8 +288,18 @@ function GroupTab({ locale, activeGroupId, isOwner }: { locale: Locale; activeGr
             variant='row'
             size='md'
             fullWidth
-            leading={<IconSettings size={16} className='text-ink-faint' />}
-            trailing={<IconChevronRight size={14} className='text-ink-faint' />}
+            leading={
+              <IconSettings
+                size={16}
+                className='text-ink-faint'
+              />
+            }
+            trailing={
+              <IconChevronRight
+                size={14}
+                className='text-ink-faint'
+              />
+            }
           >
             {t(locale, 'settings.editGroup')}
           </ButtonLink>
@@ -300,8 +310,18 @@ function GroupTab({ locale, activeGroupId, isOwner }: { locale: Locale; activeGr
             variant='row'
             size='md'
             fullWidth
-            leading={<IconUsers size={16} className='text-ink-faint' />}
-            trailing={<IconChevronRight size={14} className='text-ink-faint' />}
+            leading={
+              <IconUsers
+                size={16}
+                className='text-ink-faint'
+              />
+            }
+            trailing={
+              <IconChevronRight
+                size={14}
+                className='text-ink-faint'
+              />
+            }
           >
             {t(locale, 'settings.manageMembers')}
           </ButtonLink>
@@ -311,8 +331,18 @@ function GroupTab({ locale, activeGroupId, isOwner }: { locale: Locale; activeGr
           variant='row'
           size='md'
           fullWidth
-          leading={<IconUsers size={16} className='text-ink-faint' />}
-          trailing={<IconChevronRight size={14} className='text-ink-faint' />}
+          leading={
+            <IconUsers
+              size={16}
+              className='text-ink-faint'
+            />
+          }
+          trailing={
+            <IconChevronRight
+              size={14}
+              className='text-ink-faint'
+            />
+          }
         >
           {t(locale, 'settings.manageGroups')}
         </ButtonLink>
@@ -347,7 +377,12 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
   const connectionsFromUrl = searchParams.get('connections') === 'open'
   const sheetOpen = connectionsOpen || connectionsFromUrl
 
-  const rowArrow = <IconChevronRight size={14} className='text-ink-faint' />
+  const rowArrow = (
+    <IconChevronRight
+      size={14}
+      className='text-ink-faint'
+    />
+  )
 
   const handleSignOut = () =>
     signOut.run(async () => {
@@ -391,7 +426,12 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
         variant='row'
         size='md'
         fullWidth
-        leading={<IconLock size={16} className='text-ink-faint' />}
+        leading={
+          <IconLock
+            size={16}
+            className='text-ink-faint'
+          />
+        }
         trailing={rowArrow}
       >
         {t(locale, 'settings.changePassword')}
@@ -402,7 +442,12 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
         size='md'
         fullWidth
         onClick={() => setPasskeysOpen(true)}
-        leading={<IconKey size={16} className='text-ink-faint' />}
+        leading={
+          <IconKey
+            size={16}
+            className='text-ink-faint'
+          />
+        }
         trailing={rowArrow}
       >
         {t(locale, 'settings.managePasskeys')}
@@ -413,7 +458,12 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
         size='md'
         fullWidth
         onClick={() => setConnectionsOpen(true)}
-        leading={<IconLink size={16} className='text-ink-faint' />}
+        leading={
+          <IconLink
+            size={16}
+            className='text-ink-faint'
+          />
+        }
         trailing={rowArrow}
       >
         {t(locale, 'settings.manageConnections')}
@@ -443,7 +493,14 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
         pendingLabel={t(locale, 'settings.signingOut')}
         successLabel={t(locale, 'settings.signedOut')}
         errorLabel={t(locale, 'settings.signOutError')}
-        leading={signOut.status === 'idle' ? <IconLogOut size={16} className='opacity-60' /> : null}
+        leading={
+          signOut.status === 'idle' ?
+            <IconLogOut
+              size={16}
+              className='opacity-60'
+            />
+          : null
+        }
         onClick={handleSignOut}
       >
         {t(locale, 'settings.signOut')}

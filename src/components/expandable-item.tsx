@@ -1,9 +1,9 @@
 'use client'
 
 import { AnimatePresence, motion } from 'motion/react'
-import { IconMore } from './icons'
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { MOTION_TRANSITION } from '../lib/motion'
+import { IconMore } from './icons'
 
 export function ExpandableItem({
   main,

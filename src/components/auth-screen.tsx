@@ -355,8 +355,9 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 size='md'
                 fullWidth
                 onClick={handleGoogle}
-                disabled={loading}
-                leading={<GoogleMark />}
+                status={loading ? 'pending' : 'idle'}
+                pendingLabel={t(locale, 'auth.redirecting')}
+                leading={!loading ? <GoogleMark /> : null}
               >
                 {t(locale, 'auth.tryGoogle')}
               </Button>
@@ -431,8 +432,9 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 size='md'
                 fullWidth
                 onClick={handleGoogle}
-                disabled={loading}
-                leading={<GoogleMark />}
+                status={loading ? 'pending' : 'idle'}
+                pendingLabel={t(locale, 'auth.redirecting')}
+                leading={!loading ? <GoogleMark /> : null}
               >
                 {t(locale, 'auth.continueGoogle')}
               </Button>

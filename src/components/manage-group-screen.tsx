@@ -36,6 +36,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
   const [confirmingCancelInvite, setConfirmingCancelInvite] = useState<string | null>(null)
   const [cancellingInviteId, setCancellingInviteId] = useState<string | null>(null)
   const [cancelPending, startCancel] = useTransition()
+  const [groupName, setGroupName] = useState('')
   const [shareSheet, setShareSheet] = useState<{ open: boolean; url: string; email: string }>({ open: false, url: '', email: '' })
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -45,6 +46,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
   useEffect(() => {
     getGroupDetailsWithInvites(groupId).then((data) => {
       if (data) {
+        setGroupName(data.name)
         setMembers(data.members)
         setIsOwner(data.isOwner)
         setPendingInvites(data.pendingInvitations)
@@ -177,7 +179,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
                 className='shrink-0'
                 disabled={!validFormat}
                 status={invitePending ? 'pending' : 'idle'}
-                pendingLabel='…'
+                pendingLabel={t(locale, 'groups.manage.inviting')}
               >
                 {t(locale, 'groups.manage.invite')}
               </Button>
@@ -256,6 +258,8 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
         onClose={() => setShareSheet((s) => ({ ...s, open: false }))}
         inviteUrl={shareSheet.url}
         email={shareSheet.email}
+        groupId={groupId}
+        groupName={groupName}
       />
     </div>
   )
@@ -338,6 +342,7 @@ function MemberRow({
                 label={t(locale, 'groups.manage.confirmRemove')}
                 busy={isRemoving}
                 pending={pending}
+                pendingLabel={t(locale, 'groups.manage.removing')}
                 locale={locale}
                 onCancel={onCancelRemove}
                 onConfirm={onConfirmRemove}
@@ -390,7 +395,10 @@ function InviteRow({
       <div className='flex items-stretch'>
         <div className='flex flex-1 items-center gap-3 px-4 py-3'>
           <div className='bg-line flex h-7 w-7 shrink-0 items-center justify-center rounded-full'>
-            <IconMail size={14} className='text-ink-faint' />
+            <IconMail
+              size={14}
+              className='text-ink-faint'
+            />
           </div>
           <div className='min-w-0 flex-1'>
             <p className='text-ink truncate text-sm'>{invite.invitedEmail}</p>
@@ -423,6 +431,7 @@ function InviteRow({
                 label={t(locale, 'groups.manage.confirmCancelInvite')}
                 busy={isCancelling}
                 pending={pending}
+                pendingLabel={t(locale, 'groups.manage.cancellingInvite')}
                 locale={locale}
                 onCancel={onCancelCancel}
                 onConfirm={onConfirmCancel}
@@ -451,6 +460,7 @@ function ConfirmRow({
   label,
   busy,
   pending,
+  pendingLabel,
   locale,
   onCancel,
   onConfirm
@@ -458,6 +468,7 @@ function ConfirmRow({
   label: string
   busy: boolean
   pending: boolean
+  pendingLabel: string
   locale: Locale
   onCancel: () => void
   onConfirm: () => void
@@ -489,7 +500,7 @@ function ConfirmRow({
           disabled={pending}
           onClick={onConfirm}
           status={busy ? 'pending' : 'idle'}
-          pendingLabel='…'
+          pendingLabel={pendingLabel}
         >
           {t(locale, 'groups.manage.confirm')}
         </Button>

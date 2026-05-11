@@ -10,7 +10,7 @@ export function PasswordInput({
   placeholder,
   autoComplete,
   autoFocus,
-  locale,
+  locale
 }: {
   value: string
   onChange: (v: string) => void
@@ -22,7 +22,7 @@ export function PasswordInput({
   const [show, setShow] = useState(false)
   const [pressed, setPressed] = useState(false)
   return (
-    <div className='border-line bg-paper ring-sage/40 focus-within:ring-2 flex overflow-hidden rounded-xl border transition-all'>
+    <div className='border-line bg-paper ring-sage/40 flex overflow-hidden rounded-xl border transition-all focus-within:ring-2'>
       <input
         type={show ? 'text' : 'password'}
         value={value}
@@ -42,7 +42,9 @@ export function PasswordInput({
         className={`text-ink-faint hover:text-ink-soft border-line flex w-12 shrink-0 items-center justify-center border-l transition-colors ${pressed || show ? 'bg-ink/10' : ''}`}
       >
         <span className={`transition-transform duration-100 ${pressed ? 'scale-75' : 'scale-100'}`}>
-          {show ? <EyeOff /> : <Eye />}
+          {show ?
+            <EyeOff />
+          : <Eye />}
         </span>
       </button>
     </div>

@@ -103,6 +103,7 @@ const pt = {
   'settings.googleEmailMismatch': 'O e-mail do Google não corresponde ao da sua conta.',
 
   'password.back': 'voltar',
+  'password.metaTitle': 'Senha',
   'password.show': 'mostrar senha',
   'password.hide': 'ocultar senha',
   'password.currentLabel': 'senha atual',
@@ -229,7 +230,7 @@ const pt = {
   'error.titleItalic': 'turbulência',
   'error.body': 'Algo saiu do prumo aqui. Tenta de novo daqui a pouco.',
   'error.retry': 'tentar de novo',
-  'error.backToCount': 'voltar pra contagem',
+  'error.home': 'início',
 
   'loading.text': 'preparando o céu…',
 
@@ -264,6 +265,7 @@ const pt = {
   'auth.namePlaceholderName': 'Novo usuário',
   'auth.submit': 'continuar',
   'auth.loading': 'entrando…',
+  'auth.redirecting': 'redirecionando…',
   'auth.invalidEmail': 'E-mail inválido.',
   'auth.passwordTooShort': 'Senha precisa ter pelo menos 8 caracteres.',
   'auth.passwordTooLong': 'Senha muito longa.',
@@ -286,6 +288,7 @@ const pt = {
   'auth.errorItalic': 'errado',
   'auth.errorBody': 'não conseguimos completar seu login. tente de novo.',
   'auth.tryGoogle': 'tentar com Google',
+  'auth.metaTitle': 'Entrar',
   'auth.continueEmail': 'continuar com e-mail →',
   'auth.back': 'voltar',
   'auth.welcomeLine1': 'anote o céu',
@@ -380,10 +383,20 @@ const pt = {
   'invite.backToApp': 'voltar para o app',
   'invite.error': 'Algo deu errado. Tente de novo.',
 
-  'invite.share.title': 'convite enviado!',
+  'invite.metaTitle': 'Convite',
+  'invite.ogDescription': 'você foi convidado para contar aviões juntos.',
+  'invite.ogDescriptionGeneric': 'entre para contar aviões juntos.',
+  'invite.share.title': 'convite criado!',
+  'invite.share.subtitle': 'escolha como enviar:',
+  'invite.share.sendEmail': 'enviar por e-mail',
+  'invite.share.sendingEmail': 'enviando…',
+  'invite.share.emailSent': 'e-mail enviado!',
+  'invite.share.emailError': 'falha ao enviar',
   'invite.share.copy': 'copiar link',
   'invite.share.copied': 'copiado!',
   'invite.share.share': 'compartilhar',
+  'invite.share.shareTitle': 'Aviões — {group}',
+  'invite.share.shareText': 'entre no grupo {group} no Aviões e conte aviões comigo!',
   'invite.share.done': 'pronto',
 
   'groups.title': 'Grupos',
@@ -461,6 +474,8 @@ const pt = {
   'groups.manage.alreadyMember': 'Este e-mail já faz parte do grupo.',
   'groups.manage.inviteError': 'Não foi possível enviar o convite.',
   'groups.manage.inviteRateLimited': 'Muitos convites enviados. Aguarde um pouco.',
+  'groups.manage.removing': 'removendo…',
+  'groups.manage.cancellingInvite': 'cancelando…',
 
   'auth.inviteWelcomeLine1': 'entre para aceitar o',
   'auth.inviteWelcomeItalic': 'convite',
@@ -482,6 +497,7 @@ const pt = {
   'auth.usernameInvalidLabel': 'inválido',
   'auth.usernameSubmitIdle': 'escolha um usuário',
 
+  'profile.metaTitle': 'Perfil',
   'profile.back': 'voltar',
   'profile.headingLine1': 'seu',
   'profile.headingItalic': 'perfil',
@@ -654,6 +670,7 @@ const en: Record<TranslationKey, string> = {
   'settings.googleEmailMismatch': 'The Google email does not match your account email.',
 
   'password.back': 'back',
+  'password.metaTitle': 'Password',
   'password.show': 'show password',
   'password.hide': 'hide password',
   'password.currentLabel': 'current password',
@@ -780,7 +797,7 @@ const en: Record<TranslationKey, string> = {
   'error.titleItalic': 'turbulence',
   'error.body': 'Something went sideways. Try again in a bit.',
   'error.retry': 'try again',
-  'error.backToCount': 'back to counting',
+  'error.home': 'home',
 
   'loading.text': 'preparing the sky…',
 
@@ -815,6 +832,7 @@ const en: Record<TranslationKey, string> = {
   'auth.namePlaceholderName': 'New user',
   'auth.submit': 'continue',
   'auth.loading': 'signing in…',
+  'auth.redirecting': 'redirecting…',
   'auth.invalidEmail': 'Invalid email.',
   'auth.passwordTooShort': 'Password must be at least 8 characters.',
   'auth.passwordTooLong': 'Password too long.',
@@ -837,6 +855,7 @@ const en: Record<TranslationKey, string> = {
   'auth.errorItalic': 'wrong',
   'auth.errorBody': 'we could not complete your login. try again.',
   'auth.tryGoogle': 'try with Google',
+  'auth.metaTitle': 'Sign in',
   'auth.continueEmail': 'continue with email →',
   'auth.back': 'back',
   'auth.welcomeLine1': 'note the sky',
@@ -931,10 +950,20 @@ const en: Record<TranslationKey, string> = {
   'invite.backToApp': 'back to app',
   'invite.error': 'Something went wrong. Try again.',
 
-  'invite.share.title': 'invite sent!',
+  'invite.metaTitle': 'Invitation',
+  'invite.ogDescription': "you've been invited to count airplanes together.",
+  'invite.ogDescriptionGeneric': 'join to count airplanes together.',
+  'invite.share.title': 'invite created!',
+  'invite.share.subtitle': 'choose how to send:',
+  'invite.share.sendEmail': 'send by email',
+  'invite.share.sendingEmail': 'sending…',
+  'invite.share.emailSent': 'email sent!',
+  'invite.share.emailError': 'failed to send',
   'invite.share.copy': 'copy link',
   'invite.share.copied': 'copied!',
   'invite.share.share': 'share',
+  'invite.share.shareTitle': 'Airplanes — {group}',
+  'invite.share.shareText': 'join {group} on Airplanes and count airplanes with me!',
   'invite.share.done': 'done',
 
   'groups.title': 'Groups',
@@ -1012,6 +1041,8 @@ const en: Record<TranslationKey, string> = {
   'groups.manage.alreadyMember': 'This email is already in the group.',
   'groups.manage.inviteError': 'Could not send invite.',
   'groups.manage.inviteRateLimited': 'Too many invites sent. Please wait.',
+  'groups.manage.removing': 'removing…',
+  'groups.manage.cancellingInvite': 'cancelling…',
 
   'auth.inviteWelcomeLine1': 'sign in to accept the',
   'auth.inviteWelcomeItalic': 'invite',
@@ -1033,6 +1064,7 @@ const en: Record<TranslationKey, string> = {
   'auth.usernameInvalidLabel': 'invalid',
   'auth.usernameSubmitIdle': 'pick a username',
 
+  'profile.metaTitle': 'Profile',
   'profile.back': 'back',
   'profile.headingLine1': 'your',
   'profile.headingItalic': 'profile',

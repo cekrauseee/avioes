@@ -10,7 +10,7 @@ import { MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { applyLocalIdentity, applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import type { Locale } from '../lib/types'
 import { AnimatedList, AnimatedListItem } from './animated-list'
-import { Button, ButtonLink } from './button'
+import { Button, ButtonLink, usePromiseStatus } from './button'
 import { ConfirmActionSlot, ConfirmRow, ConfirmTriggerRow } from './confirm-row'
 import { ExpandableItem } from './expandable-item'
 import { IconArrowLeft, IconChevronRight, IconLogOut, IconPlus, IconSettings, IconUsers, IconX } from './icons'
@@ -217,8 +217,18 @@ export function GroupsScreen({ from }: { from?: string }) {
                               fullWidth
                               align='between'
                               className='px-5'
-                              leading={<IconSettings size={14} className='text-ink-faint' />}
-                              trailing={<IconChevronRight size={14} className='text-ink-faint' />}
+                              leading={
+                                <IconSettings
+                                  size={14}
+                                  className='text-ink-faint'
+                                />
+                              }
+                              trailing={
+                                <IconChevronRight
+                                  size={14}
+                                  className='text-ink-faint'
+                                />
+                              }
                             >
                               {t(locale, 'groups.editName')}
                             </ButtonLink>
@@ -230,8 +240,18 @@ export function GroupsScreen({ from }: { from?: string }) {
                               fullWidth
                               align='between'
                               className='border-line border-t px-5'
-                              leading={<IconUsers size={14} className='text-ink-faint' />}
-                              trailing={<IconChevronRight size={14} className='text-ink-faint' />}
+                              leading={
+                                <IconUsers
+                                  size={14}
+                                  className='text-ink-faint'
+                                />
+                              }
+                              trailing={
+                                <IconChevronRight
+                                  size={14}
+                                  className='text-ink-faint'
+                                />
+                              }
                             >
                               {t(locale, 'groups.manageMembers')}
                             </ButtonLink>
@@ -302,16 +322,18 @@ export function GroupsScreen({ from }: { from?: string }) {
 
 function EmptyState({ locale }: { locale: Locale }) {
   const router = useRouter()
+  const signOut = usePromiseStatus({ resetMs: 1400 })
 
-  const handleSignOut = async () => {
-    try {
-      await authClient.signOut()
-    } finally {
-      applyLocalIdentity(null)
-      router.replace('/auth')
-      router.refresh()
-    }
-  }
+  const handleSignOut = () =>
+    signOut.run(async () => {
+      try {
+        await authClient.signOut()
+      } finally {
+        applyLocalIdentity(null)
+        router.replace('/auth')
+        router.refresh()
+      }
+    })
 
   return (
     <div className='flex flex-col items-center gap-4 py-12 text-center'>
@@ -339,8 +361,19 @@ function EmptyState({ locale }: { locale: Locale }) {
         size='sm'
         fullWidth
         className='mt-2 max-w-56'
+        status={signOut.status}
+        pendingLabel={t(locale, 'settings.signingOut')}
+        successLabel={t(locale, 'settings.signedOut')}
+        errorLabel={t(locale, 'settings.signOutError')}
         onClick={handleSignOut}
-        leading={<IconLogOut size={14} className='opacity-60' />}
+        leading={
+          signOut.status === 'idle' ?
+            <IconLogOut
+              size={14}
+              className='opacity-60'
+            />
+          : null
+        }
       >
         {t(locale, 'groups.signOut')}
       </Button>

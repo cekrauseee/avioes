@@ -1,9 +1,8 @@
 'use client'
 
-import { AnimatePresence, motion } from 'motion/react'
+import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
-import { createPortal } from 'react-dom'
 import { getUserGroups, setActiveGroup } from '../actions'
 import { authClient } from '../lib/auth-client'
 import { resolveAvatarUrl } from '../lib/avatar'
@@ -12,8 +11,9 @@ import { MOTION_TRANSITION } from '../lib/motion'
 import { applyLocalIdentity, applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import { getMemberColor, getMemberFirstName, getMemberFullName } from '../lib/types'
 import { Avatar } from './avatar'
-import { Button, ButtonLink } from './button'
+import { Button, ButtonLink, usePromiseStatus } from './button'
 import { IconChevronRight, IconLogOut, IconPlus, IconUserPlus } from './icons'
+import { Sheet } from './sheet'
 
 type GroupEntry = { id: string; name: string; ownerId: string; memberCount: number }
 
@@ -34,6 +34,7 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
   const [groups, setGroups] = useState<GroupEntry[]>([])
   const [switchingId, setSwitchingId] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const signOut = usePromiseStatus({ resetMs: 1400 })
 
   useEffect(() => {
     if (!open) return
@@ -62,165 +63,155 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
     })
   }
 
-  const handleSignOut = async () => {
-    onClose()
-    try {
-      await authClient.signOut()
-    } finally {
-      applyLocalIdentity(null)
-      router.replace('/auth')
-      router.refresh()
-    }
-  }
+  const handleSignOut = () =>
+    signOut.run(async () => {
+      onClose()
+      try {
+        await authClient.signOut()
+      } finally {
+        applyLocalIdentity(null)
+        router.replace('/auth')
+        router.refresh()
+      }
+    })
 
-  if (typeof document === 'undefined') return null
+  return (
+    <Sheet
+      open={open}
+      onClose={onClose}
+    >
+      <div className='flex items-center gap-4 px-6 pt-3 pb-5'>
+        <Avatar
+          image={myImage}
+          firstName={myFirstName}
+          accentBg={me.bg}
+          size={44}
+          initialClassName='text-base font-medium'
+        />
+        <div className='min-w-0'>
+          <p className='text-ink font-display text-lg leading-tight'>{myFullName}</p>
+          <p className='text-ink-faint truncate text-xs'>{myEmail}</p>
+        </div>
+      </div>
 
-  return createPortal(
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            key='backdrop'
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={MOTION_TRANSITION.sheetBackdrop}
-            onClick={onClose}
-            className='bg-ink/20 fixed inset-0 z-40'
-          />
-          <motion.div
-            key='sheet'
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={MOTION_TRANSITION.sheetPanel}
-            className='bg-bg fixed right-0 bottom-0 left-0 z-50 mx-auto w-full max-w-[630px] rounded-t-2xl'
-          >
-            {/* drag handle */}
-            <div className='flex justify-center pt-3 pb-1'>
-              <div className='bg-line h-1 w-10 rounded-full' />
-            </div>
+      <div className='border-line mx-6 border-t' />
 
-            {/* user identity */}
-            <div className='flex items-center gap-4 px-6 pt-3 pb-5'>
-              <Avatar
-                image={myImage}
-                firstName={myFirstName}
-                accentBg={me.bg}
-                size={44}
-                initialClassName='text-base font-medium'
-              />
-              <div className='min-w-0'>
-                <p className='text-ink font-display text-lg leading-tight'>{myFullName}</p>
-                <p className='text-ink-faint truncate text-xs'>{myEmail}</p>
-              </div>
-            </div>
+      <div className='px-6 pt-4 pb-2'>
+        <p className='text-ink-faint mb-2 text-[11px]'>{t(locale, 'groups.sheet.otherGroups')}</p>
 
-            <div className='border-line mx-6 border-t' />
-
-            {/* other groups quick switch */}
-            <div className='px-6 pt-4 pb-2'>
-              <p className='text-ink-faint mb-2 text-[11px]'>{t(locale, 'groups.sheet.otherGroups')}</p>
-
-              {displayed.length === 0 ?
-                <p className='text-ink-faint text-sm italic'>{t(locale, 'groups.sheet.onlyGroup')}</p>
-              : <div className='flex flex-col gap-2'>
-                  {displayed.map((group) => (
-                    <Button
-                      key={group.id}
-                      variant='row'
-                      size='sm'
-                      fullWidth
-                      onClick={() => switchTo(group.id)}
-                      disabled={pending}
-                      leading={
-                        <div className='flex min-w-0 flex-col items-start gap-0.5'>
-                          <span className='font-display truncate text-base'>{group.name}</span>
-                          <span className='text-ink-faint text-[11px]'>
-                            {group.memberCount} {t(locale, group.memberCount === 1 ? 'groups.memberCount' : 'groups.memberCountPlural')}
-                          </span>
-                        </div>
-                      }
-                      trailing={
-                        <span className='text-sage text-base leading-none'>
-                          {switchingId === group.id ?
-                            <motion.span
-                              animate={{ opacity: [1, 0.4, 1] }}
-                              transition={MOTION_TRANSITION.pulse}
-                            >
-                              …
-                            </motion.span>
-                          : <IconChevronRight size={14} />}
-                        </span>
-                      }
-                    />
-                  ))}
-                </div>
-              }
-
-              <div className='mt-3'>
-                {hasMore ?
-                  <ButtonLink
-                    href='/groups'
-                    onClick={onClose}
-                    variant='row'
-                    size='md'
-                    fullWidth
-                    trailing={<span className='text-ink-faint text-base leading-none'><IconChevronRight size={14} /></span>}
-                  >
-                    {t(locale, 'groups.sheet.viewAll')}
-                  </ButtonLink>
-                : <ButtonLink
-                    href='/groups/new'
-                    onClick={onClose}
-                    variant='row-accent'
-                    size='md'
-                    fullWidth
-                    trailing={<span className='text-base leading-none'><IconPlus size={14} /></span>}
-                  >
-                    {t(locale, 'groups.sheet.create')}
-                  </ButtonLink>
-                }
-              </div>
-            </div>
-
-            {isOwner && state.activeGroupId && (
-              <>
-                <div className='border-line mx-6 mt-3 border-t' />
-                <div className='px-6 pt-3'>
-                  <ButtonLink
-                    href={`/groups/${state.activeGroupId}/manage`}
-                    onClick={onClose}
-                    variant='row-accent'
-                    size='md'
-                    fullWidth
-                    leading={<IconUserPlus size={16} />}
-                    trailing={<IconChevronRight size={14} />}
-                  >
-                    {t(locale, 'groups.sheet.invite')}
-                  </ButtonLink>
-                </div>
-              </>
-            )}
-
-            <div className='border-line mx-6 mt-3 border-t' />
-
-            {/* sign out */}
-            <div className='px-6 pt-3 pb-[max(env(safe-area-inset-bottom),1.5rem)]'>
+        {displayed.length === 0 ?
+          <p className='text-ink-faint text-sm italic'>{t(locale, 'groups.sheet.onlyGroup')}</p>
+        : <div className='flex flex-col gap-2'>
+            {displayed.map((group) => (
               <Button
-                variant='destructive-outline'
-                size='md'
+                key={group.id}
+                variant='row'
+                size='sm'
                 fullWidth
-                onClick={handleSignOut}
-                leading={<IconLogOut size={16} className='opacity-60' />}
-              >
-                {t(locale, 'groups.sheet.signOut')}
-              </Button>
-            </div>
-          </motion.div>
+                onClick={() => switchTo(group.id)}
+                disabled={pending}
+                leading={
+                  <div className='flex min-w-0 flex-col items-start gap-0.5'>
+                    <span className='font-display truncate text-base'>{group.name}</span>
+                    <span className='text-ink-faint text-[11px]'>
+                      {group.memberCount} {t(locale, group.memberCount === 1 ? 'groups.memberCount' : 'groups.memberCountPlural')}
+                    </span>
+                  </div>
+                }
+                trailing={
+                  <span className='text-sage text-base leading-none'>
+                    {switchingId === group.id ?
+                      <motion.span
+                        animate={{ opacity: [1, 0.4, 1] }}
+                        transition={MOTION_TRANSITION.pulse}
+                      >
+                        …
+                      </motion.span>
+                    : <IconChevronRight size={14} />}
+                  </span>
+                }
+              />
+            ))}
+          </div>
+        }
+
+        <div className='mt-3'>
+          {hasMore ?
+            <ButtonLink
+              href='/groups'
+              onClick={onClose}
+              variant='row'
+              size='md'
+              fullWidth
+              trailing={
+                <span className='text-ink-faint text-base leading-none'>
+                  <IconChevronRight size={14} />
+                </span>
+              }
+            >
+              {t(locale, 'groups.sheet.viewAll')}
+            </ButtonLink>
+          : <ButtonLink
+              href='/groups/new'
+              onClick={onClose}
+              variant='row-accent'
+              size='md'
+              fullWidth
+              trailing={
+                <span className='text-base leading-none'>
+                  <IconPlus size={14} />
+                </span>
+              }
+            >
+              {t(locale, 'groups.sheet.create')}
+            </ButtonLink>
+          }
+        </div>
+      </div>
+
+      {isOwner && state.activeGroupId && (
+        <>
+          <div className='border-line mx-6 mt-3 border-t' />
+          <div className='px-6 pt-3'>
+            <ButtonLink
+              href={`/groups/${state.activeGroupId}/manage`}
+              onClick={onClose}
+              variant='row-accent'
+              size='md'
+              fullWidth
+              leading={<IconUserPlus size={16} />}
+              trailing={<IconChevronRight size={14} />}
+            >
+              {t(locale, 'groups.sheet.invite')}
+            </ButtonLink>
+          </div>
         </>
       )}
-    </AnimatePresence>,
-    document.body
+
+      <div className='border-line mx-6 mt-3 border-t' />
+
+      <div className='px-6 pt-3'>
+        <Button
+          variant='destructive-outline'
+          size='md'
+          fullWidth
+          status={signOut.status}
+          pendingLabel={t(locale, 'settings.signingOut')}
+          successLabel={t(locale, 'settings.signedOut')}
+          errorLabel={t(locale, 'settings.signOutError')}
+          onClick={handleSignOut}
+          leading={
+            signOut.status === 'idle' ?
+              <IconLogOut
+                size={16}
+                className='opacity-60'
+              />
+            : null
+          }
+        >
+          {t(locale, 'groups.sheet.signOut')}
+        </Button>
+      </div>
+    </Sheet>
   )
 }

@@ -25,6 +25,7 @@ const fraunces = Fraunces({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.BETTER_AUTH_URL ?? 'http://localhost:3000'),
   title: {
     default: 'Airplanes',
     template: '%s \\ Airplanes'

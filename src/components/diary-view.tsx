@@ -63,7 +63,7 @@ export function DiaryView() {
                   >
                     <span
                       aria-hidden
-                      className={`absolute top-2 -left-[18px] h-2 w-2 rounded-full ${color.bg}`}
+                      className={`absolute top-2 -left-[18.5px] h-2 w-2 rounded-full ${color.bg}`}
                     />
                     <article className={`bg-paper rounded-xl p-3 ${i % 2 === 0 ? 'rotate-[-0.3deg]' : 'rotate-[0.3deg]'}`}>
                       <p className='font-display text-base leading-snug'>

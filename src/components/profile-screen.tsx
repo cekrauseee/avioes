@@ -498,7 +498,10 @@ function SelectField({
             </option>
           ))}
         </select>
-        <IconChevronDown size={14} className='text-ink-faint pointer-events-none absolute right-3' />
+        <IconChevronDown
+          size={14}
+          className='text-ink-faint pointer-events-none absolute right-3'
+        />
       </div>
       <FieldHint error={error} />
     </div>

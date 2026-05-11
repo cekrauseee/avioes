@@ -1,9 +1,9 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
 import { startTransition } from 'react'
-import { IconArrowLeft, IconRefresh } from '../components/icons'
+import { Button, ButtonLink } from '../components/button'
+import { IconRefresh } from '../components/icons'
 import { t } from '../lib/i18n'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 
@@ -50,22 +50,24 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
         <p className='font-display text-ink-soft mt-3 max-w-[28ch] text-sm italic'>{t(locale, 'error.body')}</p>
       </div>
 
-      <div className='mt-4 flex flex-col items-center gap-1.5'>
-        <button
-          type='button'
+      <div className='mt-4 flex flex-col items-center gap-2'>
+        <Button
+          variant='secondary'
+          size='md'
+          fullWidth
           onClick={retry}
-          className='bg-paper text-ink hover:bg-line/40 focus-visible:bg-line/40 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm transition-colors active:scale-[0.99]'
+          leading={<IconRefresh size={16} />}
         >
-          <IconRefresh size={16} />
-          <span className='font-display'>{t(locale, 'error.retry')}</span>
-        </button>
-        <Link
+          {t(locale, 'error.retry')}
+        </Button>
+        <ButtonLink
+          variant='ghost'
+          size='md'
+          fullWidth
           href='/'
-          className='text-ink-faint hover:text-ink-soft focus-visible:text-ink-soft inline-flex items-center gap-1 px-3 py-1.5 text-xs transition-colors'
         >
-          <IconArrowLeft size={14} />
-          <span>{t(locale, 'error.backToCount')}</span>
-        </Link>
+          {t(locale, 'error.home')}
+        </ButtonLink>
       </div>
     </main>
   )

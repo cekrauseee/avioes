@@ -19,7 +19,7 @@ import { MOTION_OFFSET, MOTION_TRANSITION, withMotionDelay } from '../lib/motion
 import { applyLocalIdentity, applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import { MEMBER_COLORS } from '../lib/types'
 import { Avatar } from './avatar'
-import { Button } from './button'
+import { Button, usePromiseStatus } from './button'
 import { IconArrowLeft } from './icons'
 
 type Step = 'name' | 'username' | 'photo' | 'group'
@@ -68,6 +68,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
   const fileRef = useRef<HTMLInputElement | null>(null)
 
   const [groupName, setGroupName] = useState('')
+  const signOutStatus = usePromiseStatus({ resetMs: 1400 })
 
   useEffect(() => {
     return () => {
@@ -244,15 +245,16 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
     }
   }
 
-  const handleSignOut = async () => {
-    try {
-      await authClient.signOut()
-    } finally {
-      applyLocalIdentity(null)
-      router.replace('/auth')
-      router.refresh()
-    }
-  }
+  const handleSignOut = () =>
+    signOutStatus.run(async () => {
+      try {
+        await authClient.signOut()
+      } finally {
+        applyLocalIdentity(null)
+        router.replace('/auth')
+        router.refresh()
+      }
+    })
 
   const stepIndex = STEPS.indexOf(step)
   const onSubmit =
@@ -500,6 +502,8 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
                     variant='ghost-destructive'
                     size='sm'
                     shape='pill'
+                    status={signOutStatus.status}
+                    pendingLabel={t(locale, 'settings.signingOut')}
                     onClick={handleSignOut}
                   >
                     {t(locale, 'onboarding.signOut')}

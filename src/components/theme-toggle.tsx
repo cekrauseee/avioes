@@ -1,11 +1,11 @@
 'use client'
 
+import type { ComponentType } from 'react'
+import type { TKey } from '../lib/i18n'
 import { t, tf } from '../lib/i18n'
 import { queueTheme, selectLocale, selectTheme, useOfflineState } from '../lib/offline-store'
 import type { Theme } from '../lib/types'
-import type { TKey } from '../lib/i18n'
-import { IconSunMoon, IconSun, IconMoon } from './icons'
-import type { ComponentType } from 'react'
+import { IconMoon, IconSun, IconSunMoon } from './icons'
 
 const order: Theme[] = ['system', 'light', 'dark']
 const labelKeys: Record<Theme, TKey> = {

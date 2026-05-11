@@ -15,15 +15,24 @@ const cn = (...parts: (string | false | null | undefined)[]) => parts.filter(Boo
 
 const VARIANT_CHROME: Record<ButtonVariant, string> = {
   primary: 'bg-sage text-bg font-medium active:scale-[0.98] disabled:opacity-50',
-  secondary:
-    'border-line bg-paper text-ink-soft border hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50',
+  secondary: 'border-line bg-paper text-ink-soft border active:scale-[0.98] disabled:opacity-50',
   destructive: 'bg-clay text-bg font-medium active:scale-[0.98] disabled:opacity-50',
-  'destructive-outline':
-    'border-clay/30 text-clay border hover:bg-clay/8 focus-visible:bg-clay/8 focus-visible:ring-clay/30 focus-visible:ring-2 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50',
-  row: 'border-line text-ink-soft border hover:bg-paper transition-colors disabled:opacity-50',
-  'row-accent': 'border-line bg-paper text-sage border hover:bg-sage-soft transition-colors disabled:opacity-50',
-  ghost: 'text-ink-soft hover:bg-line/40 transition-colors active:scale-[0.98] disabled:opacity-50',
-  'ghost-destructive': 'text-clay hover:bg-clay/8 transition-colors disabled:opacity-50'
+  'destructive-outline': 'border-clay/30 text-clay border active:scale-[0.98] disabled:opacity-50',
+  row: 'border-line text-ink-soft border transition-colors disabled:opacity-50',
+  'row-accent': 'border-line bg-paper text-sage border transition-colors disabled:opacity-50',
+  ghost: 'text-ink-soft transition-colors active:scale-[0.98] disabled:opacity-50',
+  'ghost-destructive': 'text-clay transition-colors disabled:opacity-50'
+}
+
+const VARIANT_HOVER_FOCUS: Record<ButtonVariant, string> = {
+  primary: '',
+  secondary: 'hover:bg-line/40 focus-visible:bg-line/40 focus-visible:ring-sage/40 focus-visible:ring-2 focus-visible:outline-none',
+  destructive: '',
+  'destructive-outline': 'hover:bg-clay/8 focus-visible:bg-clay/8 focus-visible:ring-clay/30 focus-visible:ring-2 focus-visible:outline-none',
+  row: 'hover:bg-paper',
+  'row-accent': 'hover:bg-sage-soft',
+  ghost: 'hover:bg-line/40',
+  'ghost-destructive': 'hover:bg-clay/8'
 }
 
 const ALIGN_CLASSES: Record<ButtonAlign, string> = {
@@ -56,13 +65,18 @@ const SHAPE_CLASSES: Record<ButtonShape, string> = {
   square: ''
 }
 
-// Status overrides take precedence over variant chrome so the button reads as
-// success/error regardless of the variant the caller picked.
 const STATUS_OVERRIDES: Record<ButtonStatus, string> = {
   idle: '',
   pending: '',
-  success: 'bg-sage text-bg border-transparent',
-  error: 'bg-clay text-bg border-transparent'
+  success: 'bg-sage-soft text-ink border-transparent',
+  error: 'bg-clay-soft text-ink border-transparent'
+}
+
+const STATUS_HOVER_FOCUS: Record<ButtonStatus, string> = {
+  idle: '',
+  pending: '',
+  success: 'hover:bg-[color-mix(in_srgb,var(--sage-soft),var(--sage)_20%)] focus-visible:ring-2 focus-visible:ring-sage/40 focus-visible:outline-none',
+  error: 'hover:bg-[color-mix(in_srgb,var(--clay-soft),var(--clay)_20%)] focus-visible:ring-2 focus-visible:ring-clay/40 focus-visible:outline-none'
 }
 
 interface BaseStyleProps {
@@ -76,7 +90,7 @@ interface BaseStyleProps {
 export function buttonVariants(opts: BaseStyleProps = {}): string {
   const { variant = 'primary', size = 'md', shape = 'rounded', align, fullWidth } = opts
   const resolvedAlign = align ?? DEFAULT_ALIGN[variant]
-  return cn('transition-all', ALIGN_CLASSES[resolvedAlign], VARIANT_CHROME[variant], SIZE_CLASSES[size], SHAPE_CLASSES[shape], fullWidth && 'w-full')
+  return cn('transition-all', ALIGN_CLASSES[resolvedAlign], VARIANT_CHROME[variant], VARIANT_HOVER_FOCUS[variant], SIZE_CLASSES[size], SHAPE_CLASSES[shape], fullWidth && 'w-full')
 }
 
 // ─── Button ─────────────────────────────────────────────────────────────────
@@ -98,6 +112,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     variant = 'primary',
     size = 'md',
     shape = 'rounded',
+    align,
     fullWidth,
     status = 'idle',
     pendingLabel,
@@ -112,6 +127,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   },
   ref
 ) {
+  const resolvedAlign = align ?? DEFAULT_ALIGN[variant]
+  const isStatusOverride = status === 'success' || status === 'error'
+  const hoverFocus = isStatusOverride ? STATUS_HOVER_FOCUS[status] : VARIANT_HOVER_FOCUS[variant]
+
   const labelByStatus: Record<ButtonStatus, ReactNode> = {
     idle: children,
     pending: pendingLabel ?? children,
@@ -124,14 +143,33 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       ref={ref}
       type='button'
       disabled={disabled || status === 'pending'}
-      className={cn(buttonVariants({ variant, size, shape, fullWidth }), STATUS_OVERRIDES[status], className)}
+      className={cn(
+        'transition-all',
+        ALIGN_CLASSES[resolvedAlign],
+        VARIANT_CHROME[variant],
+        hoverFocus,
+        SIZE_CLASSES[size],
+        SHAPE_CLASSES[shape],
+        fullWidth && 'w-full',
+        STATUS_OVERRIDES[status],
+        className
+      )}
       {...rest}
     >
-      {leading}
-      <ButtonStatusContent
-        status={status}
-        label={labelByStatus[status]}
-      />
+      {leading ? (
+        <span className='inline-flex items-center gap-2'>
+          {leading}
+          <ButtonStatusContent
+            status={status}
+            label={labelByStatus[status]}
+          />
+        </span>
+      ) : (
+        <ButtonStatusContent
+          status={status}
+          label={labelByStatus[status]}
+        />
+      )}
       {trailing}
     </motion.button>
   )
@@ -158,8 +196,14 @@ export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(functio
       className={cn(buttonVariants({ variant, size, shape, fullWidth }), className)}
       {...rest}
     >
-      {leading}
-      {children}
+      {leading ? (
+        <span className='inline-flex items-center gap-2'>
+          {leading}
+          {children}
+        </span>
+      ) : (
+        children
+      )}
       {trailing}
     </NextLink>
   )

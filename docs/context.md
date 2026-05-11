@@ -20,6 +20,22 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-11 — OG metadata + illustration for invite links
+
+Invite URLs now produce rich link previews for WhatsApp, Twitter, iMessage, etc. `src/app/(standalone)/invite/[token]/opengraph-image.tsx` generates a 1200×630 dynamic OG image via `ImageResponse` — two-column layout with text (group name, inviter name, tagline) on the left and a hand-drawn paper airplane + envelope illustration on the right. `generateMetadata` in the invite page returns dynamic title, description, `openGraph`, and `twitter` metadata. Root layout gained `metadataBase`. Illustrations: `public/og-invite-{light,dark}.png` (512×512, transparent RGBA). `navigator.share()` in `InviteShareSheet` now includes `title` + `text` with group name via `tf()`. New i18n keys: `invite.metaTitle`, `invite.ogDescription`, `invite.ogDescriptionGeneric`, `invite.share.shareTitle`, `invite.share.shareText`.
+
+### 2026-05-11 — Invite flow: deferred email sending
+
+`createInvitation` no longer sends the email automatically. Instead, the `InviteShareSheet` opens immediately after invite creation with three options: **send by email** (new primary button, calls `sendInvitationEmail` server action), **copy link**, and **share** (Web Share API). The sheet title changed from "convite enviado!" to "convite criado!" with a "choose how to send" subtitle. Email sending uses `usePromiseStatus` for idle→pending→success/error feedback. The `sendInvitationEmail` action validates group ownership before sending.
+
+### 2026-05-11 — Button status consistency pass
+
+All action buttons now use well-defined `status` / `pendingLabel` / `successLabel` / `errorLabel` props. Sign-out buttons in `account-sheet`, `groups-screen` EmptyState, and `onboarding-wizard` upgraded from bare `onClick` to `usePromiseStatus` with idle→pending→success/error feedback matching `settings-view`. Manage-group confirm rows' lazy `pendingLabel='…'` replaced with proper i18n keys (`groups.manage.removing`, `groups.manage.cancellingInvite`). Invite button uses `groups.manage.inviting`. Auth screen Google buttons now show spinner + `auth.redirecting` during OAuth redirect. Passkeys sheet `+` text replaced with `IconPlus`.
+
+### 2026-05-11 — Custom SVG icon library + button leading/trailing layout fix
+
+All ~80 unicode glyphs across 27 files replaced with custom SVG icons from `src/components/icons.tsx` (stroke-based, 1.7 width, `currentColor`, organic aesthetic). Icons added as `leading`/`trailing` props on buttons for semantic cues. `button.tsx` updated to wrap `leading` + label in a flex group so `justify-between` only distributes between `[icon+label]` and `[trailing]`, keeping labels left-aligned in row buttons.
+
 ### 2026-05-11 — OTP email send error handling
 
 better-auth's `runInBackgroundOrAwait` swallows errors from the `sendVerificationOTP` callback, always returning `{ success: true }`. Module-level `lastOtpSendError` tracker in `src/lib/auth.ts` + `consumeOtpSendError()` detect failures. New `requestOtpEmail` server action in `src/actions.ts` wraps the better-auth call and checks the tracker. `auth-screen.tsx` `sendOtp` now calls the server action instead of the client-side auth plugin, so email delivery failures surface as `auth.otpSendFailed`.

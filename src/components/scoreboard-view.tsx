@@ -87,7 +87,7 @@ export function ScoreboardView({ initialRanking }: { initialRanking: WorldRankin
               animate={reduce ? { opacity: 1 } : { opacity: 1, x: 0 }}
               exit={reduce ? { opacity: 0 } : { opacity: 0, x: -direction * MOTION_OFFSET.tab }}
               transition={MOTION_TRANSITION.tab}
-              className='scroll-area absolute inset-0 overflow-y-auto px-5 py-4'
+              className='scroll-area fade-scroll absolute inset-0 overflow-y-auto px-5 py-4'
             >
               {tab === 'group' && <GroupTab locale={locale} />}
               {tab === 'world' && (
@@ -277,7 +277,7 @@ function WorldTab({ initialRanking, locale }: { initialRanking: WorldRankingResu
       </div>
 
       <AnimatePresence
-        mode='wait'
+        mode='popLayout'
         initial={false}
       >
         <motion.div
@@ -427,16 +427,18 @@ function UserGroupsJumpBar({
 }) {
   return (
     <div className='mt-4'>
-      <span className='text-ink-faint mb-1.5 block text-[10px] tracking-[0.12em] uppercase'>{t(locale, 'world.yourGroups')}</span>
+      <span className='text-ink-faint mb-1.5 block text-xs'>{t(locale, 'world.yourGroups')}</span>
       <div className='-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-1 whitespace-nowrap'>
         {entries.map((e, i) => {
           const color = MEMBER_COLORS[i % MEMBER_COLORS.length]
           return (
-            <button
+            <motion.button
               type='button'
               key={e.groupId}
               onClick={() => onJump(e.groupId)}
-              className='border-line bg-paper inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 transition-colors active:scale-95'
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+              className='border-line bg-paper inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1'
             >
               <span
                 aria-hidden
@@ -445,7 +447,7 @@ function UserGroupsJumpBar({
               <span className='text-ink-faint font-mono text-[11px] tabular-nums'>#{e.rank}</span>
               <span className='font-display text-sm'>{e.displayName}</span>
               <span className='text-ink-soft font-mono text-xs tabular-nums'>· {e.score}</span>
-            </button>
+            </motion.button>
           )
         })}
       </div>

@@ -74,9 +74,27 @@ export function IconX(props: IconProps) {
 export function IconMore(props: IconProps) {
   return (
     <I {...props}>
-      <circle cx='12' cy='12' r='1' fill='currentColor' stroke='none' />
-      <circle cx='5' cy='12' r='1' fill='currentColor' stroke='none' />
-      <circle cx='19' cy='12' r='1' fill='currentColor' stroke='none' />
+      <circle
+        cx='12'
+        cy='12'
+        r='1'
+        fill='currentColor'
+        stroke='none'
+      />
+      <circle
+        cx='5'
+        cy='12'
+        r='1'
+        fill='currentColor'
+        stroke='none'
+      />
+      <circle
+        cx='19'
+        cy='12'
+        r='1'
+        fill='currentColor'
+        stroke='none'
+      />
     </I>
   )
 }
@@ -104,7 +122,11 @@ export function IconRefresh(props: IconProps) {
 export function IconSun(props: IconProps) {
   return (
     <I {...props}>
-      <circle cx='12' cy='12' r='4' />
+      <circle
+        cx='12'
+        cy='12'
+        r='4'
+      />
       <path d='M12 2v2' />
       <path d='M12 20v2' />
       <path d='m4.93 4.93 1.41 1.41' />
@@ -152,7 +174,13 @@ export function IconCheck(props: IconProps) {
 export function IconMail(props: IconProps) {
   return (
     <I {...props}>
-      <rect width='20' height='16' x='2' y='4' rx='2' />
+      <rect
+        width='20'
+        height='16'
+        x='2'
+        y='4'
+        rx='2'
+      />
       <path d='m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7' />
     </I>
   )
@@ -163,7 +191,12 @@ export function IconLogOut(props: IconProps) {
     <I {...props}>
       <path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4' />
       <polyline points='16 17 21 12 16 7' />
-      <line x1='21' x2='9' y1='12' y2='12' />
+      <line
+        x1='21'
+        x2='9'
+        y1='12'
+        y2='12'
+      />
     </I>
   )
 }
@@ -173,7 +206,12 @@ export function IconLeave(props: IconProps) {
     <I {...props}>
       <path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4' />
       <polyline points='16 17 21 12 16 7' />
-      <line x1='21' x2='9' y1='12' y2='12' />
+      <line
+        x1='21'
+        x2='9'
+        y1='12'
+        y2='12'
+      />
     </I>
   )
 }
@@ -181,7 +219,13 @@ export function IconLeave(props: IconProps) {
 export function IconCopy(props: IconProps) {
   return (
     <I {...props}>
-      <rect width='14' height='14' x='8' y='8' rx='2' />
+      <rect
+        width='14'
+        height='14'
+        x='8'
+        y='8'
+        rx='2'
+      />
       <path d='M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2' />
     </I>
   )
@@ -192,7 +236,12 @@ export function IconShare(props: IconProps) {
     <I {...props}>
       <path d='M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8' />
       <polyline points='16 6 12 2 8 6' />
-      <line x1='12' x2='12' y1='2' y2='15' />
+      <line
+        x1='12'
+        x2='12'
+        y1='2'
+        y2='15'
+      />
     </I>
   )
 }
@@ -201,7 +250,11 @@ export function IconUsers(props: IconProps) {
   return (
     <I {...props}>
       <path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' />
-      <circle cx='9' cy='7' r='4' />
+      <circle
+        cx='9'
+        cy='7'
+        r='4'
+      />
       <path d='M22 21v-2a4 4 0 0 0-3-3.87' />
       <path d='M16 3.13a4 4 0 0 1 0 7.75' />
     </I>
@@ -212,7 +265,11 @@ export function IconUserEdit(props: IconProps) {
   return (
     <I {...props}>
       <path d='M11.5 15H7a4 4 0 0 0-4 4v2' />
-      <circle cx='9.5' cy='7' r='4' />
+      <circle
+        cx='9.5'
+        cy='7'
+        r='4'
+      />
       <path d='m15.2 15.5 4.6 4.6' />
       <path d='m19.8 15.5-4.6 4.6' />
     </I>
@@ -222,7 +279,11 @@ export function IconUserEdit(props: IconProps) {
 export function IconKey(props: IconProps) {
   return (
     <I {...props}>
-      <circle cx='7.5' cy='15.5' r='5.5' />
+      <circle
+        cx='7.5'
+        cy='15.5'
+        r='5.5'
+      />
       <path d='m11.5 11.5 9-9' />
       <path d='M17 3h4v4' />
       <path d='m21 3-4 4' />
@@ -242,7 +303,13 @@ export function IconLink(props: IconProps) {
 export function IconLock(props: IconProps) {
   return (
     <I {...props}>
-      <rect width='18' height='11' x='3' y='11' rx='2' />
+      <rect
+        width='18'
+        height='11'
+        x='3'
+        y='11'
+        rx='2'
+      />
       <path d='M7 11V7a5 5 0 0 1 10 0v4' />
     </I>
   )
@@ -252,7 +319,11 @@ export function IconSettings(props: IconProps) {
   return (
     <I {...props}>
       <path d='M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z' />
-      <circle cx='12' cy='12' r='3' />
+      <circle
+        cx='12'
+        cy='12'
+        r='3'
+      />
     </I>
   )
 }
@@ -270,9 +341,23 @@ export function IconUserPlus(props: IconProps) {
   return (
     <I {...props}>
       <path d='M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' />
-      <circle cx='9' cy='7' r='4' />
-      <line x1='19' x2='19' y1='8' y2='14' />
-      <line x1='22' x2='16' y1='11' y2='11' />
+      <circle
+        cx='9'
+        cy='7'
+        r='4'
+      />
+      <line
+        x1='19'
+        x2='19'
+        y1='8'
+        y2='14'
+      />
+      <line
+        x1='22'
+        x2='16'
+        y1='11'
+        y2='11'
+      />
     </I>
   )
 }

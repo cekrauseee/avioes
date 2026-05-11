@@ -244,7 +244,7 @@ export async function getWorldRanking(opts: { window: WorldRankingWindow }): Pro
     return {
       rank: i + 1,
       groupId: r.groupId,
-      displayName: isMember ? r.name : `Grupo #${r.groupId.slice(0, 6)}`,
+      displayName: r.name,
       score: r.score,
       isMember
     }
@@ -361,14 +361,30 @@ export async function createInvitation(
   })
   if (!result.ok) return result
 
+  return { ok: true, token, inviteUrl }
+}
+
+export async function sendInvitationEmail(
+  groupId: string,
+  email: string,
+  inviteUrl: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false, error: 'not_authenticated' }
+
+  const membership = await readGroupMembership(groupId, user.id)
+  if (membership?.role !== 'owner') return { ok: false, error: 'not_owner' }
+
+  const group = await readGroupForMember(groupId, user.id)
+  if (!group) return { ok: false, error: 'group_not_found' }
+
   const inviterName = user.firstName ?? user.name.split(' ')[0] ?? user.name
   try {
-    await sendInviteEmail(trimmed, inviterName, group.name, inviteUrl)
+    await sendInviteEmail(email, inviterName, group.name, inviteUrl)
   } catch {
-    // email send failure is not fatal — user can share the link manually
+    return { ok: false, error: 'send_failed' }
   }
-
-  return { ok: true, token, inviteUrl }
+  return { ok: true }
 }
 
 export async function acceptInvitation(

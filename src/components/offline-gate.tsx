@@ -5,9 +5,9 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { startTransition, useState } from 'react'
 import { t } from '../lib/i18n'
-import { IconRefresh } from './icons'
 import { MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
+import { IconRefresh } from './icons'
 
 export function OfflineGate() {
   const router = useRouter()
