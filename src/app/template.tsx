@@ -11,8 +11,8 @@ export default function Template({ children }: { children: React.ReactNode }) {
 
   return (
     <motion.div
-      initial={reduceMotion ? false : { opacity: 0, x: direction * MOTION_OFFSET.route }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={reduceMotion ? false : { opacity: 0, x: direction * MOTION_OFFSET.route, filter: 'blur(4px)' }}
+      animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
       transition={MOTION_TRANSITION.route}
       className='flex min-h-0 w-full flex-1 flex-col overflow-hidden'
     >

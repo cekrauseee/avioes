@@ -143,6 +143,7 @@ export function InviteScreen({
                 aria-hidden
                 width={480}
                 height={480}
+                unoptimized
                 className='theme-light-only h-auto w-full select-none'
                 draggable={false}
               />
@@ -152,6 +153,7 @@ export function InviteScreen({
                 aria-hidden
                 width={480}
                 height={480}
+                unoptimized
                 className='theme-dark-only h-auto w-full select-none'
                 draggable={false}
               />
@@ -217,6 +219,7 @@ export function InviteScreen({
                   alt=''
                   width={40}
                   height={40}
+                  unoptimized
                   referrerPolicy='no-referrer'
                   className='h-10 w-10 rounded-full object-cover'
                 />
@@ -237,6 +240,7 @@ export function InviteScreen({
                 aria-hidden
                 width={480}
                 height={480}
+                unoptimized
                 className='theme-light-only h-auto w-full select-none'
                 draggable={false}
               />
@@ -246,6 +250,7 @@ export function InviteScreen({
                 aria-hidden
                 width={480}
                 height={480}
+                unoptimized
                 className='theme-dark-only h-auto w-full select-none'
                 draggable={false}
               />
@@ -316,6 +321,7 @@ function ErrorScreen({ locale, line1Key, italicKey, bodyKey }: { locale: 'pt' | 
             aria-hidden
             width={480}
             height={480}
+            unoptimized
             className='theme-light-only h-auto w-full select-none'
             draggable={false}
           />
@@ -325,6 +331,7 @@ function ErrorScreen({ locale, line1Key, italicKey, bodyKey }: { locale: 'pt' | 
             aria-hidden
             width={480}
             height={480}
+            unoptimized
             className='theme-dark-only h-auto w-full select-none'
             draggable={false}
           />

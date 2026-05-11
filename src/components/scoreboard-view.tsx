@@ -166,6 +166,7 @@ function Score({
           alt=''
           width={48}
           height={48}
+          unoptimized
           referrerPolicy='no-referrer'
           className='h-12 w-12 rounded-full object-cover'
         />
@@ -192,6 +193,7 @@ function ScoreboardEmpty({ locale }: { locale: Locale }) {
           aria-hidden
           width={400}
           height={400}
+          unoptimized
           className='theme-light-only h-auto w-full select-none'
           draggable={false}
         />
@@ -201,6 +203,7 @@ function ScoreboardEmpty({ locale }: { locale: Locale }) {
           aria-hidden
           width={400}
           height={400}
+          unoptimized
           className='theme-dark-only h-auto w-full select-none'
           draggable={false}
         />

@@ -43,7 +43,7 @@ const OFFLINE_ASSETS = [
   '/favicon-light.png',
   '/favicon-dark.png'
 ]
-const PRECACHE = ['/manifest.webmanifest']
+const PRECACHE = ['/manifest.webmanifest', ...OFFLINE_ASSETS]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

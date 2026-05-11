@@ -31,9 +31,9 @@ const slideVariants = {
 }
 
 const screenVariants = {
-  enter: (dir: number) => ({ x: dir * MOTION_OFFSET.screen, opacity: 0 }),
-  center: { x: 0, opacity: 1 },
-  exit: (dir: number) => ({ x: -dir * MOTION_OFFSET.screen, opacity: 0, transition: MOTION_TRANSITION.screenExit })
+  enter: (dir: number) => ({ x: dir * MOTION_OFFSET.screen, opacity: 0, filter: 'blur(3px)' }),
+  center: { x: 0, opacity: 1, filter: 'blur(0px)' },
+  exit: (dir: number) => ({ x: -dir * MOTION_OFFSET.screen, opacity: 0, filter: 'blur(2px)', transition: MOTION_TRANSITION.screenExit })
 }
 
 export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthError: string | null }) {
@@ -323,6 +323,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 aria-hidden
                 width={480}
                 height={480}
+                unoptimized
                 priority
                 className='theme-light-only h-auto w-full select-none'
                 draggable={false}
@@ -333,6 +334,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 aria-hidden
                 width={480}
                 height={480}
+                unoptimized
                 priority
                 className='theme-dark-only h-auto w-full select-none'
                 draggable={false}
@@ -395,6 +397,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 aria-hidden
                 width={1254}
                 height={1254}
+                unoptimized
                 priority
                 className='theme-light-only h-auto w-full select-none'
                 draggable={false}
@@ -405,6 +408,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 aria-hidden
                 width={1254}
                 height={1254}
+                unoptimized
                 priority
                 className='theme-dark-only h-auto w-full select-none'
                 draggable={false}

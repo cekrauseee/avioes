@@ -20,10 +20,6 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
-### 2026-05-10 — Performance pass: images, animations, SW precache, noise
-
-Removed `unoptimized` from all illustration `<Image>` tags (kept on avatar and plane-arc sprite only) — Next.js now auto-converts to WebP/AVIF and resizes to the `width` hint. Removed `filter: 'blur()'` from all motion transitions (template, auth, settings, intro, button) — blur forces full repaint each frame; opacity+transform are GPU-composited. Replaced live SVG `feTurbulence` noise overlay with a static CSS background-image so the GPU doesn't blend a full-viewport filter on every paint. SW `PRECACHE` reduced to `['/manifest.webmanifest']` only — illustrations cache on first use via stale-while-revalidate instead of blocking install with ~30MB. `OFFLINE_ASSETS` list unchanged so the fetch handler still caches them when visited.
-
 ### 2026-05-07 — Multi-step `/onboarding` wizard (name → username → photo → group)
 
 Profile collection moved out of the auth wizard into a dedicated post-creation flow. `auth-screen.tsx` ends right after the password step — `signUp.email({ email, password, name: t(locale, 'auth.namePlaceholderName') })` ("Novo usuário" / "New user"). `firstName` is `required: false` in better-auth additionalFields. OAuth (Google) still maps `given_name`/`family_name` into the user row at signup. Both paths land on `/onboarding` because `users.onboardingStatus` is `'pending'` for any newly-created user.

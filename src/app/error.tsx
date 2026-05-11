@@ -26,6 +26,7 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
             aria-hidden
             width={480}
             height={480}
+            unoptimized
             className='theme-light-only h-auto w-full select-none'
             draggable={false}
           />
@@ -35,6 +36,7 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
             aria-hidden
             width={480}
             height={480}
+            unoptimized
             className='theme-dark-only h-auto w-full select-none'
             draggable={false}
           />

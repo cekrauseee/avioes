@@ -193,6 +193,7 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
                   aria-hidden
                   width={400}
                   height={400}
+                  unoptimized
                   className='theme-light-only h-auto w-full select-none'
                   draggable={false}
                 />
@@ -202,6 +203,7 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
                   aria-hidden
                   width={400}
                   height={400}
+                  unoptimized
                   className='theme-dark-only h-auto w-full select-none'
                   draggable={false}
                 />

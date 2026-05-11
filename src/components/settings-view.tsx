@@ -144,9 +144,9 @@ export function SettingsView() {
           >
             <motion.div
               key={tab}
-              initial={reduce ? { opacity: 0 } : { opacity: 0, x: direction * MOTION_OFFSET.tab }}
-              animate={reduce ? { opacity: 1 } : { opacity: 1, x: 0 }}
-              exit={reduce ? { opacity: 0 } : { opacity: 0, x: -direction * MOTION_OFFSET.tab }}
+              initial={reduce ? { opacity: 0 } : { opacity: 0, x: direction * MOTION_OFFSET.tab, filter: 'blur(4px)' }}
+              animate={reduce ? { opacity: 1 } : { opacity: 1, x: 0, filter: 'blur(0px)' }}
+              exit={reduce ? { opacity: 0 } : { opacity: 0, x: -direction * MOTION_OFFSET.tab, filter: 'blur(4px)' }}
               transition={MOTION_TRANSITION.tab}
               className='scroll-area absolute inset-0 overflow-y-auto px-5 py-5'
             >
