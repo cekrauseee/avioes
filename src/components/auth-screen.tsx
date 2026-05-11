@@ -833,7 +833,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
   )
 }
 
-function GoogleMark() {
+export function GoogleMark() {
   return (
     <svg
       width='18'

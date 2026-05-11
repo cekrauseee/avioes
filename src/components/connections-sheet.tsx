@@ -7,6 +7,7 @@ import { authClient } from '../lib/auth-client'
 import { t } from '../lib/i18n'
 import { MOTION_TRANSITION } from '../lib/motion'
 import type { Locale } from '../lib/types'
+import { GoogleMark } from './auth-screen'
 import { Button, ButtonLink } from './button'
 import { ConfirmActionSlot, ConfirmRow, ConfirmTriggerRow } from './confirm-row'
 import { ExpandableItem } from './expandable-item'
@@ -107,7 +108,7 @@ export function ConnectionsSheet({ open, onClose, locale }: { open: boolean; onC
 
             <div className='flex flex-col gap-2.5 px-6 pt-4'>
               {accounts === null ?
-                <Skel className='h-14 w-full rounded-2xl' />
+                <Skel className='h-12 w-full rounded-2xl' />
               : googleLinked ?
                 <ExpandableItem
                   expanded={expanded}
@@ -115,7 +116,7 @@ export function ConnectionsSheet({ open, onClose, locale }: { open: boolean; onC
                   toggleAriaLabel={t(locale, 'settings.googleDisconnect')}
                   main={
                     <div className='flex flex-1 items-center gap-2.5 px-5 py-4'>
-                      <span className='text-base leading-none'>G</span>
+                      <GoogleMark />
                       <span className='text-ink-soft text-sm'>{t(locale, 'settings.googleConnected')}</span>
                     </div>
                   }
@@ -163,7 +164,7 @@ export function ConnectionsSheet({ open, onClose, locale }: { open: boolean; onC
                   className='rounded-2xl px-5 py-4'
                   leading={
                     <div className='flex items-center gap-2.5'>
-                      <span className='text-base leading-none'>G</span>
+                      <GoogleMark />
                       <span className='text-sm'>{t(locale, 'settings.googleConnect')}</span>
                     </div>
                   }
