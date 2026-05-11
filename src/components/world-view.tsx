@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useRef, useState, useTransition } from 'react'
 import { getWorldRanking, type WorldRankingResult, type WorldRankingRowDTO, type WorldRankingWindow } from '../actions'
 import { t } from '../lib/i18n'
@@ -8,10 +9,10 @@ import { selectLocale, useOfflineState } from '../lib/offline-store'
 import { MEMBER_COLORS, type Locale } from '../lib/types'
 import { AppShell } from './app-shell'
 import { SyncStatus } from './sync-status'
+import { Tabs, type TabItem } from './tabs'
 import { ThemeToggle } from './theme-toggle'
-import { ToolbarTabs, type ToolbarTabItem } from './toolbar-tabs'
 
-const WINDOWS: ToolbarTabItem<WorldRankingWindow>[] = [
+const WINDOWS: TabItem<WorldRankingWindow>[] = [
   { id: 'all', labelKey: 'world.window.all' },
   { id: 'week', labelKey: 'world.window.week' }
 ]
@@ -19,17 +20,22 @@ const WINDOWS: ToolbarTabItem<WorldRankingWindow>[] = [
 const MEDALS = ['🥇', '🥈', '🥉']
 
 export function WorldView({ initial }: { initial: WorldRankingResult }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const state = useOfflineState()
   const locale = selectLocale(state)
+  const rawWindow = searchParams.get('window')
+  const windowSel: WorldRankingWindow = rawWindow === 'week' ? 'week' : 'all'
   const [data, setData] = useState(initial)
-  const [windowSel, setWindowSel] = useState<WorldRankingWindow>(initial.window)
   const [pending, startTransition] = useTransition()
   const listRef = useRef<HTMLDivElement>(null)
   const reqIdRef = useRef(0)
 
   function selectWindow(w: WorldRankingWindow) {
     if (w === windowSel) return
-    setWindowSel(w)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('window', w)
+    router.replace(`/world?${params}`, { scroll: false })
     const id = ++reqIdRef.current
     startTransition(async () => {
       const fresh = await getWorldRanking({ window: w })
@@ -64,13 +70,12 @@ export function WorldView({ initial }: { initial: WorldRankingResult }) {
           </div>
           <p className='font-display text-ink-soft mt-1 text-sm italic'>{t(locale, 'world.subtitle')}</p>
 
-          <div className='-mx-5 mt-3'>
-            <ToolbarTabs
+          <div className='mt-3'>
+            <Tabs
               items={WINDOWS}
               activeId={windowSel}
-              accentClass='bg-sage'
               locale={locale}
-              indicatorLayoutId='world-window'
+              layoutId='world-window'
               onSelect={selectWindow}
             />
           </div>

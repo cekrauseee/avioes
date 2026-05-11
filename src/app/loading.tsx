@@ -1,5 +1,5 @@
-import { headers } from 'next/headers'
 import { detectLocaleFromHeader, t } from '@/lib/i18n'
+import { headers } from 'next/headers'
 
 export default async function Loading() {
   const h = await headers()

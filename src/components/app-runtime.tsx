@@ -54,7 +54,9 @@ export function AppRuntime({ children }: { children: React.ReactNode }) {
             style={{ opacity: state.localeFading ? 0 : 1 }}
           >
             <div className='mx-auto flex min-h-0 w-full max-w-[420px] flex-1 flex-col overflow-hidden'>
-              {state.storageError ? <StorageGate /> : children}
+              {state.storageError ?
+                <StorageGate />
+              : children}
             </div>
           </div>
           {!state.storageError && <OfflineSync />}

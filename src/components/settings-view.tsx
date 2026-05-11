@@ -1,15 +1,13 @@
 'use client'
 
-import { AnimatePresence, motion, useReducedMotion, type PanInfo } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { getUserGroups } from '../actions'
 import { authClient } from '../lib/auth-client'
 import { resolveAvatarUrl } from '../lib/avatar'
-import { useArrowKeyNavigation, useHorizontalWheelNavigation } from '../lib/horizontal-wheel-navigation'
 import { t, type TKey } from '../lib/i18n'
 import { MOTION_OFFSET, MOTION_SPRING, MOTION_TRANSITION } from '../lib/motion'
-import { useNavDirection } from '../lib/nav-direction'
 import { applyLocalIdentity, queuePalette, queueTheme, selectLocale, selectPalette, selectTheme, switchLocale, useOfflineState } from '../lib/offline-store'
 import { getMemberColor, getMemberFirstName, getMemberFullName, PALETTES, type Locale, type Palette, type Theme } from '../lib/types'
 import { AppShell } from './app-shell'
@@ -19,7 +17,7 @@ import { ConnectionsSheet } from './connections-sheet'
 import { Onboarding } from './onboarding'
 import { PasskeysSheet } from './passkeys-sheet'
 import { Skel } from './skeleton'
-import { ToolbarTabs, type ToolbarTabItem } from './toolbar-tabs'
+import { Tabs, type TabItem } from './tabs'
 
 type Tab = 'visual' | 'group' | 'account'
 
@@ -27,11 +25,7 @@ const TABS = [
   { id: 'visual', labelKey: 'settings.tab.visual' },
   { id: 'group', labelKey: 'settings.tab.group' },
   { id: 'account', labelKey: 'settings.tab.account' }
-] satisfies ToolbarTabItem<Tab>[]
-
-const SETTINGS_PREV_ROUTE = '/scoreboard'
-const SWIPE_THRESHOLD = 60
-const WHEEL_SWIPE_THRESHOLD = 34
+] satisfies TabItem<Tab>[]
 
 const PALETTE_KEYS = Object.keys(PALETTES) as Palette[]
 
@@ -64,80 +58,46 @@ export function SettingsView() {
   const tab = (TABS.some((t) => t.id === rawTab) ? rawTab : 'visual') as Tab
   const [direction, setDirection] = useState<1 | -1>(1)
   const reduce = useReducedMotion()
-  const { set: setNavDirection } = useNavDirection()
+  const prevTabRef = useRef(tab)
 
-  const currentIndex = TABS.findIndex((t) => t.id === tab)
+  useEffect(() => {
+    if (prevTabRef.current !== tab) {
+      const prevIndex = TABS.findIndex((t) => t.id === prevTabRef.current)
+      const nextIndex = TABS.findIndex((t) => t.id === tab)
+      setDirection(nextIndex > prevIndex ? 1 : -1)
+      prevTabRef.current = tab
+    }
+  }, [tab])
 
   const goTo = (id: Tab) => {
-    const nextIndex = TABS.findIndex((t) => t.id === id)
     if (id === tab) return
-    setDirection(nextIndex > currentIndex ? 1 : -1)
     const params = new URLSearchParams(searchParams.toString())
     params.set('tab', id)
     router.replace(`/settings?${params}`, { scroll: false })
   }
 
-  const goByDirection = (nextDirection: 1 | -1) => {
-    const nextIndex = currentIndex + nextDirection
-    const nextTab = TABS[nextIndex]
-
-    if (nextTab) {
-      setDirection(nextDirection)
-      const params = new URLSearchParams(searchParams.toString())
-      params.set('tab', nextTab.id)
-      router.replace(`/settings?${params}`, { scroll: false })
-      return
-    }
-
-    if (nextDirection === -1) {
-      setNavDirection(-1)
-      router.push(SETTINGS_PREV_ROUTE)
-    }
-  }
-
-  const onDragEnd = (_: unknown, info: PanInfo) => {
-    if (info.offset.x < -SWIPE_THRESHOLD && info.velocity.x < 0) goByDirection(1)
-    else if (info.offset.x > SWIPE_THRESHOLD && info.velocity.x > 0) goByDirection(-1)
-  }
-  const onWheel = useHorizontalWheelNavigation(goByDirection, WHEEL_SWIPE_THRESHOLD)
-  useArrowKeyNavigation(goByDirection, Boolean(state.identity && state.activeGroupId))
-
   if (!state.identity || !state.activeGroupId) return <Onboarding />
 
   const who = state.identity
-  const accent = getMemberColor(who, state.groupMembers)
 
   return (
     <AppShell>
       <div className='flex min-h-0 flex-1 flex-col pt-[max(env(safe-area-inset-top),1.25rem)]'>
-        {/* header */}
         <div className='px-5 pb-1'>
           <h1 className='font-display text-2xl tracking-tight'>{t(locale, 'settings.title')}</h1>
         </div>
 
-        {/* tab bar */}
-        <div className='relative px-5 pb-0'>
-          <ToolbarTabs
+        <div className='px-5 pt-2 pb-0'>
+          <Tabs
             items={TABS}
             activeId={tab}
-            accentClass={accent.bg}
             locale={locale}
-            indicatorLayoutId='settings-tab-indicator'
+            layoutId='settings-tab'
             onSelect={goTo}
           />
         </div>
 
-        {/* tab content */}
-        <motion.div
-          className='relative min-h-0 flex-1 touch-pan-y overflow-hidden overscroll-x-contain'
-          drag={reduce ? false : 'x'}
-          dragDirectionLock
-          dragElastic={0.15}
-          dragConstraints={{ left: 0, right: 0 }}
-          onDragEnd={onDragEnd}
-          onWheelCapture={reduce ? undefined : onWheel}
-          whileDrag={{ cursor: 'grabbing' }}
-        >
+        <div className='relative min-h-0 flex-1 overflow-hidden'>
           <AnimatePresence
             mode='sync'
             initial={false}
@@ -171,7 +131,7 @@ export function SettingsView() {
               )}
             </motion.div>
           </AnimatePresence>
-        </motion.div>
+        </div>
       </div>
     </AppShell>
   )
