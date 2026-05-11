@@ -4,6 +4,7 @@ const pt = {
   'nav.count': 'Contar',
   'nav.diary': 'Diário',
   'nav.scoreboard': 'Placar',
+  'nav.world': 'Mundo',
   'nav.settings': 'Ajustes',
 
   'world.title': 'Mundo',
@@ -592,6 +593,7 @@ const en: Record<TranslationKey, string> = {
   'nav.count': 'Count',
   'nav.diary': 'Diary',
   'nav.scoreboard': 'Score',
+  'nav.world': 'World',
   'nav.settings': 'Settings',
 
   'world.title': 'World',

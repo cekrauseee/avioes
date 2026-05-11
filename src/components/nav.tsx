@@ -11,6 +11,7 @@ const links = [
   { id: '/', href: '/', labelKey: 'nav.count' },
   { id: '/diary', href: '/diary', labelKey: 'nav.diary' },
   { id: '/scoreboard', href: '/scoreboard', labelKey: 'nav.scoreboard' },
+  { id: '/world', href: '/world', labelKey: 'nav.world' },
   { id: '/settings', href: '/settings', labelKey: 'nav.settings' }
 ] satisfies ToolbarTabItem<string>[]
 

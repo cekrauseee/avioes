@@ -1140,7 +1140,10 @@ function CollapsingOverlay({ originRect }: { originRect: CollapsingRect }) {
         width: '100vw',
         height: '100vh',
         borderRadius: 0,
-        transition: reduceMotion ? 'none' : `top ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), left ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), width ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), height ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), border-radius ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1)`
+        transition:
+          reduceMotion ? 'none' : (
+            `top ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), left ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), width ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), height ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1), border-radius ${EXPAND_DURATION}ms cubic-bezier(0.22,1,0.36,1)`
+          )
       }}
     />,
     document.body
@@ -1175,7 +1178,12 @@ class MapErrorBoundary extends Component<{ locale: Locale; children: React.React
       <>
         {collapsing && collapsingRect && <CollapsingOverlay originRect={collapsingRect} />}
         <AnimatePresence>
-          {!collapsing && <MapErrorFallback key='error' locale={this.props.locale} />}
+          {!collapsing && (
+            <MapErrorFallback
+              key='error'
+              locale={this.props.locale}
+            />
+          )}
         </AnimatePresence>
       </>
     )
