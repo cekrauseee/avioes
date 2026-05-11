@@ -364,11 +364,7 @@ export async function createInvitation(
   return { ok: true, token, inviteUrl }
 }
 
-export async function sendInvitationEmail(
-  groupId: string,
-  email: string,
-  inviteUrl: string
-): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function sendInvitationEmail(groupId: string, email: string, inviteUrl: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const user = await getSessionUser()
   if (!user) return { ok: false, error: 'not_authenticated' }
 

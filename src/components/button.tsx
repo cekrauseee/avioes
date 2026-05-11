@@ -90,7 +90,15 @@ interface BaseStyleProps {
 export function buttonVariants(opts: BaseStyleProps = {}): string {
   const { variant = 'primary', size = 'md', shape = 'rounded', align, fullWidth } = opts
   const resolvedAlign = align ?? DEFAULT_ALIGN[variant]
-  return cn('transition-all', ALIGN_CLASSES[resolvedAlign], VARIANT_CHROME[variant], VARIANT_HOVER_FOCUS[variant], SIZE_CLASSES[size], SHAPE_CLASSES[shape], fullWidth && 'w-full')
+  return cn(
+    'transition-all',
+    ALIGN_CLASSES[resolvedAlign],
+    VARIANT_CHROME[variant],
+    VARIANT_HOVER_FOCUS[variant],
+    SIZE_CLASSES[size],
+    SHAPE_CLASSES[shape],
+    fullWidth && 'w-full'
+  )
 }
 
 // ─── Button ─────────────────────────────────────────────────────────────────
@@ -156,7 +164,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       )}
       {...rest}
     >
-      {leading ? (
+      {leading ?
         <span className='inline-flex items-center gap-2'>
           {leading}
           <ButtonStatusContent
@@ -164,12 +172,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
             label={labelByStatus[status]}
           />
         </span>
-      ) : (
-        <ButtonStatusContent
+      : <ButtonStatusContent
           status={status}
           label={labelByStatus[status]}
         />
-      )}
+      }
       {trailing}
     </motion.button>
   )
@@ -196,14 +203,12 @@ export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(functio
       className={cn(buttonVariants({ variant, size, shape, fullWidth }), className)}
       {...rest}
     >
-      {leading ? (
+      {leading ?
         <span className='inline-flex items-center gap-2'>
           {leading}
           {children}
         </span>
-      ) : (
-        children
-      )}
+      : children}
       {trailing}
     </NextLink>
   )

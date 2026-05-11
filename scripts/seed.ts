@@ -37,77 +37,77 @@ type SeedUser = {
 
 const SEED_USERS: SeedUser[] = [
   // ── Brasileiros ─────────────────────────────────────────────────────────
-  { key: 'henrique',  firstName: 'Henrique',  lastName: 'Krause',    email: 'henrique@test.com',  locale: 'pt', palette: 'default', theme: 'system' },
-  { key: 'pietra',    firstName: 'Pietra',    lastName: 'Silva',     email: 'pietra@test.com',    locale: 'pt', palette: 'blossom'  },
-  { key: 'lucas',     firstName: 'Lucas',     lastName: 'Oliveira',  email: 'lucas@test.com',     locale: 'pt'  },
-  { key: 'isabela',   firstName: 'Isabela',   lastName: 'Ferreira',  email: 'isabela@test.com',   locale: 'pt', palette: 'lavender' },
-  { key: 'gabriel',   firstName: 'Gabriel',   lastName: 'Santos',    email: 'gabriel@test.com',   locale: 'pt'  },
-  { key: 'camila',    firstName: 'Camila',    lastName: 'Costa',     email: 'camila@test.com',    locale: 'pt', palette: 'blossom'  },
-  { key: 'rafael',    firstName: 'Rafael',    lastName: 'Lima',      email: 'rafael@test.com',    locale: 'pt'  },
-  { key: 'beatriz',   firstName: 'Beatriz',   lastName: 'Rocha',     email: 'beatriz@test.com',   locale: 'pt', palette: 'sky'      },
-  { key: 'rodrigo',   firstName: 'Rodrigo',   lastName: 'Carvalho',  email: 'rodrigo@test.com',   locale: 'pt', theme: 'dark'       },
-  { key: 'leticia',   firstName: 'Letícia',   lastName: 'Almeida',   email: 'leticia@test.com',   locale: 'pt'  },
-  { key: 'eduardo',   firstName: 'Eduardo',   lastName: 'Martins',   email: 'eduardo@test.com',   locale: 'pt', palette: 'ocean'    },
-  { key: 'mariana',   firstName: 'Mariana',   lastName: 'Ribeiro',   email: 'mariana@test.com',   locale: 'pt'  },
-  { key: 'thiago',    firstName: 'Thiago',    lastName: 'Araújo',    email: 'thiago@test.com',    locale: 'pt', theme: 'dark'       },
-  { key: 'natalia',   firstName: 'Natália',   lastName: 'Gomes',     email: 'natalia@test.com',   locale: 'pt', palette: 'lavender' },
-  { key: 'bruno',     firstName: 'Bruno',     lastName: 'Barbosa',   email: 'bruno@test.com',     locale: 'pt'  },
-  { key: 'fernanda',  firstName: 'Fernanda',  lastName: 'Correia',   email: 'fernanda@test.com',  locale: 'pt', palette: 'blossom'  },
-  { key: 'mateus',    firstName: 'Mateus',    lastName: 'Teixeira',  email: 'mateus@test.com',    locale: 'pt'  },
-  { key: 'julia',     firstName: 'Júlia',     lastName: 'Nascimento',email: 'julia@test.com',     locale: 'pt', palette: 'earth'    },
-  { key: 'diego',     firstName: 'Diego',     lastName: 'Vieira',    email: 'diego@test.com',     locale: 'pt', theme: 'light'      },
-  { key: 'larissa',   firstName: 'Larissa',   lastName: 'Mendes',    email: 'larissa@test.com',   locale: 'pt'  },
-  { key: 'andre',     firstName: 'André',     lastName: 'Sousa',     email: 'andre@test.com',     locale: 'pt'  },
-  { key: 'amanda',    firstName: 'Amanda',    lastName: 'Pereira',   email: 'amanda@test.com',    locale: 'pt', palette: 'sky'      },
-  { key: 'vinicius',  firstName: 'Vinícius',  lastName: 'Monteiro',  email: 'vinicius@test.com',  locale: 'pt'  },
-  { key: 'priscila',  firstName: 'Priscila',  lastName: 'Cardoso',   email: 'priscila@test.com',  locale: 'pt', palette: 'lavender' },
-  { key: 'leonardo',  firstName: 'Leonardo',  lastName: 'Moreira',   email: 'leonardo@test.com',  locale: 'pt', theme: 'dark'       },
-  { key: 'aline',     firstName: 'Aline',     lastName: 'Castro',    email: 'aline@test.com',     locale: 'pt'  },
-  { key: 'gustavo',   firstName: 'Gustavo',   lastName: 'Freitas',   email: 'gustavo@test.com',   locale: 'pt', palette: 'ocean'    },
-  { key: 'bianca',    firstName: 'Bianca',    lastName: 'Campos',    email: 'bianca@test.com',    locale: 'pt', palette: 'blossom'  },
-  { key: 'joao',      firstName: 'João',      lastName: 'Ramos',     email: 'joao@test.com',      locale: 'pt'  },
-  { key: 'rebeca',    firstName: 'Rebeca',    lastName: 'Dias',      email: 'rebeca@test.com',    locale: 'pt', palette: 'sky'      },
-  { key: 'sergio',    firstName: 'Sérgio',    lastName: 'Azevedo',   email: 'sergio@test.com',    locale: 'pt', theme: 'dark'       },
-  { key: 'vanessa',   firstName: 'Vanessa',   lastName: 'Lopes',     email: 'vanessa@test.com',   locale: 'pt'  },
-  { key: 'marcos',    firstName: 'Marcos',    lastName: 'Cruz',      email: 'marcos@test.com',    locale: 'pt'  },
-  { key: 'danielle',  firstName: 'Danielle',  lastName: 'Pinto',     email: 'danielle@test.com',  locale: 'pt', palette: 'lavender' },
-  { key: 'paulo',     firstName: 'Paulo',     lastName: 'Xavier',    email: 'paulo@test.com',     locale: 'pt'  },
+  { key: 'henrique', firstName: 'Henrique', lastName: 'Krause', email: 'henrique@test.com', locale: 'pt', palette: 'default', theme: 'system' },
+  { key: 'pietra', firstName: 'Pietra', lastName: 'Silva', email: 'pietra@test.com', locale: 'pt', palette: 'blossom' },
+  { key: 'lucas', firstName: 'Lucas', lastName: 'Oliveira', email: 'lucas@test.com', locale: 'pt' },
+  { key: 'isabela', firstName: 'Isabela', lastName: 'Ferreira', email: 'isabela@test.com', locale: 'pt', palette: 'lavender' },
+  { key: 'gabriel', firstName: 'Gabriel', lastName: 'Santos', email: 'gabriel@test.com', locale: 'pt' },
+  { key: 'camila', firstName: 'Camila', lastName: 'Costa', email: 'camila@test.com', locale: 'pt', palette: 'blossom' },
+  { key: 'rafael', firstName: 'Rafael', lastName: 'Lima', email: 'rafael@test.com', locale: 'pt' },
+  { key: 'beatriz', firstName: 'Beatriz', lastName: 'Rocha', email: 'beatriz@test.com', locale: 'pt', palette: 'sky' },
+  { key: 'rodrigo', firstName: 'Rodrigo', lastName: 'Carvalho', email: 'rodrigo@test.com', locale: 'pt', theme: 'dark' },
+  { key: 'leticia', firstName: 'Letícia', lastName: 'Almeida', email: 'leticia@test.com', locale: 'pt' },
+  { key: 'eduardo', firstName: 'Eduardo', lastName: 'Martins', email: 'eduardo@test.com', locale: 'pt', palette: 'ocean' },
+  { key: 'mariana', firstName: 'Mariana', lastName: 'Ribeiro', email: 'mariana@test.com', locale: 'pt' },
+  { key: 'thiago', firstName: 'Thiago', lastName: 'Araújo', email: 'thiago@test.com', locale: 'pt', theme: 'dark' },
+  { key: 'natalia', firstName: 'Natália', lastName: 'Gomes', email: 'natalia@test.com', locale: 'pt', palette: 'lavender' },
+  { key: 'bruno', firstName: 'Bruno', lastName: 'Barbosa', email: 'bruno@test.com', locale: 'pt' },
+  { key: 'fernanda', firstName: 'Fernanda', lastName: 'Correia', email: 'fernanda@test.com', locale: 'pt', palette: 'blossom' },
+  { key: 'mateus', firstName: 'Mateus', lastName: 'Teixeira', email: 'mateus@test.com', locale: 'pt' },
+  { key: 'julia', firstName: 'Júlia', lastName: 'Nascimento', email: 'julia@test.com', locale: 'pt', palette: 'earth' },
+  { key: 'diego', firstName: 'Diego', lastName: 'Vieira', email: 'diego@test.com', locale: 'pt', theme: 'light' },
+  { key: 'larissa', firstName: 'Larissa', lastName: 'Mendes', email: 'larissa@test.com', locale: 'pt' },
+  { key: 'andre', firstName: 'André', lastName: 'Sousa', email: 'andre@test.com', locale: 'pt' },
+  { key: 'amanda', firstName: 'Amanda', lastName: 'Pereira', email: 'amanda@test.com', locale: 'pt', palette: 'sky' },
+  { key: 'vinicius', firstName: 'Vinícius', lastName: 'Monteiro', email: 'vinicius@test.com', locale: 'pt' },
+  { key: 'priscila', firstName: 'Priscila', lastName: 'Cardoso', email: 'priscila@test.com', locale: 'pt', palette: 'lavender' },
+  { key: 'leonardo', firstName: 'Leonardo', lastName: 'Moreira', email: 'leonardo@test.com', locale: 'pt', theme: 'dark' },
+  { key: 'aline', firstName: 'Aline', lastName: 'Castro', email: 'aline@test.com', locale: 'pt' },
+  { key: 'gustavo', firstName: 'Gustavo', lastName: 'Freitas', email: 'gustavo@test.com', locale: 'pt', palette: 'ocean' },
+  { key: 'bianca', firstName: 'Bianca', lastName: 'Campos', email: 'bianca@test.com', locale: 'pt', palette: 'blossom' },
+  { key: 'joao', firstName: 'João', lastName: 'Ramos', email: 'joao@test.com', locale: 'pt' },
+  { key: 'rebeca', firstName: 'Rebeca', lastName: 'Dias', email: 'rebeca@test.com', locale: 'pt', palette: 'sky' },
+  { key: 'sergio', firstName: 'Sérgio', lastName: 'Azevedo', email: 'sergio@test.com', locale: 'pt', theme: 'dark' },
+  { key: 'vanessa', firstName: 'Vanessa', lastName: 'Lopes', email: 'vanessa@test.com', locale: 'pt' },
+  { key: 'marcos', firstName: 'Marcos', lastName: 'Cruz', email: 'marcos@test.com', locale: 'pt' },
+  { key: 'danielle', firstName: 'Danielle', lastName: 'Pinto', email: 'danielle@test.com', locale: 'pt', palette: 'lavender' },
+  { key: 'paulo', firstName: 'Paulo', lastName: 'Xavier', email: 'paulo@test.com', locale: 'pt' },
   // ── Portugueses ─────────────────────────────────────────────────────────
-  { key: 'tiago_pt',  firstName: 'Tiago',     lastName: 'Fonseca',   email: 'tiago.pt@test.com',  locale: 'pt', palette: 'ocean'    },
-  { key: 'sofia_pt',  firstName: 'Sofia',     lastName: 'Rodrigues', email: 'sofia.pt@test.com',  locale: 'pt'  },
-  { key: 'nuno',      firstName: 'Nuno',      lastName: 'Machado',   email: 'nuno@test.com',      locale: 'pt', theme: 'dark'       },
-  { key: 'ines',      firstName: 'Inês',      lastName: 'Melo',      email: 'ines@test.com',      locale: 'pt', palette: 'blossom'  },
-  { key: 'rui',       firstName: 'Rui',       lastName: 'Marques',   email: 'rui@test.com',       locale: 'pt'  },
+  { key: 'tiago_pt', firstName: 'Tiago', lastName: 'Fonseca', email: 'tiago.pt@test.com', locale: 'pt', palette: 'ocean' },
+  { key: 'sofia_pt', firstName: 'Sofia', lastName: 'Rodrigues', email: 'sofia.pt@test.com', locale: 'pt' },
+  { key: 'nuno', firstName: 'Nuno', lastName: 'Machado', email: 'nuno@test.com', locale: 'pt', theme: 'dark' },
+  { key: 'ines', firstName: 'Inês', lastName: 'Melo', email: 'ines@test.com', locale: 'pt', palette: 'blossom' },
+  { key: 'rui', firstName: 'Rui', lastName: 'Marques', email: 'rui@test.com', locale: 'pt' },
   // ── Argentinos ──────────────────────────────────────────────────────────
-  { key: 'facundo',   firstName: 'Facundo',   lastName: 'García',    email: 'facundo@test.com',   locale: 'en'  },
-  { key: 'valentina', firstName: 'Valentina', lastName: 'López',     email: 'valentina@test.com', locale: 'en', palette: 'blossom'  },
-  { key: 'matias',    firstName: 'Matías',    lastName: 'Fernández', email: 'matias@test.com',    locale: 'en'  },
-  { key: 'lucia_ar',  firstName: 'Lucía',     lastName: 'González',  email: 'lucia.ar@test.com',  locale: 'en', palette: 'lavender' },
-  { key: 'agustin',   firstName: 'Agustín',   lastName: 'Martínez',  email: 'agustin@test.com',   locale: 'en', theme: 'dark'       },
+  { key: 'facundo', firstName: 'Facundo', lastName: 'García', email: 'facundo@test.com', locale: 'en' },
+  { key: 'valentina', firstName: 'Valentina', lastName: 'López', email: 'valentina@test.com', locale: 'en', palette: 'blossom' },
+  { key: 'matias', firstName: 'Matías', lastName: 'Fernández', email: 'matias@test.com', locale: 'en' },
+  { key: 'lucia_ar', firstName: 'Lucía', lastName: 'González', email: 'lucia.ar@test.com', locale: 'en', palette: 'lavender' },
+  { key: 'agustin', firstName: 'Agustín', lastName: 'Martínez', email: 'agustin@test.com', locale: 'en', theme: 'dark' },
   // ── Franceses ───────────────────────────────────────────────────────────
-  { key: 'antoine',   firstName: 'Antoine',   lastName: 'Dupont',    email: 'antoine@test.com',   locale: 'en', palette: 'earth'    },
-  { key: 'chloe',     firstName: 'Chloé',     lastName: 'Bernard',   email: 'chloe@test.com',     locale: 'en'  },
-  { key: 'theo',      firstName: 'Théo',      lastName: 'Moreau',    email: 'theo@test.com',      locale: 'en', theme: 'dark'       },
-  { key: 'emma_fr',   firstName: 'Emma',      lastName: 'Leroy',     email: 'emma.fr@test.com',   locale: 'en', palette: 'sky'      },
-  { key: 'baptiste',  firstName: 'Baptiste',  lastName: 'Petit',     email: 'baptiste@test.com',  locale: 'en'  },
+  { key: 'antoine', firstName: 'Antoine', lastName: 'Dupont', email: 'antoine@test.com', locale: 'en', palette: 'earth' },
+  { key: 'chloe', firstName: 'Chloé', lastName: 'Bernard', email: 'chloe@test.com', locale: 'en' },
+  { key: 'theo', firstName: 'Théo', lastName: 'Moreau', email: 'theo@test.com', locale: 'en', theme: 'dark' },
+  { key: 'emma_fr', firstName: 'Emma', lastName: 'Leroy', email: 'emma.fr@test.com', locale: 'en', palette: 'sky' },
+  { key: 'baptiste', firstName: 'Baptiste', lastName: 'Petit', email: 'baptiste@test.com', locale: 'en' },
   // ── Alemães ─────────────────────────────────────────────────────────────
-  { key: 'lukas',     firstName: 'Lukas',     lastName: 'Müller',    email: 'lukas@test.com',     locale: 'en', palette: 'ocean'    },
-  { key: 'laura_de',  firstName: 'Laura',     lastName: 'Schmidt',   email: 'laura.de@test.com',  locale: 'en'  },
-  { key: 'jan',       firstName: 'Jan',       lastName: 'Fischer',   email: 'jan@test.com',       locale: 'en', theme: 'dark'       },
-  { key: 'anna_de',   firstName: 'Anna',      lastName: 'Weber',     email: 'anna.de@test.com',   locale: 'en', palette: 'lavender' },
-  { key: 'tim',       firstName: 'Tim',       lastName: 'Wagner',    email: 'tim@test.com',       locale: 'en'  },
+  { key: 'lukas', firstName: 'Lukas', lastName: 'Müller', email: 'lukas@test.com', locale: 'en', palette: 'ocean' },
+  { key: 'laura_de', firstName: 'Laura', lastName: 'Schmidt', email: 'laura.de@test.com', locale: 'en' },
+  { key: 'jan', firstName: 'Jan', lastName: 'Fischer', email: 'jan@test.com', locale: 'en', theme: 'dark' },
+  { key: 'anna_de', firstName: 'Anna', lastName: 'Weber', email: 'anna.de@test.com', locale: 'en', palette: 'lavender' },
+  { key: 'tim', firstName: 'Tim', lastName: 'Wagner', email: 'tim@test.com', locale: 'en' },
   // ── Japoneses ───────────────────────────────────────────────────────────
-  { key: 'yuki',      firstName: 'Yuki',      lastName: 'Tanaka',    email: 'yuki@test.com',      locale: 'en', palette: 'sky'      },
-  { key: 'kenji',     firstName: 'Kenji',     lastName: 'Sato',      email: 'kenji@test.com',     locale: 'en', theme: 'dark'       },
-  { key: 'haruto',    firstName: 'Haruto',    lastName: 'Suzuki',    email: 'haruto@test.com',    locale: 'en'  },
-  { key: 'sakura',    firstName: 'Sakura',    lastName: 'Yamamoto',  email: 'sakura@test.com',    locale: 'en', palette: 'blossom'  },
-  { key: 'aoi',       firstName: 'Aoi',       lastName: 'Nakamura',  email: 'aoi@test.com',       locale: 'en', palette: 'lavender' },
+  { key: 'yuki', firstName: 'Yuki', lastName: 'Tanaka', email: 'yuki@test.com', locale: 'en', palette: 'sky' },
+  { key: 'kenji', firstName: 'Kenji', lastName: 'Sato', email: 'kenji@test.com', locale: 'en', theme: 'dark' },
+  { key: 'haruto', firstName: 'Haruto', lastName: 'Suzuki', email: 'haruto@test.com', locale: 'en' },
+  { key: 'sakura', firstName: 'Sakura', lastName: 'Yamamoto', email: 'sakura@test.com', locale: 'en', palette: 'blossom' },
+  { key: 'aoi', firstName: 'Aoi', lastName: 'Nakamura', email: 'aoi@test.com', locale: 'en', palette: 'lavender' },
   // ── Anglófonos ──────────────────────────────────────────────────────────
-  { key: 'james',     firstName: 'James',     lastName: 'Wilson',    email: 'james@test.com',     locale: 'en', palette: 'ocean'    },
-  { key: 'emily',     firstName: 'Emily',     lastName: 'Taylor',    email: 'emily@test.com',     locale: 'en'  },
-  { key: 'oliver',    firstName: 'Oliver',    lastName: 'Brown',     email: 'oliver@test.com',    locale: 'en', theme: 'dark'       },
-  { key: 'charlotte', firstName: 'Charlotte', lastName: 'Davies',    email: 'charlotte@test.com', locale: 'en', palette: 'blossom'  },
-  { key: 'liam',      firstName: 'Liam',      lastName: 'Johnson',   email: 'liam@test.com',      locale: 'en'  },
+  { key: 'james', firstName: 'James', lastName: 'Wilson', email: 'james@test.com', locale: 'en', palette: 'ocean' },
+  { key: 'emily', firstName: 'Emily', lastName: 'Taylor', email: 'emily@test.com', locale: 'en' },
+  { key: 'oliver', firstName: 'Oliver', lastName: 'Brown', email: 'oliver@test.com', locale: 'en', theme: 'dark' },
+  { key: 'charlotte', firstName: 'Charlotte', lastName: 'Davies', email: 'charlotte@test.com', locale: 'en', palette: 'blossom' },
+  { key: 'liam', firstName: 'Liam', lastName: 'Johnson', email: 'liam@test.com', locale: 'en' }
 ]
 
 // ─── Groups ─────────────────────────────────────────────────────────────────
@@ -131,176 +131,201 @@ const SEED_GROUPS: SeedGroup[] = [
     name: 'Praia Galera',
     ownerKey: 'lucas',
     memberKeys: ['lucas', 'isabela', 'camila', 'rafael', 'beatriz'],
-    weekEvents: 55, olderEvents: 350
+    weekEvents: 55,
+    olderEvents: 350
   },
   {
     id: 'sg-turma',
     name: 'Turma da Facul',
     ownerKey: 'henrique',
     memberKeys: ['henrique', 'pietra', 'lucas', 'camila', 'rodrigo', 'leticia'],
-    weekEvents: 45, olderEvents: 320
+    weekEvents: 45,
+    olderEvents: 320
   },
   {
     id: 'sg-buenos',
     name: 'Buenos Aires Spotters',
     ownerKey: 'facundo',
     memberKeys: ['facundo', 'valentina', 'matias', 'lucia_ar', 'agustin'],
-    weekEvents: 35, olderEvents: 266
+    weekEvents: 35,
+    olderEvents: 266
   },
   {
     id: 'sg-tokyo',
     name: 'Tokyo Flyers',
     ownerKey: 'yuki',
     memberKeys: ['yuki', 'kenji', 'haruto', 'sakura', 'aoi'],
-    weekEvents: 40, olderEvents: 230
+    weekEvents: 40,
+    olderEvents: 230
   },
   {
     id: 'sg-europa',
     name: 'Europa 2025',
     ownerKey: 'henrique',
     memberKeys: ['henrique', 'antoine', 'chloe', 'lukas', 'james', 'emily'],
-    weekEvents: 28, olderEvents: 220
+    weekEvents: 28,
+    olderEvents: 220
   },
   {
     id: 'sg-london',
     name: 'London Spotters',
     ownerKey: 'james',
     memberKeys: ['james', 'emily', 'oliver', 'charlotte', 'liam'],
-    weekEvents: 22, olderEvents: 218
+    weekEvents: 22,
+    olderEvents: 218
   },
   {
     id: 'sg-rio',
     name: 'Rio Trip',
     ownerKey: 'rodrigo',
     memberKeys: ['rodrigo', 'natalia', 'thiago', 'mariana', 'eduardo'],
-    weekEvents: 18, olderEvents: 210
+    weekEvents: 18,
+    olderEvents: 210
   },
   {
     id: 'sg-paris',
     name: 'Paris Planewatchers',
     ownerKey: 'antoine',
     memberKeys: ['antoine', 'chloe', 'theo', 'emma_fr', 'baptiste'],
-    weekEvents: 30, olderEvents: 175
+    weekEvents: 30,
+    olderEvents: 175
   },
   {
     id: 'sg-viagem',
     name: 'Viagem SP',
     ownerKey: 'henrique',
     memberKeys: ['henrique', 'pietra', 'lucas', 'camila'],
-    weekEvents: 48, olderEvents: 100
+    weekEvents: 48,
+    olderEvents: 100
   },
   {
     id: 'sg-cariocas',
     name: 'Cariocas United',
     ownerKey: 'mariana',
     memberKeys: ['mariana', 'thiago', 'larissa', 'andre', 'vinicius'],
-    weekEvents: 20, olderEvents: 140
+    weekEvents: 20,
+    olderEvents: 140
   },
   {
     id: 'sg-berlin',
     name: 'Berlin Aviatik',
     ownerKey: 'lukas',
     memberKeys: ['lukas', 'laura_de', 'jan', 'anna_de', 'tim'],
-    weekEvents: 25, olderEvents: 125
+    weekEvents: 25,
+    olderEvents: 125
   },
   {
     id: 'sg-floripa',
     name: 'Floripa 2024',
     ownerKey: 'gabriel',
     memberKeys: ['gabriel', 'amanda', 'vinicius', 'priscila', 'bianca'],
-    weekEvents: 18, olderEvents: 108
+    weekEvents: 18,
+    olderEvents: 108
   },
   {
     id: 'sg-mundial',
     name: 'Mundial 2026',
     ownerKey: 'paulo',
     memberKeys: ['paulo', 'marcos', 'danielle', 'sergio', 'vanessa', 'diego'],
-    weekEvents: 22, olderEvents: 100
+    weekEvents: 22,
+    olderEvents: 100
   },
   {
     id: 'sg-familia-krause',
     name: 'Família Krause',
     ownerKey: 'henrique',
     memberKeys: ['henrique', 'pietra', 'joao'],
-    weekEvents: 12, olderEvents: 95
+    weekEvents: 12,
+    olderEvents: 95
   },
   {
     id: 'sg-lisbon',
     name: 'Lisbon Skywatchers',
     ownerKey: 'tiago_pt',
     memberKeys: ['tiago_pt', 'sofia_pt', 'nuno', 'ines', 'rui'],
-    weekEvents: 15, olderEvents: 80
+    weekEvents: 15,
+    olderEvents: 80
   },
   {
     id: 'sg-bairro',
     name: 'Amigos do Bairro',
     ownerKey: 'leonardo',
     memberKeys: ['leonardo', 'aline', 'gustavo', 'bianca'],
-    weekEvents: 14, olderEvents: 75
+    weekEvents: 14,
+    olderEvents: 75
   },
   {
     id: 'sg-familia-silva',
     name: 'Família Silva',
     ownerKey: 'pietra',
     memberKeys: ['pietra', 'rafael', 'leticia', 'mateus'],
-    weekEvents: 10, olderEvents: 68
+    weekEvents: 10,
+    olderEvents: 68
   },
   {
     id: 'sg-dev',
     name: 'Dev Team',
     ownerKey: 'henrique',
     memberKeys: ['henrique', 'rodrigo', 'leonardo', 'gustavo'],
-    weekEvents: 8, olderEvents: 62
+    weekEvents: 8,
+    olderEvents: 62
   },
   {
     id: 'sg-churras',
     name: 'Galera do Churras',
     ownerKey: 'thiago',
     memberKeys: ['thiago', 'rodrigo', 'eduardo', 'bruno', 'fernanda', 'julia'],
-    weekEvents: 14, olderEvents: 56
+    weekEvents: 14,
+    olderEvents: 56
   },
   {
     id: 'sg-academia',
     name: 'Grupo da Academia',
     ownerKey: 'rebeca',
     memberKeys: ['rebeca', 'vanessa', 'danielle'],
-    weekEvents: 8, olderEvents: 42
+    weekEvents: 8,
+    olderEvents: 42
   },
   {
     id: 'sg-trabalho',
     name: 'Trabalho BV',
     ownerKey: 'henrique',
     memberKeys: ['henrique', 'mariana', 'paulo'],
-    weekEvents: 6, olderEvents: 40
+    weekEvents: 6,
+    olderEvents: 40
   },
   {
     id: 'sg-startup',
     name: 'Startup Crew',
     ownerKey: 'diego',
     memberKeys: ['diego', 'mateus', 'julia', 'larissa'],
-    weekEvents: 8, olderEvents: 32
+    weekEvents: 8,
+    olderEvents: 32
   },
   {
     id: 'sg-marketing',
     name: 'Marketing SP',
     ownerKey: 'amanda',
     memberKeys: ['amanda', 'bianca', 'sergio'],
-    weekEvents: 5, olderEvents: 28
+    weekEvents: 5,
+    olderEvents: 28
   },
   {
     id: 'sg-familia-lima',
     name: 'Família Lima',
     ownerKey: 'rafael',
     memberKeys: ['rafael', 'beatriz', 'joao'],
-    weekEvents: 4, olderEvents: 20
+    weekEvents: 4,
+    olderEvents: 20
   },
   {
     id: 'sg-casal',
     name: 'Casal Feliz',
     ownerKey: 'gabriel',
     memberKeys: ['gabriel', 'isabela'],
-    weekEvents: 0, olderEvents: 0
-  },
+    weekEvents: 0,
+    olderEvents: 0
+  }
 ]
 
 const PRIMARY_USER_KEY = 'henrique'
@@ -373,19 +398,19 @@ async function seed() {
       .values({ id: g.id, name: g.name, ownerId, createdAt: now })
       .onConflictDoUpdate({ target: groups.id, set: { name: g.name, ownerId } })
 
-    const memberIds = g.memberKeys
-      .map((k) => idByKey.get(k))
-      .filter((id): id is string => Boolean(id))
+    const memberIds = g.memberKeys.map((k) => idByKey.get(k)).filter((id): id is string => Boolean(id))
 
     if (memberIds.length > 0) {
       await db
         .insert(groupMembers)
-        .values(memberIds.map((userId) => ({
-          groupId: g.id,
-          userId,
-          role: (userId === ownerId ? 'owner' : 'member') as 'owner' | 'member',
-          joinedAt: now
-        })))
+        .values(
+          memberIds.map((userId) => ({
+            groupId: g.id,
+            userId,
+            role: (userId === ownerId ? 'owner' : 'member') as 'owner' | 'member',
+            joinedAt: now
+          }))
+        )
         .onConflictDoNothing()
     }
 
@@ -393,7 +418,10 @@ async function seed() {
     if (evtRows.length > 0) {
       // Insert in chunks of 500 to avoid parameter limits
       for (let i = 0; i < evtRows.length; i += 500) {
-        await db.insert(events).values(evtRows.slice(i, i + 500)).onConflictDoNothing()
+        await db
+          .insert(events)
+          .values(evtRows.slice(i, i + 500))
+          .onConflictDoNothing()
       }
       totalEvents += evtRows.length
     }
@@ -420,13 +448,7 @@ async function seed() {
 
 // ─── Event builder ───────────────────────────────────────────────────────────
 
-function buildEvents(
-  groupId: string,
-  memberIds: string[],
-  weekEvents: number,
-  olderEvents: number,
-  now: number
-) {
+function buildEvents(groupId: string, memberIds: string[], weekEvents: number, olderEvents: number, now: number) {
   if (memberIds.length === 0) return []
 
   const rows: { clientId: string; who: string; groupId: string; ts: number }[] = []

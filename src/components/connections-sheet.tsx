@@ -82,7 +82,10 @@ export function ConnectionsSheet({
     >
       <div className='px-6 pt-4 pb-2'>
         <div className='flex items-center gap-2'>
-          <IconLink size={18} className='text-ink-soft' />
+          <IconLink
+            size={18}
+            className='text-ink-soft'
+          />
           <p className='font-display text-ink text-lg'>{t(locale, 'settings.connections')}</p>
         </div>
         <p className='text-ink-faint mt-1 text-xs'>{t(locale, 'settings.connectionsSheetSubtitle')}</p>

@@ -65,7 +65,10 @@ export function InviteShareSheet({
     >
       <div className='px-6 pt-4 pb-2'>
         <div className='flex items-center gap-2'>
-          <IconSend size={18} className='text-ink-soft' />
+          <IconSend
+            size={18}
+            className='text-ink-soft'
+          />
           <p className='font-display text-ink text-lg'>{t(locale, 'invite.share.title')}</p>
         </div>
         <p className='text-ink-faint mt-1 text-xs'>{email}</p>
@@ -89,11 +92,7 @@ export function InviteShareSheet({
           successLabel={t(locale, 'invite.share.emailSent')}
           errorLabel={t(locale, 'invite.share.emailError')}
           onClick={handleSendEmail}
-          leading={
-            emailStatus.status === 'idle' ?
-              <IconMail size={16} />
-            : null
-          }
+          leading={emailStatus.status === 'idle' ? <IconMail size={16} /> : null}
         >
           {t(locale, 'invite.share.sendEmail')}
         </Button>

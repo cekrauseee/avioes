@@ -1,9 +1,9 @@
-import type { Metadata } from 'next'
 import { InviteScreen } from '@/components/invite-screen'
 import { getCurrentUser } from '@/lib/auth-guards'
 import { readLocale } from '@/lib/cookies'
 import { t } from '@/lib/i18n'
 import { readInvitationByToken } from '@/lib/store'
+import type { Metadata } from 'next'
 
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
   const { token } = await params

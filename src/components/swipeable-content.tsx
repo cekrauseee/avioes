@@ -39,7 +39,7 @@ export function SwipeableContent({ children, disabled }: { children: React.React
       dragElastic={0.15}
       dragConstraints={{ left: 0, right: 0 }}
       onDragEnd={onDragEnd}
-whileDrag={{ cursor: 'grabbing' }}
+      whileDrag={{ cursor: 'grabbing' }}
     >
       {children}
     </motion.div>

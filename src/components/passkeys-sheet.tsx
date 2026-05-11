@@ -100,7 +100,10 @@ export function PasskeysSheet({ open, onClose, locale }: { open: boolean; onClos
     >
       <div className='px-6 pt-4 pb-2'>
         <div className='flex items-center gap-2'>
-          <IconKey size={18} className='text-ink-soft' />
+          <IconKey
+            size={18}
+            className='text-ink-soft'
+          />
           <p className='font-display text-ink text-lg'>{t(locale, 'settings.passkeys')}</p>
         </div>
         <p className='text-ink-faint mt-1 text-xs'>{t(locale, 'settings.passkeysSheetSubtitle')}</p>

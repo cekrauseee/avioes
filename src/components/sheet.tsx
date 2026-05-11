@@ -5,17 +5,7 @@ import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { MOTION_TRANSITION } from '../lib/motion'
 
-export function Sheet({
-  open,
-  onClose,
-  layout,
-  children
-}: {
-  open: boolean
-  onClose: () => void
-  layout?: boolean
-  children: React.ReactNode
-}) {
+export function Sheet({ open, onClose, layout, children }: { open: boolean; onClose: () => void; layout?: boolean; children: React.ReactNode }) {
   const dragControls = useDragControls()
 
   useEffect(() => {
@@ -58,15 +48,11 @@ export function Sheet({
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={
-              layout ?
-                { ...MOTION_TRANSITION.sheetPanel, layout: MOTION_TRANSITION.sheetLayout }
-              : MOTION_TRANSITION.sheetPanel
-            }
+            transition={layout ? { ...MOTION_TRANSITION.sheetPanel, layout: MOTION_TRANSITION.sheetLayout } : MOTION_TRANSITION.sheetPanel}
             className='bg-bg fixed right-0 bottom-0 left-0 z-50 mx-auto w-full max-w-[630px] rounded-t-2xl pb-[max(env(safe-area-inset-bottom),1.5rem)]'
           >
             <div
-              className='flex touch-none select-none justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing'
+              className='flex cursor-grab touch-none justify-center pt-3 pb-1 select-none active:cursor-grabbing'
               onPointerDown={(e) => dragControls.start(e)}
             >
               <div className='bg-line h-1 w-10 rounded-full' />
