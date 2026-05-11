@@ -103,6 +103,7 @@ export default async function RootLayout({
       <body
         className='bg-bg text-ink flex min-h-full flex-col overflow-hidden'
         style={{ backgroundColor: '#f6f1e7' }}
+        suppressHydrationWarning
       >
         <script
           dangerouslySetInnerHTML={{

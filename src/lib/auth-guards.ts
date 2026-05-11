@@ -46,6 +46,18 @@ export async function requireOnboardedUser(nextPath: string): Promise<User> {
   return user
 }
 
+export async function requireActiveGroup(nextPath: string): Promise<User> {
+  const user = await requireOnboardedUser(nextPath)
+  const activeGroupId = await readActiveGroupId(user.id)
+  if (!activeGroupId) redirect('/groups')
+  const membership = await readGroupMembership(activeGroupId, user.id)
+  if (!membership) {
+    await writeActiveGroupId(user.id, null)
+    redirect('/groups')
+  }
+  return user
+}
+
 export async function requireGroupMember(groupId: string, nextPath: string): Promise<User> {
   const user = await requireOnboardedUser(nextPath)
   const membership = await readGroupMembership(groupId, user.id)

@@ -2,8 +2,8 @@
 
 import { motion, useReducedMotion } from 'motion/react'
 import { useEffect, useState } from 'react'
-import { MOTION_OFFSET, MOTION_TRANSITION } from '../lib/motion'
-import { useNavDirection } from '../lib/nav-direction'
+import { MOTION_OFFSET, MOTION_TRANSITION } from '@/lib/motion'
+import { useNavDirection } from '@/lib/nav-direction'
 
 let routeAnimationReady = false
 
