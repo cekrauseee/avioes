@@ -15,8 +15,8 @@ export default function Loading() {
 
       <div className='px-5 pt-2'>
         <div className='bg-bg-soft/60 border-line inline-flex gap-0.5 rounded-full border p-0.5'>
-          <span className='bg-line/60 block h-7 w-16 animate-pulse rounded-full' />
-          <span className='bg-line/60 block h-7 w-16 animate-pulse rounded-full opacity-30' />
+          <span className='bg-line/60 block h-8 w-20 animate-pulse rounded-full' />
+          <span className='bg-line/60 block h-8 w-20 animate-pulse rounded-full opacity-30' />
         </div>
       </div>
 
