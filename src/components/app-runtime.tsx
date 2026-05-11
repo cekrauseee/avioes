@@ -15,8 +15,7 @@ const PAGE_TITLE_KEY: Record<string, TKey> = {
   '/': 'nav.count',
   '/diary': 'diary.title',
   '/scoreboard': 'scoreboard.title',
-  '/settings': 'settings.title',
-  '/world': 'world.title'
+  '/settings': 'settings.title'
 }
 
 export function AppRuntime({ children }: { children: React.ReactNode }) {

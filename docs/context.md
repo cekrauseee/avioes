@@ -20,6 +20,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-11 — World ranking merged into scoreboard
+
+Dropped `/world` route entirely. Scoreboard page now has two tabs (grupo/mundo) using the pill `Tabs` component. Group tab shows the existing per-member scores + streaks. World tab shows the global ranking with time-window sub-tabs (all/week), podium, list, and user-groups jump bar. Nav bar reduced from 5 to 4 tabs. World ranking data fetched server-side as `initialRanking` prop; client-side refetch on window switch via `getWorldRanking` server action. Search params: `?tab=group|world` + `?window=all|week`. Removed files: `world-view.tsx`, `(tabs)/world/page.tsx`. Updated: nav, swipeable-content, SW shell routes, proxy matcher, app-runtime page title map. i18n: added `scoreboard.tab.group/world`, removed `nav.world`.
+
 ### 2026-05-11 — Mobile startup performance pass
 
 Vercel Speed Insights showed poor mobile FCP/LCP on `/auth` and `/`, while INP/FID were already good. Startup now avoids first-paint opacity/blur route animation, skips `/auth`'s offline hydration gate, short-circuits no-cookie Better Auth session lookups, removes the large splash PNGs from loading fallbacks, and delays service-worker registration until load/idle so precaching does not compete with first render. Critical illustrations that can become LCP now use optimized Next Image output with explicit `sizes` plus eager/high-priority loading. Route navigation is lighter: shorter/no-blur route transitions, prefetch warmed nav targets, and toolbar tabs use one router path instead of Link plus manual push.

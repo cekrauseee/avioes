@@ -1,3 +1,4 @@
+import { getWorldRanking } from '@/actions'
 import { ScoreboardView } from '@/components/scoreboard-view'
 import { requireActiveGroup } from '@/lib/auth-guards'
 import { readLocale } from '@/lib/cookies'
@@ -10,5 +11,6 @@ export async function generateMetadata() {
 
 export default async function ScoreboardPage() {
   await requireActiveGroup('/scoreboard')
-  return <ScoreboardView />
+  const initialRanking = await getWorldRanking({ window: 'all' })
+  return <ScoreboardView initialRanking={initialRanking} />
 }

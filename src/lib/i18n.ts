@@ -5,7 +5,6 @@ const pt = {
   'nav.diary': 'Diário',
   'nav.scoreboard': 'Placar',
   'nav.settings': 'Ajustes',
-  'nav.world': 'Mundo',
 
   'world.title': 'Mundo',
   'world.subtitle': 'Onde seu grupo voa.',
@@ -41,6 +40,8 @@ const pt = {
   'diary.emptyHint': 'toque na tela inicial pra começar',
 
   'scoreboard.title': 'Placar',
+  'scoreboard.tab.group': 'grupo',
+  'scoreboard.tab.world': 'mundo',
   'scoreboard.isAhead': 'está na frente.',
   'scoreboard.tied': 'Empate técnico no céu.',
   'scoreboard.total': 'no total',
@@ -550,7 +551,6 @@ const en: Record<TranslationKey, string> = {
   'nav.diary': 'Diary',
   'nav.scoreboard': 'Score',
   'nav.settings': 'Settings',
-  'nav.world': 'World',
 
   'world.title': 'World',
   'world.subtitle': 'Where your group flies.',
@@ -586,6 +586,8 @@ const en: Record<TranslationKey, string> = {
   'diary.emptyHint': 'tap the home screen to start',
 
   'scoreboard.title': 'Scoreboard',
+  'scoreboard.tab.group': 'group',
+  'scoreboard.tab.world': 'world',
   'scoreboard.isAhead': 'is ahead.',
   'scoreboard.tied': 'All tied up in the sky.',
   'scoreboard.total': 'total',

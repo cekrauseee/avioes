@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useArrowKeyNavigation, useHorizontalWheelNavigation } from '../lib/horizontal-wheel-navigation'
 import { useNavDirection } from '../lib/nav-direction'
 
-const ROUTES = ['/', '/diary', '/scoreboard', '/world', '/settings']
+const ROUTES = ['/', '/diary', '/scoreboard', '/settings']
 const SWIPE_THRESHOLD = 60
 const WHEEL_SWIPE_THRESHOLD = 34
 
