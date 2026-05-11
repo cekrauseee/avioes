@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useEffect } from 'react'
 import { t, type TKey } from '../lib/i18n'
@@ -43,12 +44,33 @@ export function AppRuntime({ children }: { children: React.ReactNode }) {
 
   if (!state.hydrated) {
     return (
-      <div className='flex flex-1 items-center justify-center'>
-        <div className='animate-pulse opacity-40'>
-          <svg width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.5' strokeLinecap='round' strokeLinejoin='round'>
-            <path d='M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.4-.1.9.3 1.1L11 12l-2 3H6l-1 1 3 2 2 3 1-1v-3l3-2 3.7 7.3c.2.4.7.5 1.1.3l.5-.3c.4-.2.6-.7.5-1.1z' />
-          </svg>
-        </div>
+      <div className='flex-1 overflow-hidden'>
+        <main className='relative flex h-full flex-col items-center justify-center px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.25rem)]'>
+          <div className='relative w-[58%] max-w-60 animate-pulse'>
+            <Image
+              src='/splash-light.png'
+              alt=''
+              aria-hidden
+              width={480}
+              height={480}
+              priority
+              unoptimized
+              className='theme-light-only h-auto w-full select-none'
+              draggable={false}
+            />
+            <Image
+              src='/splash-dark.png'
+              alt=''
+              aria-hidden
+              width={480}
+              height={480}
+              priority
+              unoptimized
+              className='theme-dark-only h-auto w-full select-none'
+              draggable={false}
+            />
+          </div>
+        </main>
       </div>
     )
   }

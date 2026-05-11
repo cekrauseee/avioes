@@ -37,6 +37,7 @@ export function useOfflineRuntime(): void {
     init()
   }, [init])
 
+  const hydrated = useAppStore((s) => s.hydrated)
   const identity = useAppStore((s) => s.identity)
   const activeGroupId = useAppStore((s) => s.activeGroupId)
   const theme = useAppStore(_selectTheme)
@@ -44,11 +45,12 @@ export function useOfflineRuntime(): void {
   const locale = useAppStore(_selectLocale)
 
   useEffect(() => {
+    if (!hydrated) return
     document.documentElement.dataset.theme = theme
     document.documentElement.dataset.palette = palette
     document.documentElement.lang = locale === 'en' ? 'en' : 'pt-BR'
     writeBootState({ userId: identity, activeGroupId, theme, palette, locale })
-  }, [identity, activeGroupId, theme, palette, locale])
+  }, [hydrated, identity, activeGroupId, theme, palette, locale])
 }
 
 export function useOfflineSync(): void {
