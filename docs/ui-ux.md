@@ -59,7 +59,7 @@ Illustrations carry as much of the product feel as the typography does. Treat th
 - **Light/dark pairs always.** Render with `next/image` (`unoptimized`) inside `theme-light-only` / `theme-dark-only` wrappers. Don't filter or invert a single PNG to fake the dark version — generate both.
 - **Theme-aware preloading.** When an image triggers on interaction (tap fly-by, post-action confirmation), preload both variants so the dark/light swap is invisible. `counter.tsx` shows the pattern.
 - **Add to `OFFLINE_ASSETS`.** Any user-facing PNG must live in the precache list in `src/app/sw.js/route.ts`, otherwise empty/error states break offline.
-- **No icon libraries, no stock art.** The aesthetic is one hand. Glyphs (`✈`, `◐`) are still fine for tiny inline marks; everything bigger gets a real drawing.
+- **Custom SVG icons only.** `src/components/icons.tsx` is the single icon set — stroke-based, 1.7 stroke-width, `currentColor`, organic feel. No external icon libraries. New icons follow the same `I()` base wrapper pattern. Use them in `leading`/`trailing` Button props for navigation hints (arrows, chevrons) and semantic cues (lock, key, users, etc.).
 
 The full catalog, the visual contract every illustration follows, and the prompt template for requesting new art live in [`docs/images.md`](./images.md). When a feature needs new art, do not generate it inline — author the prompt, hand it to Codex with the file name and target location, and wire the returned PNG.
 
@@ -91,7 +91,7 @@ The app uses Motion (framer-motion v12). Animation should make the journey feel 
 ## Don'ts
 
 - Don't add gradients, shadows, or glassmorphism. The aesthetic is matte paper.
-- Don't introduce icon libraries. Use text glyphs (`✈`) for tiny inline marks; use the hand-drawn PNG set for anything bigger.
+- Don't introduce external icon libraries. Use `src/components/icons.tsx` for all inline icons; use the hand-drawn PNG set for anything bigger.
 - Don't add a desktop-specific layout. Desktop is a centered phone frame.
 - Don't add an "About" or "Help" page. The app is its own help.
 - Don't ship a new screen with a `<Placeholder/>` where a real illustration belongs. Either reuse an existing PNG, or request a new one via [`docs/images.md`](./images.md).
