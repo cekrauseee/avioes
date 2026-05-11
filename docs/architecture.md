@@ -125,6 +125,30 @@ The server ignores client authority claims at every layer. Add-event ops whose `
 
 Hand-drawn paper-journal PNGs in `public/` carry the empty/error/welcome states (see [`docs/images.md`](./images.md) for the catalog, the visual contract, and the prompt template). Light/dark pairs render through `next/image` (`unoptimized`) wrapped in `theme-light-only` / `theme-dark-only`. Every user-facing PNG is precached via `OFFLINE_ASSETS` in `src/app/sw.js/route.ts` so empty/error screens survive offline. App icons (`public/icons/*`) and the PWA manifest live in `app/manifest.ts`.
 
+## Real-time sync
+
+Event sync across devices and sessions uses **Pusher Channels** as a pub/sub transport. No sensitive data flows through Pusher — it only carries "sync" nudges that tell connected clients to refresh their state from the server.
+
+```
+User A (phone)                                 User B (laptop)
+  addAirplane()                                  Pusher subscription
+      ↓                                              ↑
+  drainOnce() → syncOps()                    group-{groupId} channel
+      ↓                                              ↑
+  applyOps() in DB ── publishGroupUpdate() ──────────┘
+      ↓                                              ↓
+  snapshot returned                            drainOnce() → bootstrapState()
+                                                     ↓
+                                               fresh snapshot applied
+```
+
+- Server: `src/lib/pusher.ts` exposes `publishGroupUpdate(groupId)`. Called from `syncOps()` in `src/actions.ts` after event ops (add/delete) are applied. Fire-and-forget — Pusher failure does not block the sync response.
+- Client: `src/lib/realtime.ts` exposes `useRealtimeSync(groupId)`. Subscribes to `group-{groupId}` on mount, triggers `drainOnce()` on `sync` event (sets `lastSyncOk = null` first so the drain actually fetches). Unsubscribes on group change or unmount. Wired into `OfflineSync`.
+- Channels are public (`group-{uuid}`). The UUID is unguessable, and the payload carries no user data — worst case an eavesdropper learns "something changed" but can't read what.
+- When Pusher keys are unset, the app falls back gracefully to polling-only sync (5–8 s intervals). No runtime errors.
+- Cross-tab sync within the same browser still uses `BroadcastChannel` (existing). Pusher handles cross-device/cross-browser sync.
+- Env vars: `PUSHER_APP_ID`, `PUSHER_KEY`, `PUSHER_SECRET`, `PUSHER_CLUSTER` (server), `NEXT_PUBLIC_PUSHER_KEY`, `NEXT_PUBLIC_PUSHER_CLUSTER` (client).
+
 ## PWA
 
 - `app/manifest.ts` emits `/manifest.webmanifest` (PT brand strings).

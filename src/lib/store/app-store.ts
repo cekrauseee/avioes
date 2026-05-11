@@ -348,6 +348,10 @@ function createAppStore() {
 
       applyServerSnapshot(sync: SyncSnapshot) {
         const s = get()
+
+        const prevIds = new Set(s.baseEvents.map((e) => e.id))
+        const pendingEventIds = new Set(s.pendingOps.filter((op) => op.kind === 'add-event').map((op) => (op as { event: AirplaneEvent }).event.id))
+
         const next = migrateLegacyQueue(settleSnapshot(s, sync))
         commit({
           ...next,
@@ -358,6 +362,11 @@ function createAppStore() {
           offlineSyncPending: false,
           offlineSyncInFlight: false
         })
+
+        const remoteNew = sync.events.filter((e) => !prevIds.has(e.id) && !pendingEventIds.has(e.id))
+        if (remoteNew.length > 0 && remoteEventListeners.length > 0) {
+          for (const listener of remoteEventListeners) listener(remoteNew)
+        }
       },
 
       applyLocalIdentity(identity: Identity | null) {
@@ -458,6 +467,20 @@ function createAppStore() {
       }
     }
   })
+}
+
+// ---------------------------------------------------------------------------
+// Remote event listeners
+// ---------------------------------------------------------------------------
+
+type RemoteEventListener = (events: AirplaneEvent[]) => void
+let remoteEventListeners: RemoteEventListener[] = []
+
+export function subscribeRemoteEvents(listener: RemoteEventListener): () => void {
+  remoteEventListeners.push(listener)
+  return () => {
+    remoteEventListeners = remoteEventListeners.filter((l) => l !== listener)
+  }
 }
 
 // ---------------------------------------------------------------------------

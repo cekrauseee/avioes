@@ -45,6 +45,17 @@ export type PendingOp =
   | { id: string; kind: 'set-palette'; palette: Palette }
   | { id: string; kind: 'set-locale'; locale: Locale }
 
+export type NotificationType = 'group_invite' | 'invite_accepted' | 'invite_rejected'
+
+export type Notification = {
+  id: string
+  type: NotificationType
+  data: string
+  referenceId: string | null
+  read: boolean
+  createdAt: number
+}
+
 export type PalettePreview = {
   bg: string
   sage: string

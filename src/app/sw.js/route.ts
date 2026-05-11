@@ -41,7 +41,9 @@ const OFFLINE_ASSETS = [
   '/flying-airplane-light.png',
   '/flying-airplane-dark.png',
   '/favicon-light.png',
-  '/favicon-dark.png'
+  '/favicon-dark.png',
+  '/notifications-empty-light.png',
+  '/notifications-empty-dark.png'
 ]
 const PRECACHE = ['/manifest.webmanifest', ...OFFLINE_ASSETS]
 
@@ -102,6 +104,38 @@ self.addEventListener('fetch', (event) => {
         return res
       })
       .catch(() => caches.match(req).then((r) => r || (isNav ? caches.match('/') : Response.error())))
+  )
+})
+
+self.addEventListener('push', (event) => {
+  if (!event.data) return
+  try {
+    const payload = event.data.json()
+    const title = payload.title || 'Aviões'
+    const options = {
+      body: payload.body || '',
+      icon: '/icons/icon-1024.png',
+      badge: '/favicon-light.png',
+      data: { url: payload.url || '/notifications' }
+    }
+    event.waitUntil(self.registration.showNotification(title, options))
+  } catch {}
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = event.notification.data?.url || '/notifications'
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if (new URL(client.url).origin === self.location.origin) {
+          client.focus()
+          client.navigate(url)
+          return
+        }
+      }
+      return self.clients.openWindow(url)
+    })
   )
 })
 `

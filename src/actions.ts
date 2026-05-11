@@ -8,21 +8,28 @@ import { auth, consumeOtpSendError } from './lib/auth'
 import { isCountryCode } from './lib/countries'
 import { sendInviteEmail, sendPasswordEmail } from './lib/email'
 import type { SyncSnapshot } from './lib/offline-model'
-import type { UserProfile } from './lib/store'
+import { publishGroupUpdate, publishUserNotification } from './lib/pusher'
+import type { PushSubscriptionRecord, UserProfile } from './lib/store'
 import {
   acceptInvitation as acceptInvitationInStore,
+  acceptInvitationById,
   applyOps,
   cancelInvitation as cancelInvitationInStore,
   consumePasswordToken,
   countRecentPasswordSends,
   createGroup,
+  createNotification,
   createOrReplaceInvitation,
   createPasswordToken,
   deleteGroup as deleteGroupInStore,
+  deleteNotification as deleteNotificationInStore,
+  deleteNotificationsByReference,
+  deletePushSubscription,
   findUserByEmail,
   getCredentialPasswordHash,
   isUsernameTaken,
   leaveGroup as leaveGroupInStore,
+  markNotificationsRead as markNotificationsReadInStore,
   readActiveGroupId,
   readEventsForMember,
   readGroupForMember,
@@ -31,16 +38,21 @@ import {
   readGroupsForUser,
   readInvitationByToken,
   readLocale,
+  readNotificationsForUser,
   readOnboardingStatus,
   readPalette,
   readPendingInvitationsForGroup,
   readTheme,
+  readUnreadNotificationCount,
   readUserProfile,
   readWorldRanking,
   recordPasswordAttempt,
   rejectInvitation as rejectInvitationInStore,
+  rejectInvitationById,
   removeGroupMember,
+  toggleNotificationRead,
   updateGroup as updateGroupInStore,
+  upsertPushSubscription,
   updateUserProfile,
   userHasCredentialAccount,
   userHasPasskeys as userHasPasskeysInStore,
@@ -49,7 +61,8 @@ import {
   writeActiveGroupId,
   writeOnboardingStatus
 } from './lib/store'
-import type { Group, GroupMember, OnboardingStatus, PendingOp } from './lib/types'
+import type { Group, GroupMember, Notification, OnboardingStatus, PendingOp } from './lib/types'
+import { sendPushToUser } from './lib/web-push'
 import { startOfWeekBRT } from './lib/world-window'
 
 export type WorldRankingWindow = 'all' | 'week'
@@ -117,6 +130,9 @@ export async function syncOps(ops: unknown[]): Promise<SyncSnapshot> {
   }
 
   const applied = validOps.length > 0 ? await applyOps(validOps, user.id, activeGroupId) : []
+  if (applied.length > 0 && validOps.some((op) => op.kind === 'add-event' || op.kind === 'delete-event')) {
+    publishGroupUpdate(activeGroupId)
+  }
   return snapshotForMember(user.id, activeGroupId, [...rejected, ...applied], true, onboardingStatus)
 }
 
@@ -361,6 +377,19 @@ export async function createInvitation(
   })
   if (!result.ok) return result
 
+  if (existingMember) {
+    const inviterName = user.firstName ?? user.name.split(' ')[0] ?? user.name
+    await createNotification(
+      crypto.randomUUID(),
+      existingMember.id,
+      'group_invite',
+      JSON.stringify({ groupId, groupName: group.name, inviterFirstName: inviterName, inviterImage: user.image ?? null }),
+      id
+    )
+    publishUserNotification(existingMember.id)
+    void sendPushToUser(existingMember.id, { title: 'Aviões', body: `${inviterName} te convidou para ${group.name}`, url: '/notifications' })
+  }
+
   return { ok: true, token, inviteUrl }
 }
 
@@ -400,6 +429,19 @@ export async function acceptInvitation(
   if (!result.ok) return result
 
   await writeOnboardingStatus(user.id, 'complete')
+
+  await deleteNotificationsByReference(inv.id)
+  const accepterName = user.firstName ?? user.name.split(' ')[0] ?? user.name
+  await createNotification(
+    crypto.randomUUID(),
+    inv.invitedByUserId,
+    'invite_accepted',
+    JSON.stringify({ groupId: result.groupId, groupName: result.groupName, accepterFirstName: accepterName, accepterImage: user.image ?? null }),
+    inv.id
+  )
+  publishUserNotification(inv.invitedByUserId)
+  void sendPushToUser(inv.invitedByUserId, { title: 'Aviões', body: `${accepterName} aceitou o convite para ${result.groupName}` })
+
   const snapshot = await snapshotForMember(user.id, result.groupId, [], true, 'complete')
   return { ok: true, groupId: result.groupId, groupName: result.groupName, snapshot }
 }
@@ -415,7 +457,22 @@ export async function rejectInvitation(token: string): Promise<{ ok: true } | { 
     return { ok: false, error: 'email_mismatch' }
   }
 
-  return rejectInvitationInStore(token)
+  const result = await rejectInvitationInStore(token)
+  if (!result.ok) return result
+
+  await deleteNotificationsByReference(inv.id)
+  const rejecterName = user.firstName ?? user.name.split(' ')[0] ?? user.name
+  await createNotification(
+    crypto.randomUUID(),
+    inv.invitedByUserId,
+    'invite_rejected',
+    JSON.stringify({ groupId: inv.groupId, groupName: inv.groupName, rejecterFirstName: rejecterName, rejecterImage: user.image ?? null }),
+    inv.id
+  )
+  publishUserNotification(inv.invitedByUserId)
+  void sendPushToUser(inv.invitedByUserId, { title: 'Aviões', body: `${rejecterName} recusou o convite para ${inv.groupName}` })
+
+  return { ok: true }
 }
 
 export async function cancelInvitation(groupId: string, invitationId: string): Promise<{ success: true } | { error: string }> {
@@ -426,6 +483,7 @@ export async function cancelInvitation(groupId: string, invitationId: string): P
   if (membership?.role !== 'owner') return { error: 'Apenas o dono pode cancelar convites' }
 
   await cancelInvitationInStore(groupId, invitationId)
+  await deleteNotificationsByReference(invitationId)
   return { success: true }
 }
 
@@ -536,6 +594,121 @@ async function snapshotForMember(
     onboardingStatus,
     settled
   }
+}
+
+// --- Notifications ---
+
+export async function getNotifications(): Promise<Notification[]> {
+  const user = await getSessionUser()
+  if (!user) return []
+  return readNotificationsForUser(user.id)
+}
+
+export async function getUnreadNotificationCount(): Promise<number> {
+  const user = await getSessionUser()
+  if (!user) return 0
+  return readUnreadNotificationCount(user.id)
+}
+
+export async function markNotificationsAsRead(ids: string[]): Promise<{ ok: boolean }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false }
+  if (!Array.isArray(ids) || ids.length === 0) return { ok: true }
+  await markNotificationsReadInStore(user.id, ids.slice(0, 100))
+  return { ok: true }
+}
+
+export async function toggleNotificationReadStatus(id: string): Promise<{ ok: true; read: boolean } | { ok: false }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false }
+  const read = await toggleNotificationRead(user.id, id)
+  return { ok: true, read }
+}
+
+export async function deleteNotificationAction(id: string): Promise<{ ok: boolean }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false }
+  await deleteNotificationInStore(user.id, id)
+  return { ok: true }
+}
+
+export async function acceptInviteFromNotification(
+  notificationId: string
+): Promise<{ ok: true; snapshot: SyncSnapshot } | { ok: false; error: string }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false, error: 'unauthenticated' }
+
+  const notifs = await readNotificationsForUser(user.id)
+  const notif = notifs.find((n) => n.id === notificationId)
+  if (!notif || notif.type !== 'group_invite' || !notif.referenceId) {
+    return { ok: false, error: 'not_found' }
+  }
+
+  const result = await acceptInvitationById(notif.referenceId, user.id)
+  if (!result.ok) return { ok: false, error: result.error }
+
+  await writeOnboardingStatus(user.id, 'complete')
+  await deleteNotificationInStore(user.id, notificationId)
+
+  const accepterName = user.firstName ?? user.name.split(' ')[0] ?? user.name
+  await createNotification(
+    crypto.randomUUID(),
+    result.invitedByUserId,
+    'invite_accepted',
+    JSON.stringify({ groupId: result.groupId, groupName: result.groupName, accepterFirstName: accepterName, accepterImage: user.image ?? null }),
+    notif.referenceId
+  )
+  publishUserNotification(result.invitedByUserId)
+  void sendPushToUser(result.invitedByUserId, { title: 'Aviões', body: `${accepterName} aceitou o convite para ${result.groupName}` })
+
+  const snapshot = await snapshotForMember(user.id, result.groupId, [], true, 'complete')
+  return { ok: true, snapshot }
+}
+
+export async function rejectInviteFromNotification(notificationId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false, error: 'unauthenticated' }
+
+  const notifs = await readNotificationsForUser(user.id)
+  const notif = notifs.find((n) => n.id === notificationId)
+  if (!notif || notif.type !== 'group_invite' || !notif.referenceId) {
+    return { ok: false, error: 'not_found' }
+  }
+
+  const result = await rejectInvitationById(notif.referenceId)
+  if (!result.ok) return { ok: false, error: result.error }
+
+  await deleteNotificationInStore(user.id, notificationId)
+
+  const rejecterName = user.firstName ?? user.name.split(' ')[0] ?? user.name
+  const data = JSON.parse(notif.data) as { groupId: string; groupName: string }
+  await createNotification(
+    crypto.randomUUID(),
+    result.invitedByUserId,
+    'invite_rejected',
+    JSON.stringify({ groupId: data.groupId, groupName: data.groupName, rejecterFirstName: rejecterName, rejecterImage: user.image ?? null }),
+    notif.referenceId
+  )
+  publishUserNotification(result.invitedByUserId)
+  void sendPushToUser(result.invitedByUserId, { title: 'Aviões', body: `${rejecterName} recusou o convite para ${data.groupName}` })
+
+  return { ok: true }
+}
+
+// --- Push subscriptions ---
+
+export async function subscribePush(subscription: PushSubscriptionRecord): Promise<{ ok: boolean }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false }
+  await upsertPushSubscription(crypto.randomUUID(), user.id, subscription)
+  return { ok: true }
+}
+
+export async function unsubscribePush(endpoint: string): Promise<{ ok: boolean }> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false }
+  await deletePushSubscription(user.id, endpoint)
+  return { ok: true }
 }
 
 // --- Profile ---

@@ -1,10 +1,24 @@
 import 'server-only'
 
 import crypto from 'crypto'
-import { and, eq, gt, like, sql } from 'drizzle-orm'
+import { and, desc, eq, gt, inArray, like, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
-import { accounts, db, events, groupInvitations, groupMembers, groups, passkeys, preferences, processedOps, users, verifications } from './db'
-import type { AirplaneEvent, Group, GroupMember, GroupRole, Locale, OnboardingStatus, Palette, PendingOp, Theme } from './types'
+import {
+  accounts,
+  db,
+  events,
+  groupInvitations,
+  groupMembers,
+  groups,
+  notifications,
+  passkeys,
+  preferences,
+  processedOps,
+  pushSubscriptions,
+  users,
+  verifications
+} from './db'
+import type { AirplaneEvent, Group, GroupMember, GroupRole, Locale, Notification, NotificationType, OnboardingStatus, Palette, PendingOp, Theme } from './types'
 
 const groupMembersForCount = alias(groupMembers, 'group_members_for_count')
 
@@ -174,6 +188,7 @@ export type InvitationDetails = {
   groupId: string
   groupName: string
   invitedEmail: string
+  invitedByUserId: string
   invitedByFirstName: string
   invitedByImage: string | null
   status: 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'expired'
@@ -189,6 +204,7 @@ export async function readInvitationByToken(token: string): Promise<InvitationDe
       groupId: groupInvitations.groupId,
       groupName: groups.name,
       invitedEmail: groupInvitations.invitedEmail,
+      invitedByUserId: groupInvitations.invitedByUserId,
       invitedByFirstName: users.firstName,
       invitedByName: users.name,
       invitedByImage: users.image,
@@ -208,6 +224,7 @@ export async function readInvitationByToken(token: string): Promise<InvitationDe
     groupId: found.groupId,
     groupName: found.groupName,
     invitedEmail: found.invitedEmail,
+    invitedByUserId: found.invitedByUserId,
     invitedByFirstName: found.invitedByFirstName ?? found.invitedByName.split(' ')[0] ?? found.invitedByName,
     invitedByImage: found.invitedByImage,
     status: found.status,
@@ -575,6 +592,194 @@ function parseServerEventId(id: string): number | null {
   if (!id.startsWith('server:')) return null
   const n = Number(id.slice('server:'.length))
   return Number.isInteger(n) && n > 0 ? n : null
+}
+
+// --- Notifications ---
+
+export async function createNotification(
+  id: string,
+  userId: string,
+  type: NotificationType,
+  data: string,
+  referenceId: string | null
+): Promise<void> {
+  await db.insert(notifications).values({ id, userId, type, data, referenceId, read: false, createdAt: Date.now() })
+}
+
+export async function readNotificationsForUser(userId: string): Promise<Notification[]> {
+  return db
+    .select({
+      id: notifications.id,
+      type: notifications.type,
+      data: notifications.data,
+      referenceId: notifications.referenceId,
+      read: notifications.read,
+      createdAt: notifications.createdAt
+    })
+    .from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt))
+    .limit(50)
+}
+
+export async function readUnreadNotificationCount(userId: string): Promise<number> {
+  const row = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), eq(notifications.read, false)))
+  return row[0]?.count ?? 0
+}
+
+export async function markNotificationsRead(userId: string, ids: string[]): Promise<void> {
+  if (ids.length === 0) return
+  await db
+    .update(notifications)
+    .set({ read: true })
+    .where(and(eq(notifications.userId, userId), inArray(notifications.id, ids)))
+}
+
+export async function toggleNotificationRead(userId: string, id: string): Promise<boolean> {
+  const rows = await db
+    .update(notifications)
+    .set({ read: sql`NOT ${notifications.read}` })
+    .where(and(eq(notifications.userId, userId), eq(notifications.id, id)))
+    .returning({ read: notifications.read })
+  return rows[0]?.read ?? false
+}
+
+export async function deleteNotification(userId: string, id: string): Promise<void> {
+  await db.delete(notifications).where(and(eq(notifications.userId, userId), eq(notifications.id, id)))
+}
+
+export async function deleteNotificationsByReference(referenceId: string): Promise<void> {
+  await db.delete(notifications).where(eq(notifications.referenceId, referenceId))
+}
+
+export async function acceptInvitationById(
+  invitationId: string,
+  userId: string
+): Promise<
+  | { ok: true; groupId: string; groupName: string; invitedByUserId: string }
+  | { ok: false; error: 'not_found' | 'expired' | 'already_used' | 'cancelled' | 'already_member' }
+> {
+  return db.transaction(async (tx) => {
+    const row = await tx
+      .select({
+        id: groupInvitations.id,
+        groupId: groupInvitations.groupId,
+        groupName: groups.name,
+        invitedByUserId: groupInvitations.invitedByUserId,
+        status: groupInvitations.status,
+        expiresAt: groupInvitations.expiresAt
+      })
+      .from(groupInvitations)
+      .innerJoin(groups, eq(groups.id, groupInvitations.groupId))
+      .where(eq(groupInvitations.id, invitationId))
+      .limit(1)
+
+    const inv = row[0]
+    if (!inv) return { ok: false as const, error: 'not_found' as const }
+    if (inv.status === 'expired') return { ok: false as const, error: 'expired' as const }
+    if (inv.status === 'cancelled') return { ok: false as const, error: 'cancelled' as const }
+    if (inv.status !== 'pending') return { ok: false as const, error: 'already_used' as const }
+    if (inv.expiresAt <= Date.now()) {
+      await tx
+        .update(groupInvitations)
+        .set({ status: 'expired' })
+        .where(and(eq(groupInvitations.id, inv.id), eq(groupInvitations.status, 'pending')))
+      return { ok: false as const, error: 'expired' as const }
+    }
+
+    const existing = await tx
+      .select({ userId: groupMembers.userId })
+      .from(groupMembers)
+      .where(and(eq(groupMembers.groupId, inv.groupId), eq(groupMembers.userId, userId)))
+      .limit(1)
+    if (existing.length > 0) return { ok: false as const, error: 'already_member' as const }
+
+    const claimed = await tx
+      .update(groupInvitations)
+      .set({ status: 'accepted' })
+      .where(and(eq(groupInvitations.id, inv.id), eq(groupInvitations.status, 'pending')))
+      .returning({ id: groupInvitations.id })
+    if (claimed.length === 0) return { ok: false as const, error: 'already_used' as const }
+
+    await tx.insert(groupMembers).values({ groupId: inv.groupId, userId, role: 'member', joinedAt: Date.now() }).onConflictDoNothing()
+    await tx
+      .insert(preferences)
+      .values({ userId, activeGroupId: inv.groupId })
+      .onConflictDoUpdate({ target: preferences.userId, set: { activeGroupId: inv.groupId } })
+
+    return { ok: true as const, groupId: inv.groupId, groupName: inv.groupName, invitedByUserId: inv.invitedByUserId }
+  })
+}
+
+export async function rejectInvitationById(
+  invitationId: string
+): Promise<{ ok: true; invitedByUserId: string } | { ok: false; error: 'not_found' | 'expired' | 'already_used' | 'cancelled' }> {
+  return db.transaction(async (tx) => {
+    const row = await tx
+      .select({
+        id: groupInvitations.id,
+        invitedByUserId: groupInvitations.invitedByUserId,
+        status: groupInvitations.status,
+        expiresAt: groupInvitations.expiresAt
+      })
+      .from(groupInvitations)
+      .where(eq(groupInvitations.id, invitationId))
+      .limit(1)
+
+    const inv = row[0]
+    if (!inv) return { ok: false as const, error: 'not_found' as const }
+    if (inv.status === 'expired') return { ok: false as const, error: 'expired' as const }
+    if (inv.status === 'cancelled') return { ok: false as const, error: 'cancelled' as const }
+    if (inv.status !== 'pending') return { ok: false as const, error: 'already_used' as const }
+    if (inv.expiresAt <= Date.now()) {
+      await tx
+        .update(groupInvitations)
+        .set({ status: 'expired' })
+        .where(and(eq(groupInvitations.id, inv.id), eq(groupInvitations.status, 'pending')))
+      return { ok: false as const, error: 'expired' as const }
+    }
+
+    const claimed = await tx
+      .update(groupInvitations)
+      .set({ status: 'rejected' })
+      .where(and(eq(groupInvitations.id, inv.id), eq(groupInvitations.status, 'pending')))
+      .returning({ id: groupInvitations.id })
+    if (claimed.length === 0) return { ok: false as const, error: 'already_used' as const }
+    return { ok: true as const, invitedByUserId: inv.invitedByUserId }
+  })
+}
+
+// --- Push subscriptions ---
+
+export type PushSubscriptionRecord = {
+  endpoint: string
+  p256dh: string
+  auth: string
+}
+
+export async function upsertPushSubscription(id: string, userId: string, sub: PushSubscriptionRecord): Promise<void> {
+  await db
+    .insert(pushSubscriptions)
+    .values({ id, userId, endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth, createdAt: Date.now() })
+    .onConflictDoUpdate({ target: pushSubscriptions.endpoint, set: { userId, p256dh: sub.p256dh, auth: sub.auth } })
+}
+
+export async function deletePushSubscription(userId: string, endpoint: string): Promise<void> {
+  await db.delete(pushSubscriptions).where(and(eq(pushSubscriptions.userId, userId), eq(pushSubscriptions.endpoint, endpoint)))
+}
+
+export async function readPushSubscriptionsForUser(userId: string): Promise<PushSubscriptionRecord[]> {
+  return db
+    .select({ endpoint: pushSubscriptions.endpoint, p256dh: pushSubscriptions.p256dh, auth: pushSubscriptions.auth })
+    .from(pushSubscriptions)
+    .where(eq(pushSubscriptions.userId, userId))
+}
+
+export async function deletePushSubscriptionByEndpoint(endpoint: string): Promise<void> {
+  await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint))
 }
 
 // --- Password tokens ---

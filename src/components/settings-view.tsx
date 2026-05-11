@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react'
-import { getUserGroups } from '../actions'
+import { getUserGroups, subscribePush, unsubscribePush } from '../actions'
 import { authClient } from '../lib/auth-client'
 import { resolveAvatarUrl } from '../lib/avatar'
 import { t, type TKey } from '../lib/i18n'
@@ -255,7 +255,167 @@ function VisualTab({ locale, reduce }: { locale: Locale; reduce: boolean | null 
           })}
         </div>
       </section>
+
+      {/* push notifications */}
+      <PushSection locale={locale} reduce={reduce} />
     </div>
+  )
+}
+
+// ─── Push notifications section ──────────────────────────────────────────────
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const raw = atob(base64)
+  const arr = new Uint8Array(raw.length)
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i)
+  return arr
+}
+
+function arrayBufferToBase64Url(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  for (const byte of bytes) binary += String.fromCharCode(byte)
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+type PushState = 'loading' | 'unsupported' | 'denied' | 'on' | 'off'
+
+let pushStateValue: PushState = 'loading'
+let pushListeners: Array<() => void> = []
+
+function subscribePushStore(cb: () => void) {
+  pushListeners.push(cb)
+  return () => {
+    pushListeners = pushListeners.filter((l) => l !== cb)
+  }
+}
+function getPushSnapshot(): PushState {
+  return pushStateValue
+}
+function setPushStoreValue(s: PushState) {
+  if (pushStateValue === s) return
+  pushStateValue = s
+  for (const l of pushListeners) l()
+}
+
+if (typeof window !== 'undefined') {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
+    pushStateValue = 'unsupported'
+  } else if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+    pushStateValue = 'denied'
+  } else {
+    navigator.serviceWorker.ready.then((reg) => {
+      reg.pushManager.getSubscription().then((sub) => setPushStoreValue(sub ? 'on' : 'off'))
+    })
+  }
+}
+
+function PushSection({ locale, reduce }: { locale: Locale; reduce: boolean | null }) {
+  const pushState = useSyncExternalStore(subscribePushStore, getPushSnapshot, () => 'loading' as PushState)
+  const [busy, setBusy] = useState(false)
+
+  const toggle = async () => {
+    if (busy || pushState === 'loading' || pushState === 'unsupported' || pushState === 'denied') return
+    setBusy(true)
+    try {
+      const reg = await navigator.serviceWorker.ready
+      if (pushState === 'on') {
+        const sub = await reg.pushManager.getSubscription()
+        if (sub) {
+          const endpoint = sub.endpoint
+          await sub.unsubscribe()
+          await unsubscribePush(endpoint)
+        }
+        setPushStoreValue('off')
+      } else {
+        const permission = await Notification.requestPermission()
+        if (permission === 'denied') {
+          setPushStoreValue('denied')
+          return
+        }
+        if (permission !== 'granted') return
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!).buffer as ArrayBuffer
+        })
+        const p256dh = sub.getKey('p256dh')
+        const auth = sub.getKey('auth')
+        if (!p256dh || !auth) return
+        await subscribePush({
+          endpoint: sub.endpoint,
+          p256dh: arrayBufferToBase64Url(p256dh),
+          auth: arrayBufferToBase64Url(auth)
+        })
+        setPushStoreValue('on')
+      }
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (pushState === 'loading' || pushState === 'unsupported') return null
+
+  if (pushState === 'denied') {
+    return (
+      <section>
+        <h2 className='text-ink-faint mb-3 text-xs'>{t(locale, 'settings.pushNotifications')}</h2>
+        <p className='text-ink-faint text-xs italic'>{t(locale, 'settings.pushDenied')}</p>
+      </section>
+    )
+  }
+
+  const isOn = pushState === 'on'
+
+  return (
+    <section>
+      <h2 className='text-ink-faint mb-3 text-xs'>{t(locale, 'settings.pushNotifications')}</h2>
+      <div className='grid grid-cols-2 gap-2.5'>
+        <button
+          type='button'
+          onClick={() => !isOn && toggle()}
+          disabled={busy}
+          className={`relative flex items-center justify-center rounded-xl border-2 py-3.5 transition-all ${
+            isOn ? 'bg-paper border-ink' : 'border-line hover:border-ink-faint'
+          } ${busy ? 'pointer-events-none opacity-50' : ''}`}
+        >
+          {isOn && !busy && (
+            <motion.span
+              layoutId='push-active'
+              className='bg-ink text-bg absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full leading-none'
+              transition={reduce ? { duration: 0 } : MOTION_SPRING.selection}
+            >
+              <IconCheck size={12} />
+            </motion.span>
+          )}
+          <span className={`font-display text-sm transition-colors ${isOn ? 'text-ink' : 'text-ink-faint'}`}>
+            {busy && !isOn ? t(locale, 'settings.pushEnabling') : t(locale, 'settings.pushOn')}
+          </span>
+        </button>
+        <button
+          type='button'
+          onClick={() => isOn && toggle()}
+          disabled={busy}
+          className={`relative flex items-center justify-center rounded-xl border-2 py-3.5 transition-all ${
+            !isOn ? 'bg-paper border-ink' : 'border-line hover:border-ink-faint'
+          } ${busy ? 'pointer-events-none opacity-50' : ''}`}
+        >
+          {!isOn && !busy && (
+            <motion.span
+              layoutId='push-active'
+              className='bg-ink text-bg absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full leading-none'
+              transition={reduce ? { duration: 0 } : MOTION_SPRING.selection}
+            >
+              <IconCheck size={12} />
+            </motion.span>
+          )}
+          <span className={`font-display text-sm transition-colors ${!isOn ? 'text-ink' : 'text-ink-faint'}`}>
+            {busy && isOn ? t(locale, 'settings.pushDisabling') : t(locale, 'settings.pushOff')}
+          </span>
+        </button>
+      </div>
+    </section>
   )
 }
 

@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { bigint, index, pgEnum, pgTable, primaryKey, serial, text, uniqueIndex } from 'drizzle-orm/pg-core'
+import { bigint, boolean, index, pgEnum, pgTable, primaryKey, serial, text, uniqueIndex } from 'drizzle-orm/pg-core'
 import { users } from './auth-schema'
 
 export const themeEnum = pgEnum('theme', ['light', 'dark', 'system'])
@@ -82,5 +82,38 @@ export const preferences = pgTable('preferences', {
 export const processedOps = pgTable('processed_ops', {
   id: text('id').primaryKey()
 })
+
+export const notificationTypeEnum = pgEnum('notification_type', ['group_invite', 'invite_accepted', 'invite_rejected'])
+
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: notificationTypeEnum('type').notNull(),
+    data: text('data').notNull(),
+    referenceId: text('reference_id'),
+    read: boolean('read').notNull().default(false),
+    createdAt: bigint('created_at', { mode: 'number' }).notNull()
+  },
+  (t) => [index('idx_notifications_user_created').on(t.userId, t.createdAt), index('idx_notifications_reference').on(t.referenceId)]
+)
+
+export const pushSubscriptions = pgTable(
+  'push_subscriptions',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    endpoint: text('endpoint').notNull(),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    createdAt: bigint('created_at', { mode: 'number' }).notNull()
+  },
+  (t) => [index('idx_push_subscriptions_user').on(t.userId), uniqueIndex('idx_push_subscriptions_endpoint').on(t.endpoint)]
+)
 
 export { accounts, passkeys, sessions, users, verifications } from './auth-schema'

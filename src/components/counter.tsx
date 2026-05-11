@@ -6,11 +6,13 @@ import { useEffect, useRef, useState } from 'react'
 import { t } from '../lib/i18n'
 import { MOTION_OFFSET, MOTION_SPRING, MOTION_TRANSITION } from '../lib/motion'
 import { addAirplane, isOffline, selectEvents, selectLocale, selectOfflineSyncing, undoAirplane, useOfflineState } from '../lib/offline-store'
+import { subscribeRemoteEvents } from '../lib/store/app-store'
 import { totals } from '../lib/streaks'
 import { getMemberColor, getMemberFirstName } from '../lib/types'
 import { AccountSheet } from './account-sheet'
 import { AppShell } from './app-shell'
 import { IconUndo } from './icons'
+import { NotificationButton } from './notification-button'
 import { Onboarding } from './onboarding'
 import { PlaneArc, type ArcKey } from './plane-arc'
 import { SyncStatus } from './sync-status'
@@ -74,6 +76,20 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
       img.src = src
     }
   }, [])
+
+  useEffect(() => {
+    return subscribeRemoteEvents((remoteEvents) => {
+      for (const e of remoteEvents) {
+        flightIdRef.current += 1
+        const from: ArcKey['from'] = Math.random() > 0.5 ? 'left' : 'right'
+        const entryY = 15 + Math.random() * 55
+        const exitY = 15 + Math.random() * 55
+        const pitch = (Math.atan2(exitY - entryY, 125) * 180) / Math.PI
+        setFlights((f) => [...f, { id: flightIdRef.current, from, entryY, exitY, pitch }])
+        if (e.who === who) animateNextRef.current = true
+      }
+    })
+  }, [who])
 
   const hydrated = state.hydrated
 
@@ -167,6 +183,7 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
               : <span className='inline-block'>{totalDisplay}</span>}
               <span>{t(locale, 'counter.total')}</span>
             </span>
+            <NotificationButton />
             <ThemeToggle />
           </div>
         </header>
