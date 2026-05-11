@@ -16,7 +16,7 @@ import { ExpandableItem } from './expandable-item'
 
 type GroupEntry = { id: string; name: string; ownerId: string; memberCount: number }
 
-export function GroupsScreen() {
+export function GroupsScreen({ from }: { from?: string }) {
   const router = useRouter()
   const state = useOfflineState()
   const locale = selectLocale(state)
@@ -107,7 +107,17 @@ export function GroupsScreen() {
         transition={MOTION_TRANSITION.header}
         className='flex items-center justify-between gap-3'
       >
-        <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
+        {from === 'settings' ?
+          <Button
+            variant='secondary'
+            size='sm'
+            shape='pill'
+            onClick={() => router.back()}
+            leading={<span aria-hidden>←</span>}
+          >
+            {t(locale, 'groups.manage.back')}
+          </Button>
+        : <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>}
         <ButtonLink
           href='/groups/new'
           variant='row-accent'

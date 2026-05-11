@@ -304,7 +304,7 @@ function GroupTab({ locale, activeGroupId, isOwner }: { locale: Locale; activeGr
           </ButtonLink>
         )}
         <ButtonLink
-          href='/groups'
+          href='/groups?from=settings'
           variant='row'
           size='md'
           fullWidth

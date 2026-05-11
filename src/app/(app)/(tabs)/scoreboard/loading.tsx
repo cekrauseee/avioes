@@ -14,10 +14,7 @@ export default function Loading() {
       </header>
 
       <div className='px-5 pt-2'>
-        <div className='bg-bg-soft/60 border-line inline-flex gap-1 rounded-full border p-1'>
-          <span className='bg-line/60 block h-8 w-20 animate-pulse rounded-full' />
-          <span className='bg-line/60 block h-8 w-20 animate-pulse rounded-full opacity-30' />
-        </div>
+        <Skel className='h-10 w-44 rounded-full' />
       </div>
 
       <div className='flex-1 px-5 py-4'>
