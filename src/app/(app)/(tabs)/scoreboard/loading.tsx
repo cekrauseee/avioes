@@ -14,9 +14,9 @@ export default function Loading() {
       </header>
 
       <div className='px-5 pt-2'>
-        <div className='bg-line/40 flex gap-1 rounded-full p-1'>
-          <Skel className='h-8 flex-1 rounded-full' />
-          <Skel className='h-8 flex-1 rounded-full opacity-40' />
+        <div className='bg-bg-soft/60 border-line inline-flex gap-0.5 rounded-full border p-0.5'>
+          <Skel className='h-7 w-16 rounded-full' />
+          <Skel className='h-7 w-16 rounded-full opacity-30' />
         </div>
       </div>
 
