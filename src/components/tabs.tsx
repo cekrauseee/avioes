@@ -39,7 +39,7 @@ export function Tabs<Id extends string>({
             type='button'
             aria-selected={active}
             onClick={() => onSelect(item.id)}
-            className='relative rounded-full px-4 py-1.5'
+            className='group relative rounded-full px-4 py-1.5'
           >
             {active && (
               <motion.span
@@ -48,7 +48,14 @@ export function Tabs<Id extends string>({
                 transition={reduce ? { duration: 0 } : MOTION_SPRING.selection}
               />
             )}
-            <span className={`font-display relative text-sm leading-none transition-colors duration-150 ${active ? 'text-ink' : 'text-ink-faint'}`}>
+            {!active && (
+              <span className='absolute inset-0 rounded-full opacity-0 transition-opacity duration-150 group-hover:bg-ink/5 group-hover:opacity-100' />
+            )}
+            <span
+              className={`font-display relative text-sm leading-none transition-colors duration-150 ${
+                active ? 'text-ink' : 'text-ink-faint group-hover:text-ink-soft'
+              }`}
+            >
               {t(locale, item.labelKey)}
             </span>
           </button>
