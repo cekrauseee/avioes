@@ -96,7 +96,6 @@ function Empty({ locale }: { locale: Locale }) {
           aria-hidden
           width={440}
           height={440}
-          unoptimized
           className='theme-light-only h-auto w-full select-none'
           draggable={false}
         />
@@ -106,7 +105,6 @@ function Empty({ locale }: { locale: Locale }) {
           aria-hidden
           width={440}
           height={440}
-          unoptimized
           className='theme-dark-only h-auto w-full select-none'
           draggable={false}
         />
