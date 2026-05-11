@@ -1,7 +1,7 @@
 export const MOTION_EASE = [0.22, 1, 0.36, 1] as const
 
 export const MOTION_OFFSET = {
-  route: 12,
+  route: 20,
   screen: 20,
   step: 24,
   tab: 32,
@@ -10,7 +10,7 @@ export const MOTION_OFFSET = {
 } as const
 
 export const MOTION_TRANSITION = {
-  route: { duration: 0.18, ease: MOTION_EASE },
+  route: { duration: 0.2, ease: MOTION_EASE },
   screen: { duration: 0.2, ease: MOTION_EASE },
   screenExit: { duration: 0.1, ease: 'easeIn' as const },
   stepSlide: { duration: 0.28, ease: MOTION_EASE },
