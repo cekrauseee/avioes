@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { getUserGroups } from '../actions'
 import { authClient } from '../lib/auth-client'
 import { resolveAvatarUrl } from '../lib/avatar'
@@ -58,19 +58,12 @@ export function SettingsView() {
   const tab = (TABS.some((t) => t.id === rawTab) ? rawTab : 'visual') as Tab
   const [direction, setDirection] = useState<1 | -1>(1)
   const reduce = useReducedMotion()
-  const prevTabRef = useRef(tab)
-
-  useEffect(() => {
-    if (prevTabRef.current !== tab) {
-      const prevIndex = TABS.findIndex((t) => t.id === prevTabRef.current)
-      const nextIndex = TABS.findIndex((t) => t.id === tab)
-      setDirection(nextIndex > prevIndex ? 1 : -1)
-      prevTabRef.current = tab
-    }
-  }, [tab])
 
   const goTo = (id: Tab) => {
     if (id === tab) return
+    const prevIndex = TABS.findIndex((t) => t.id === tab)
+    const nextIndex = TABS.findIndex((t) => t.id === id)
+    setDirection(nextIndex > prevIndex ? 1 : -1)
     const params = new URLSearchParams(searchParams.toString())
     params.set('tab', id)
     router.replace(`/settings?${params}`, { scroll: false })

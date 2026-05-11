@@ -3,7 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { getWorldRanking, type WorldRankingResult, type WorldRankingRowDTO, type WorldRankingWindow } from '../actions'
 import { resolveAvatarUrl } from '../lib/avatar'
 import { DATE_LOCALE, t } from '../lib/i18n'
@@ -40,19 +40,12 @@ export function ScoreboardView({ initialRanking }: { initialRanking: WorldRankin
   const rawTab = searchParams.get('tab')
   const tab = (TABS.some((t) => t.id === rawTab) ? rawTab : 'group') as Tab
   const [direction, setDirection] = useState<1 | -1>(1)
-  const prevTabRef = useRef(tab)
-
-  useEffect(() => {
-    if (prevTabRef.current !== tab) {
-      const prevIndex = TABS.findIndex((t) => t.id === prevTabRef.current)
-      const nextIndex = TABS.findIndex((t) => t.id === tab)
-      setDirection(nextIndex > prevIndex ? 1 : -1)
-      prevTabRef.current = tab
-    }
-  }, [tab])
 
   const goTo = (id: Tab) => {
     if (id === tab) return
+    const prevIndex = TABS.findIndex((t) => t.id === tab)
+    const nextIndex = TABS.findIndex((t) => t.id === id)
+    setDirection(nextIndex > prevIndex ? 1 : -1)
     const params = new URLSearchParams(searchParams.toString())
     params.set('tab', id)
     router.replace(`/scoreboard?${params}`, { scroll: false })
