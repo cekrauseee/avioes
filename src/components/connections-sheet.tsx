@@ -11,6 +11,7 @@ import { GoogleMark } from './auth-screen'
 import { Button, ButtonLink } from './button'
 import { ConfirmActionSlot, ConfirmRow, ConfirmTriggerRow } from './confirm-row'
 import { ExpandableItem } from './expandable-item'
+import { IconChevronRight, IconX } from './icons'
 import { Skel } from './skeleton'
 
 type LinkedAccount = { providerId: string }
@@ -140,7 +141,7 @@ export function ConnectionsSheet({
                       shape='square'
                       fullWidth
                       className='px-5'
-                      trailing={<span className='text-ink-faint'>→</span>}
+                      trailing={<IconChevronRight size={14} className='text-ink-faint' />}
                     >
                       {t(locale, 'settings.googleDisconnect')}
                     </ButtonLink>
@@ -158,7 +159,7 @@ export function ConnectionsSheet({
                       : <ConfirmTriggerRow
                           key='disconnect'
                           label={t(locale, 'settings.googleDisconnect')}
-                          icon='×'
+                          icon={<IconX size={14} />}
                           onClick={() => setConfirming(true)}
                         />
                       }
@@ -179,7 +180,7 @@ export function ConnectionsSheet({
                       <span className='text-sm'>{t(locale, 'settings.googleConnect')}</span>
                     </div>
                   }
-                  trailing={<span className='text-ink-faint text-xs'>→</span>}
+                  trailing={<IconChevronRight size={14} className='text-ink-faint' />}
                 />
               }
               {initialError && !googleLinked && <p className='text-clay px-1 text-[11px]'>{initialError}</p>}

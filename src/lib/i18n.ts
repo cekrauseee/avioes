@@ -55,6 +55,7 @@ const pt = {
   'settings.light': 'Claro',
   'settings.dark': 'Escuro',
   'settings.auto': 'Auto',
+  'settings.themeToggleAria': 'Tema: {label}, tocar para mudar',
   'settings.palette': 'paleta',
   'settings.language': 'idioma',
   'settings.tab.visual': 'visual',
@@ -102,6 +103,8 @@ const pt = {
   'settings.googleEmailMismatch': 'O e-mail do Google não corresponde ao da sua conta.',
 
   'password.back': 'voltar',
+  'password.show': 'mostrar senha',
+  'password.hide': 'ocultar senha',
   'password.currentLabel': 'senha atual',
   'password.newLabel': 'nova senha',
   'password.confirmLabel': 'confirmar senha',
@@ -603,6 +606,7 @@ const en: Record<TranslationKey, string> = {
   'settings.light': 'Light',
   'settings.dark': 'Dark',
   'settings.auto': 'Auto',
+  'settings.themeToggleAria': 'Theme: {label}, tap to change',
   'settings.palette': 'palette',
   'settings.language': 'language',
   'settings.tab.visual': 'visual',
@@ -650,6 +654,8 @@ const en: Record<TranslationKey, string> = {
   'settings.googleEmailMismatch': 'The Google email does not match your account email.',
 
   'password.back': 'back',
+  'password.show': 'show password',
+  'password.hide': 'hide password',
   'password.currentLabel': 'current password',
   'password.newLabel': 'new password',
   'password.confirmLabel': 'confirm password',

@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { IconArrowLeft } from '../components/icons'
 import { t } from '../lib/i18n'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 
@@ -51,12 +52,7 @@ export default function NotFound() {
         href='/'
         className='bg-paper text-ink hover:bg-line/40 focus-visible:bg-line/40 mt-4 inline-flex items-center justify-center gap-2 self-center rounded-full px-5 py-3 text-sm transition-colors active:scale-[0.99]'
       >
-        <span
-          aria-hidden
-          className='text-base leading-none'
-        >
-          ←
-        </span>
+        <IconArrowLeft size={16} />
         <span className='font-display'>{t(locale, 'notFound.back')}</span>
       </Link>
     </main>

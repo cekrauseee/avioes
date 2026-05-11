@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { t, type TKey } from '../lib/i18n'
 import { MOTION_TRANSITION } from '../lib/motion'
 import type { Locale } from '../lib/types'
+import { IconArrowLeft, IconArrowRight } from './icons'
 import { Placeholder } from './placeholder'
 
 type Page = {
@@ -171,11 +172,8 @@ export function Intro({ onDone, locale }: { onDone: () => void; locale: Locale }
               index === 0 ? 'pointer-events-none opacity-0' : 'opacity-100'
             }`}
           >
-            <span
-              aria-hidden
-              className='text-base leading-none transition-transform duration-300 group-hover:-translate-x-1 group-focus-visible:-translate-x-1'
-            >
-              ←
+            <span className='transition-transform duration-300 group-hover:-translate-x-1 group-focus-visible:-translate-x-1'>
+              <IconArrowLeft size={16} />
             </span>
             <span className='font-display'>{t(locale, 'intro.back')}</span>
           </button>
@@ -215,11 +213,8 @@ export function Intro({ onDone, locale }: { onDone: () => void; locale: Locale }
             className='group focus-visible:bg-line/40 hover:bg-line/40 -mr-2 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm transition-colors active:scale-[0.99] disabled:opacity-50'
           >
             <span className='font-display'>{isLast ? t(locale, 'intro.start') : t(locale, 'intro.next')}</span>
-            <span
-              aria-hidden
-              className='text-base leading-none transition-transform duration-300 group-hover:translate-x-1 group-focus-visible:translate-x-1'
-            >
-              →
+            <span className='transition-transform duration-300 group-hover:translate-x-1 group-focus-visible:translate-x-1'>
+              <IconArrowRight size={16} />
             </span>
           </button>
         </div>

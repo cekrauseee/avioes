@@ -13,6 +13,7 @@ import { applyActiveGroup, selectLocale, useOfflineState } from '../lib/offline-
 import { getMemberColor, type Locale } from '../lib/types'
 import { Avatar } from './avatar'
 import { Button, usePromiseStatus } from './button'
+import { IconArrowLeft, IconChevronDown } from './icons'
 import { Skel } from './skeleton'
 
 type Profile = {
@@ -186,7 +187,7 @@ export function ProfileScreen() {
           size='sm'
           shape='pill'
           onClick={goBack}
-          leading={<span aria-hidden>←</span>}
+          leading={<IconArrowLeft size={16} />}
         >
           {t(locale, 'profile.back')}
         </Button>
@@ -497,12 +498,7 @@ function SelectField({
             </option>
           ))}
         </select>
-        <span
-          aria-hidden
-          className='text-ink-faint pointer-events-none absolute right-3 text-xs'
-        >
-          ▾
-        </span>
+        <IconChevronDown size={14} className='text-ink-faint pointer-events-none absolute right-3' />
       </div>
       <FieldHint error={error} />
     </div>

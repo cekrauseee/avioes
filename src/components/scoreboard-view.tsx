@@ -222,15 +222,21 @@ function GroupTab({ locale }: { locale: Locale }) {
 function WorldTab({ initialRanking, locale }: { initialRanking: WorldRankingResult; locale: Locale }) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const reduce = useReducedMotion()
   const rawWindow = searchParams.get('window')
   const windowSel: WorldRankingWindow = rawWindow === 'week' ? 'week' : 'all'
+  const [committedWindow, setCommittedWindow] = useState<WorldRankingWindow>(windowSel)
+  const [direction, setDirection] = useState<1 | -1>(1)
   const [data, setData] = useState(initialRanking)
-  const [pending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
   const listRef = useRef<HTMLDivElement>(null)
   const reqIdRef = useRef(0)
 
   function selectWindow(w: WorldRankingWindow) {
     if (w === windowSel) return
+    const prevIndex = WINDOWS.findIndex((win) => win.id === windowSel)
+    const nextIndex = WINDOWS.findIndex((win) => win.id === w)
+    setDirection(nextIndex > prevIndex ? 1 : -1)
     const params = new URLSearchParams(searchParams.toString())
     params.set('window', w)
     router.replace(`/scoreboard?${params}`, { scroll: false })
@@ -239,6 +245,7 @@ function WorldTab({ initialRanking, locale }: { initialRanking: WorldRankingResu
       const fresh = await getWorldRanking({ window: w })
       if (id !== reqIdRef.current) return
       setData(fresh)
+      setCommittedWindow(w)
     })
   }
 
@@ -269,34 +276,46 @@ function WorldTab({ initialRanking, locale }: { initialRanking: WorldRankingResu
         />
       </div>
 
-      {data.userGroupRanks.length > 0 && (
-        <UserGroupsJumpBar
-          entries={data.userGroupRanks}
-          locale={locale}
-          onJump={jumpTo}
-        />
-      )}
-
-      {data.rows.length === 0 ?
-        <WorldEmpty locale={locale} />
-      : <div className={`transition-opacity duration-150 ${pending ? 'opacity-60' : 'opacity-100'}`}>
-          <span className='text-ink-faint mt-3 block text-xs'>
-            {data.rows.length} {t(locale, 'world.groups')}
-          </span>
-          {top.length > 0 && (
-            <Podium
-              rows={top}
+      <AnimatePresence
+        mode='wait'
+        initial={false}
+      >
+        <motion.div
+          key={committedWindow}
+          initial={reduce ? { opacity: 0 } : { opacity: 0, x: direction * MOTION_OFFSET.tab }}
+          animate={reduce ? { opacity: 1 } : { opacity: 1, x: 0 }}
+          exit={reduce ? { opacity: 0 } : { opacity: 0, x: -direction * MOTION_OFFSET.tab }}
+          transition={MOTION_TRANSITION.tab}
+        >
+          {data.userGroupRanks.length > 0 && (
+            <UserGroupsJumpBar
+              entries={data.userGroupRanks}
               locale={locale}
+              onJump={jumpTo}
             />
           )}
-          {rest.length > 0 && (
-            <RestList
-              rows={rest}
-              locale={locale}
-            />
-          )}
-        </div>
-      }
+          {data.rows.length === 0 ?
+            <WorldEmpty locale={locale} />
+          : <>
+              <span className='text-ink-faint mt-3 block text-xs'>
+                {data.rows.length} {t(locale, 'world.groups')}
+              </span>
+              {top.length > 0 && (
+                <Podium
+                  rows={top}
+                  locale={locale}
+                />
+              )}
+              {rest.length > 0 && (
+                <RestList
+                  rows={rest}
+                  locale={locale}
+                />
+              )}
+            </>
+          }
+        </motion.div>
+      </AnimatePresence>
     </div>
   )
 }

@@ -8,6 +8,7 @@ import { t } from '../lib/i18n'
 import { MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 import { Button } from './button'
+import { IconArrowLeft } from './icons'
 
 export function EditGroupScreen({ groupId }: { groupId: string }) {
   const router = useRouter()
@@ -67,7 +68,7 @@ export function EditGroupScreen({ groupId }: { groupId: string }) {
           size='sm'
           shape='pill'
           onClick={() => router.back()}
-          leading={<span aria-hidden>←</span>}
+          leading={<IconArrowLeft size={16} />}
         >
           {t(locale, 'groups.edit.back')}
         </Button>

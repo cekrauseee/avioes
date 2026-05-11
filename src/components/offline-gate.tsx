@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { startTransition, useState } from 'react'
 import { t } from '../lib/i18n'
+import { IconRefresh } from './icons'
 import { MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 
@@ -98,12 +99,11 @@ export function OfflineGate() {
           className='bg-paper text-ink hover:bg-line/40 focus-visible:bg-line/40 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm transition-colors active:scale-[0.99] disabled:opacity-50'
         >
           <motion.span
-            aria-hidden
-            className='text-base leading-none'
+            className='leading-none'
             animate={retrying ? { rotate: 360 } : { rotate: 0 }}
             transition={retrying ? MOTION_TRANSITION.spinner : MOTION_TRANSITION.screen}
           >
-            ↻
+            <IconRefresh size={16} />
           </motion.span>
           <span className='font-display'>{t(locale, 'offline.retry')}</span>
         </button>

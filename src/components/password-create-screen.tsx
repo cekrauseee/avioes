@@ -10,6 +10,8 @@ import { MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 import type { Locale } from '../lib/types'
 import { Button } from './button'
+import { IconChevronRight } from './icons'
+import { PasswordInput } from './password-input'
 
 export function PasswordCreateScreen({ token, valid }: { token: string; valid: boolean }) {
   const router = useRouter()
@@ -54,7 +56,7 @@ export function PasswordCreateScreen({ token, valid }: { token: string; valid: b
             size='md'
             fullWidth
             onClick={() => router.push('/auth')}
-            trailing={<span aria-hidden>→</span>}
+            trailing={<IconChevronRight size={14} />}
           >
             {t(locale, 'auth.back')}
           </Button>
@@ -185,7 +187,7 @@ export function PasswordCreateScreen({ token, valid }: { token: string; valid: b
             size='md'
             fullWidth
             onClick={() => router.push('/settings?tab=account')}
-            trailing={<span aria-hidden>→</span>}
+            trailing={<IconChevronRight size={14} />}
           >
             {t(locale, 'password.backToAccount')}
           </Button>
@@ -221,25 +223,23 @@ export function PasswordCreateScreen({ token, valid }: { token: string; valid: b
       >
         <div className='flex flex-col gap-1.5'>
           <label className='text-ink-faint text-xs'>{t(locale, 'password.newLabel')}</label>
-          <input
-            type='password'
+          <PasswordInput
             value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            onChange={setNewPassword}
             placeholder='••••••••'
             autoComplete='new-password'
             autoFocus
-            className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none focus:ring-2'
+            locale={locale}
           />
         </div>
         <div className='flex flex-col gap-1.5'>
           <label className='text-ink-faint text-xs'>{t(locale, 'password.confirmLabel')}</label>
-          <input
-            type='password'
+          <PasswordInput
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={setConfirmPassword}
             placeholder='••••••••'
             autoComplete='new-password'
-            className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none focus:ring-2'
+            locale={locale}
           />
         </div>
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { AnimatePresence, motion } from 'motion/react'
+import { IconMore } from './icons'
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { MOTION_TRANSITION } from '../lib/motion'
 
@@ -30,7 +31,7 @@ export function ExpandableItem({
           aria-expanded={expanded}
           className={`text-ink-faint hover:text-ink-soft border-line flex w-14 shrink-0 items-center justify-center border-l text-xl leading-none transition-colors ${expanded ? 'bg-line/30' : ''}`}
         >
-          ⋯
+          <IconMore size={18} />
         </button>
       </div>
       <AnimatePresence initial={false}>{expanded && <ExpandablePanel key='content'>{children}</ExpandablePanel>}</AnimatePresence>

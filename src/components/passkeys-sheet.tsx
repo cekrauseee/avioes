@@ -11,6 +11,7 @@ import { AnimatedLayoutBlock, AnimatedList, AnimatedListGroup, AnimatedListItem 
 import { Button } from './button'
 import { ConfirmActionSlot, ConfirmRow, ConfirmTriggerRow } from './confirm-row'
 import { ExpandableItem } from './expandable-item'
+import { IconX } from './icons'
 import { Skel } from './skeleton'
 
 type PasskeyEntry = { id: string; name: string | null; aaguid: string | null; createdAt: Date | null }
@@ -188,7 +189,7 @@ export function PasskeysSheet({ open, onClose, locale }: { open: boolean; onClos
                             : <ConfirmTriggerRow
                                 key='delete'
                                 label={t(locale, 'settings.deletePasskey')}
-                                icon='×'
+                                icon={<IconX size={14} />}
                                 onClick={() => setConfirmingId(pk.id)}
                               />
                             }

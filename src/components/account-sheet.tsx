@@ -13,6 +13,7 @@ import { applyLocalIdentity, applyServerSnapshot, selectLocale, useOfflineState 
 import { getMemberColor, getMemberFirstName, getMemberFullName } from '../lib/types'
 import { Avatar } from './avatar'
 import { Button, ButtonLink } from './button'
+import { IconChevronRight, IconLogOut, IconPlus, IconUserPlus } from './icons'
 
 type GroupEntry = { id: string; name: string; ownerId: string; memberCount: number }
 
@@ -63,10 +64,13 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
 
   const handleSignOut = async () => {
     onClose()
-    await authClient.signOut()
-    applyLocalIdentity(null)
-    router.replace('/auth')
-    router.refresh()
+    try {
+      await authClient.signOut()
+    } finally {
+      applyLocalIdentity(null)
+      router.replace('/auth')
+      router.refresh()
+    }
   }
 
   if (typeof document === 'undefined') return null
@@ -146,7 +150,7 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
                             >
                               …
                             </motion.span>
-                          : '→'}
+                          : <IconChevronRight size={14} />}
                         </span>
                       }
                     />
@@ -162,7 +166,7 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
                     variant='row'
                     size='md'
                     fullWidth
-                    trailing={<span className='text-ink-faint text-base leading-none'>→</span>}
+                    trailing={<span className='text-ink-faint text-base leading-none'><IconChevronRight size={14} /></span>}
                   >
                     {t(locale, 'groups.sheet.viewAll')}
                   </ButtonLink>
@@ -172,7 +176,7 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
                     variant='row-accent'
                     size='md'
                     fullWidth
-                    trailing={<span className='text-base leading-none'>+</span>}
+                    trailing={<span className='text-base leading-none'><IconPlus size={14} /></span>}
                   >
                     {t(locale, 'groups.sheet.create')}
                   </ButtonLink>
@@ -190,7 +194,8 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
                     variant='row-accent'
                     size='md'
                     fullWidth
-                    trailing={<span className='text-base leading-none'>+</span>}
+                    leading={<IconUserPlus size={16} />}
+                    trailing={<IconChevronRight size={14} />}
                   >
                     {t(locale, 'groups.sheet.invite')}
                   </ButtonLink>
@@ -206,9 +211,8 @@ export function AccountSheet({ open, onClose }: { open: boolean; onClose: () => 
                 variant='destructive-outline'
                 size='md'
                 fullWidth
-                align='between'
                 onClick={handleSignOut}
-                trailing={<span className='text-base leading-none opacity-70'>→</span>}
+                leading={<IconLogOut size={16} className='opacity-60' />}
               >
                 {t(locale, 'groups.sheet.signOut')}
               </Button>

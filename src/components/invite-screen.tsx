@@ -10,6 +10,7 @@ import { t, tf } from '../lib/i18n'
 import { MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import { Button, ButtonLink } from './button'
+import { IconArrowLeft } from './icons'
 
 type InviteStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'expired' | 'not_found'
 
@@ -348,14 +349,7 @@ function ErrorScreen({ locale, line1Key, italicKey, bodyKey }: { locale: 'pt' | 
         size='sm'
         shape='pill'
         className='font-display mt-4 self-center'
-        leading={
-          <span
-            aria-hidden
-            className='text-base leading-none'
-          >
-            ←
-          </span>
-        }
+        leading={<IconArrowLeft size={16} />}
       >
         {t(locale, 'invite.backToApp')}
       </ButtonLink>

@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { startTransition } from 'react'
+import { IconArrowLeft, IconRefresh } from '../components/icons'
 import { t } from '../lib/i18n'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 
@@ -55,19 +56,14 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
           onClick={retry}
           className='bg-paper text-ink hover:bg-line/40 focus-visible:bg-line/40 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm transition-colors active:scale-[0.99]'
         >
-          <span
-            aria-hidden
-            className='text-base leading-none'
-          >
-            ↻
-          </span>
+          <IconRefresh size={16} />
           <span className='font-display'>{t(locale, 'error.retry')}</span>
         </button>
         <Link
           href='/'
           className='text-ink-faint hover:text-ink-soft focus-visible:text-ink-soft inline-flex items-center gap-1 px-3 py-1.5 text-xs transition-colors'
         >
-          <span aria-hidden>←</span>
+          <IconArrowLeft size={14} />
           <span>{t(locale, 'error.backToCount')}</span>
         </Link>
       </div>

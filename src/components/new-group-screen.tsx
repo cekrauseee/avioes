@@ -8,6 +8,7 @@ import { t } from '../lib/i18n'
 import { MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import { Button } from './button'
+import { IconArrowLeft } from './icons'
 
 export function NewGroupScreen() {
   const router = useRouter()
@@ -58,7 +59,7 @@ export function NewGroupScreen() {
           size='sm'
           shape='pill'
           onClick={() => router.back()}
-          leading={<span aria-hidden>←</span>}
+          leading={<IconArrowLeft size={16} />}
         >
           {t(locale, 'groups.new.back')}
         </Button>

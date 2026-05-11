@@ -12,6 +12,7 @@ import { AccountSheet } from './account-sheet'
 import { AppShell } from './app-shell'
 import { Onboarding } from './onboarding'
 import { PlaneArc, type ArcKey } from './plane-arc'
+import { IconUndo } from './icons'
 import { SyncStatus } from './sync-status'
 import { ThemeToggle } from './theme-toggle'
 
@@ -235,11 +236,8 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
             aria-label={t(locale, 'counter.undoAriaLabel')}
             className='group text-ink-soft hover:bg-line/40 hover:text-ink focus-visible:bg-line/40 focus-visible:text-ink -mr-3 inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm transition-colors active:scale-95 disabled:opacity-30 disabled:hover:bg-transparent disabled:focus-visible:bg-transparent'
           >
-            <span
-              aria-hidden
-              className='text-base leading-none transition-transform duration-300 group-hover:-rotate-[20deg] group-focus-visible:-rotate-[20deg]'
-            >
-              ↶
+            <span className='transition-transform duration-300 group-hover:-rotate-[20deg] group-focus-visible:-rotate-[20deg]'>
+              <IconUndo size={16} />
             </span>
             <span>{t(locale, 'counter.undo')}</span>
           </button>

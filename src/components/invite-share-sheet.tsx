@@ -7,6 +7,7 @@ import { t } from '../lib/i18n'
 import { MOTION_TRANSITION } from '../lib/motion'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 import { Button } from './button'
+import { IconCheck, IconCopy, IconShare } from './icons'
 
 export function InviteShareSheet({ open, onClose, inviteUrl, email }: { open: boolean; onClose: () => void; inviteUrl: string; email: string }) {
   const state = useOfflineState()
@@ -77,6 +78,7 @@ export function InviteShareSheet({ open, onClose, inviteUrl, email }: { open: bo
                 status={copied ? 'success' : 'idle'}
                 successLabel={t(locale, 'invite.share.copied')}
                 onClick={handleCopy}
+                leading={copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
               >
                 {t(locale, 'invite.share.copy')}
               </Button>
@@ -86,6 +88,7 @@ export function InviteShareSheet({ open, onClose, inviteUrl, email }: { open: bo
                   size='md'
                   fullWidth
                   onClick={handleShare}
+                  leading={<IconShare size={16} />}
                 >
                   {t(locale, 'invite.share.share')}
                 </Button>

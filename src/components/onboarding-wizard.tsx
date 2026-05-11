@@ -20,6 +20,7 @@ import { applyLocalIdentity, applyServerSnapshot, selectLocale, useOfflineState 
 import { MEMBER_COLORS } from '../lib/types'
 import { Avatar } from './avatar'
 import { Button } from './button'
+import { IconArrowLeft } from './icons'
 
 type Step = 'name' | 'username' | 'photo' | 'group'
 type UsernameStatus = 'idle' | 'pending' | 'available' | 'taken' | 'invalid'
@@ -244,10 +245,13 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
   }
 
   const handleSignOut = async () => {
-    await authClient.signOut()
-    applyLocalIdentity(null)
-    router.replace('/auth')
-    router.refresh()
+    try {
+      await authClient.signOut()
+    } finally {
+      applyLocalIdentity(null)
+      router.replace('/auth')
+      router.refresh()
+    }
   }
 
   const stepIndex = STEPS.indexOf(step)
@@ -515,7 +519,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
                     shape='pill'
                     disabled={loading}
                     onClick={() => goTo(STEPS[stepIndex - 1])}
-                    leading={<span aria-hidden>←</span>}
+                    leading={<IconArrowLeft size={16} />}
                   >
                     {t(locale, 'onboarding.back')}
                   </Button>

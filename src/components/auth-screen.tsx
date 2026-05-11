@@ -9,7 +9,10 @@ import { DATE_LOCALE, t, tf } from '../lib/i18n'
 import { MOTION_OFFSET, MOTION_TRANSITION } from '../lib/motion'
 import { applyLocalIdentity, selectLocale, useOfflineState } from '../lib/offline-store'
 import { OTP_ALLOWED_ATTEMPTS, OTP_LENGTH } from '../lib/otp-constants'
+import type { Locale } from '../lib/types'
 import { Button } from './button'
+import { IconArrowLeft } from './icons'
+import { PasswordInput } from './password-input'
 
 type Step = 'welcome' | 'email' | 'method' | 'password' | 'otp' | 'no-password' | 'error'
 
@@ -371,7 +374,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 shape='pill'
                 className='self-start'
                 onClick={() => advanceTo('welcome')}
-                leading={<span aria-hidden>←</span>}
+                leading={<IconArrowLeft size={16} />}
               >
                 {t(locale, 'auth.back')}
               </Button>
@@ -563,7 +566,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                           advanceTo('welcome')
                           setError(null)
                         }}
-                        leading={<span aria-hidden>←</span>}
+                        leading={<IconArrowLeft size={16} />}
                       >
                         {t(locale, 'auth.back')}
                       </Button>
@@ -580,6 +583,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                         placeholder={t(locale, 'auth.passwordPlaceholder')}
                         autoFocus
                         autoComplete={accountExists ? 'current-password' : 'new-password'}
+                        locale={locale}
                       />
                       <Button
                         variant='secondary'
@@ -596,7 +600,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                             advanceTo('email')
                           }
                         }}
-                        leading={<span aria-hidden>←</span>}
+                        leading={<IconArrowLeft size={16} />}
                       >
                         {accountExists ? t(locale, 'auth.back') : t(locale, 'auth.changeEmail')}
                       </Button>
@@ -650,7 +654,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                           setHasPassword(false)
                           advanceTo('email')
                         }}
-                        leading={<span aria-hidden>←</span>}
+                        leading={<IconArrowLeft size={16} />}
                       >
                         {t(locale, 'auth.changeEmail')}
                       </Button>
@@ -709,7 +713,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                           setOtpExhausted(false)
                           advanceTo('method')
                         }}
-                        leading={<span aria-hidden>←</span>}
+                        leading={<IconArrowLeft size={16} />}
                       >
                         {t(locale, 'auth.back')}
                       </Button>
@@ -751,7 +755,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                           setNoPasswordSent(false)
                           advanceTo('method')
                         }}
-                        leading={<span aria-hidden>←</span>}
+                        leading={<IconArrowLeft size={16} />}
                       >
                         {t(locale, 'auth.back')}
                       </Button>
@@ -866,6 +870,7 @@ function Field({
   placeholder,
   autoFocus,
   autoComplete,
+  locale,
   ref
 }: {
   label: string
@@ -875,21 +880,32 @@ function Field({
   placeholder?: string
   autoFocus?: boolean
   autoComplete?: string
+  locale?: Locale
   ref?: React.Ref<HTMLInputElement>
 }) {
   return (
     <div className='flex flex-col gap-1.5'>
       <label className='text-ink-faint text-xs'>{label}</label>
-      <input
-        ref={ref}
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoFocus={autoFocus}
-        autoComplete={autoComplete}
-        className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none focus:ring-2'
-      />
+      {type === 'password' && locale ?
+        <PasswordInput
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          autoFocus={autoFocus}
+          autoComplete={autoComplete}
+          locale={locale}
+        />
+      : <input
+          ref={ref}
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          autoFocus={autoFocus}
+          autoComplete={autoComplete}
+          className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none focus:ring-2'
+        />
+      }
     </div>
   )
 }

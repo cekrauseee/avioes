@@ -20,6 +20,22 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-11 — OTP email send error handling
+
+better-auth's `runInBackgroundOrAwait` swallows errors from the `sendVerificationOTP` callback, always returning `{ success: true }`. Module-level `lastOtpSendError` tracker in `src/lib/auth.ts` + `consumeOtpSendError()` detect failures. New `requestOtpEmail` server action in `src/actions.ts` wraps the better-auth call and checks the tracker. `auth-screen.tsx` `sendOtp` now calls the server action instead of the client-side auth plugin, so email delivery failures surface as `auth.otpSendFailed`.
+
+### 2026-05-11 — Email templates improved
+
+All three email templates (`otp-login`, `password-request`, `invite`) now share constants from `src/emails/shared.ts` (colors, fonts, Fraunces web font definitions). Added `onboarding-hero-light.png` illustrations, Fraunces display font (regular + italic), sage-colored CTA buttons.
+
+### 2026-05-11 — Settings/scoreboard tab direction fix
+
+Tab slide direction was computed in `useEffect` → stale during AnimatePresence render. Moved computation into the `goTo` event handler so direction is set synchronously before URL change. Applied to both `settings-view.tsx` and `scoreboard-view.tsx`.
+
+### 2026-05-11 — Connection sheet improvements
+
+Google icon SVG replaces raw "G" text. Skeleton height aligned with real button. OAuth link errors (including `email_doesn't_match`) detected via URL params and displayed in the connections sheet. Sheet auto-opens when redirected back with `?connections=open`.
+
 ### 2026-05-11 — World ranking merged into scoreboard
 
 Dropped `/world` route entirely. Scoreboard page now has two tabs (grupo/mundo) using the pill `Tabs` component. Group tab shows the existing per-member scores + streaks. World tab shows the global ranking with time-window sub-tabs (all/week), podium, list, and user-groups jump bar. Nav bar reduced from 5 to 4 tabs. World ranking data fetched server-side as `initialRanking` prop; client-side refetch on window switch via `getWorldRanking` server action. Search params: `?tab=group|world` + `?window=all|week`. Removed files: `world-view.tsx`, `(tabs)/world/page.tsx`. Updated: nav, swipeable-content, SW shell routes, proxy matcher, app-runtime page title map. i18n: added `scoreboard.tab.group/world`, removed `nav.world`.

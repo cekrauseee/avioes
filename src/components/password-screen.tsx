@@ -11,6 +11,7 @@ import { useNavDirection } from '../lib/nav-direction'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 import type { Locale } from '../lib/types'
 import { Button } from './button'
+import { IconArrowLeft, IconChevronRight } from './icons'
 import { Skel } from './skeleton'
 
 type Mode = 'set' | 'change' | null
@@ -201,7 +202,7 @@ export function PasswordScreen() {
             size='md'
             fullWidth
             onClick={goBackToAccount}
-            trailing={<span aria-hidden>→</span>}
+            trailing={<IconChevronRight size={14} />}
           >
             {t(locale, 'password.backToAccount')}
           </Button>
@@ -300,7 +301,7 @@ function Header({ onBack, locale }: { onBack: () => void; locale: Locale }) {
         size='sm'
         shape='pill'
         onClick={onBack}
-        leading={<span aria-hidden>←</span>}
+        leading={<IconArrowLeft size={16} />}
       >
         {t(locale, 'password.back')}
       </Button>

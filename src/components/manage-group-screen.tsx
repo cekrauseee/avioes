@@ -13,6 +13,7 @@ import { MEMBER_COLORS } from '../lib/types'
 import { AnimatedList, AnimatedListItem } from './animated-list'
 import { Avatar } from './avatar'
 import { Button } from './button'
+import { IconArrowLeft, IconMail, IconMore, IconX } from './icons'
 import { InviteShareSheet } from './invite-share-sheet'
 
 type PendingInvite = { id: string; invitedEmail: string; createdAt: number; expiresAt: number }
@@ -129,7 +130,7 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
             size='sm'
             shape='pill'
             onClick={() => router.back()}
-            leading={<span aria-hidden>←</span>}
+            leading={<IconArrowLeft size={16} />}
           >
             {t(locale, 'groups.manage.back')}
           </Button>
@@ -317,7 +318,7 @@ function MemberRow({
             aria-expanded={expanded}
             className={`text-ink-faint hover:text-ink-soft border-line flex w-16 shrink-0 items-center justify-center border-l text-2xl leading-none transition-colors ${expanded ? 'bg-line/30' : ''}`}
           >
-            ⋯
+            <IconMore size={18} />
           </button>
         )}
       </div>
@@ -349,7 +350,7 @@ function MemberRow({
                 className='px-4'
                 disabled={pending}
                 onClick={onAskRemove}
-                trailing={<span>×</span>}
+                trailing={<IconX size={14} />}
               >
                 {t(locale, 'groups.manage.removeFromGroup')}
               </Button>
@@ -389,7 +390,7 @@ function InviteRow({
       <div className='flex items-stretch'>
         <div className='flex flex-1 items-center gap-3 px-4 py-3'>
           <div className='bg-line flex h-7 w-7 shrink-0 items-center justify-center rounded-full'>
-            <span className='text-ink-faint text-xs'>✉</span>
+            <IconMail size={14} className='text-ink-faint' />
           </div>
           <div className='min-w-0 flex-1'>
             <p className='text-ink truncate text-sm'>{invite.invitedEmail}</p>
@@ -403,7 +404,7 @@ function InviteRow({
           aria-expanded={expanded}
           className={`text-ink-faint hover:text-ink-soft border-line flex w-16 shrink-0 items-center justify-center border-l text-2xl leading-none transition-colors ${expanded ? 'bg-line/30' : ''}`}
         >
-          ⋯
+          <IconMore size={18} />
         </button>
       </div>
 
@@ -434,7 +435,7 @@ function InviteRow({
                 className='px-4'
                 disabled={pending}
                 onClick={onAskCancel}
-                trailing={<span>×</span>}
+                trailing={<IconX size={14} />}
               >
                 {t(locale, 'groups.manage.cancelInvite')}
               </Button>

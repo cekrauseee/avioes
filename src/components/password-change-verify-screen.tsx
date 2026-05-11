@@ -10,6 +10,8 @@ import { useNavDirection } from '../lib/nav-direction'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 import type { Locale } from '../lib/types'
 import { Button } from './button'
+import { IconArrowLeft, IconChevronRight } from './icons'
+import { PasswordInput } from './password-input'
 
 export function PasswordChangeVerifyScreen({ token, valid, unauthorized }: { token: string; valid: boolean; unauthorized: boolean }) {
   const router = useRouter()
@@ -60,7 +62,7 @@ export function PasswordChangeVerifyScreen({ token, valid, unauthorized }: { tok
             size='md'
             fullWidth
             onClick={goBackToAccount}
-            trailing={<span aria-hidden>→</span>}
+            trailing={<IconChevronRight size={14} />}
           >
             {t(locale, 'password.backToAccount')}
           </Button>
@@ -100,7 +102,7 @@ export function PasswordChangeVerifyScreen({ token, valid, unauthorized }: { tok
             size='md'
             fullWidth
             onClick={goBackToAccount}
-            trailing={<span aria-hidden>→</span>}
+            trailing={<IconChevronRight size={14} />}
           >
             {t(locale, 'password.backToAccount')}
           </Button>
@@ -140,7 +142,7 @@ export function PasswordChangeVerifyScreen({ token, valid, unauthorized }: { tok
             size='md'
             fullWidth
             onClick={goBackToAccount}
-            trailing={<span aria-hidden>→</span>}
+            trailing={<IconChevronRight size={14} />}
           >
             {t(locale, 'password.backToAccount')}
           </Button>
@@ -201,37 +203,34 @@ export function PasswordChangeVerifyScreen({ token, valid, unauthorized }: { tok
       >
         <div className='flex flex-col gap-1.5'>
           <label className='text-ink-faint text-xs'>{t(locale, 'password.currentLabel')}</label>
-          <input
-            type='password'
+          <PasswordInput
             value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
+            onChange={setCurrentPassword}
             placeholder='••••••••'
             autoComplete='current-password'
             autoFocus
-            className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none focus:ring-2'
+            locale={locale}
           />
         </div>
 
         <div className='flex flex-col gap-1.5'>
           <label className='text-ink-faint text-xs'>{t(locale, 'password.newLabel')}</label>
-          <input
-            type='password'
+          <PasswordInput
             value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            onChange={setNewPassword}
             placeholder='••••••••'
             autoComplete='new-password'
-            className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none focus:ring-2'
+            locale={locale}
           />
         </div>
         <div className='flex flex-col gap-1.5'>
           <label className='text-ink-faint text-xs'>{t(locale, 'password.confirmLabel')}</label>
-          <input
-            type='password'
+          <PasswordInput
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={setConfirmPassword}
             placeholder='••••••••'
             autoComplete='new-password'
-            className='border-line bg-paper text-ink placeholder:text-ink-faint ring-sage/40 w-full rounded-xl border px-4 py-3 text-sm transition-all outline-none focus:ring-2'
+            locale={locale}
           />
         </div>
 
@@ -275,7 +274,7 @@ function Header({ onBack, locale }: { onBack: () => void; locale: Locale }) {
         size='sm'
         shape='pill'
         onClick={onBack}
-        leading={<span aria-hidden>←</span>}
+        leading={<IconArrowLeft size={16} />}
       >
         {t(locale, 'password.back')}
       </Button>

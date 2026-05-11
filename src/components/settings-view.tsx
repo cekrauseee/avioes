@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { type ReactNode, useEffect, useState, useSyncExternalStore } from 'react'
 import { getUserGroups } from '../actions'
 import { authClient } from '../lib/auth-client'
 import { resolveAvatarUrl } from '../lib/avatar'
@@ -13,6 +13,7 @@ import { getMemberColor, getMemberFirstName, getMemberFullName, PALETTES, type L
 import { AppShell } from './app-shell'
 import { Avatar } from './avatar'
 import { Button, ButtonLink, usePromiseStatus } from './button'
+import { IconCheck, IconChevronRight, IconKey, IconLink, IconLock, IconLogOut, IconMoon, IconSettings, IconSun, IconSunMoon, IconUsers } from './icons'
 import { ConnectionsSheet } from './connections-sheet'
 import { Onboarding } from './onboarding'
 import { PasskeysSheet } from './passkeys-sheet'
@@ -29,10 +30,10 @@ const TABS = [
 
 const PALETTE_KEYS = Object.keys(PALETTES) as Palette[]
 
-const THEME_MODES: { id: Theme; labelKey: TKey; glyph: string }[] = [
-  { id: 'light', labelKey: 'settings.light', glyph: '☀' },
-  { id: 'dark', labelKey: 'settings.dark', glyph: '☾' },
-  { id: 'system', labelKey: 'settings.auto', glyph: '◐' }
+const THEME_MODES: { id: Theme; labelKey: TKey; icon: ReactNode }[] = [
+  { id: 'light', labelKey: 'settings.light', icon: <IconSun size={20} /> },
+  { id: 'dark', labelKey: 'settings.dark', icon: <IconMoon size={20} /> },
+  { id: 'system', labelKey: 'settings.auto', icon: <IconSunMoon size={20} /> }
 ]
 
 const LOCALE_OPTIONS: { id: Locale; label: string }[] = [
@@ -161,13 +162,13 @@ function VisualTab({ locale, reduce }: { locale: Locale; reduce: boolean | null 
                 {active && (
                   <motion.span
                     layoutId='theme-active'
-                    className='bg-ink text-bg absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] leading-none'
+                    className='bg-ink text-bg absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full leading-none'
                     transition={reduce ? { duration: 0 } : MOTION_SPRING.selection}
                   >
-                    ✓
+                    <IconCheck size={12} />
                   </motion.span>
                 )}
-                <span className='text-xl leading-none'>{mode.glyph}</span>
+                <span className='leading-none'>{mode.icon}</span>
                 <span className={`text-xs transition-colors ${active ? 'text-ink' : 'text-ink-faint'}`}>{t(locale, mode.labelKey)}</span>
               </button>
             )
@@ -209,11 +210,11 @@ function VisualTab({ locale, reduce }: { locale: Locale; reduce: boolean | null 
                   {active && (
                     <motion.span
                       layoutId='palette-active'
-                      className='bg-ink absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] leading-none'
+                      className='bg-ink absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full leading-none'
                       style={{ color: preview.bg }}
                       transition={reduce ? { duration: 0 } : MOTION_SPRING.selection}
                     >
-                      ✓
+                      <IconCheck size={10} />
                     </motion.span>
                   )}
                 </div>
@@ -242,10 +243,10 @@ function VisualTab({ locale, reduce }: { locale: Locale; reduce: boolean | null 
                 {active && (
                   <motion.span
                     layoutId='locale-active'
-                    className='bg-ink text-bg absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] leading-none'
+                    className='bg-ink text-bg absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full leading-none'
                     transition={reduce ? { duration: 0 } : MOTION_SPRING.selection}
                   >
-                    ✓
+                    <IconCheck size={12} />
                   </motion.span>
                 )}
                 <span className={`font-display text-sm transition-colors ${active ? 'text-ink' : 'text-ink-faint'}`}>{opt.label}</span>
@@ -287,7 +288,8 @@ function GroupTab({ locale, activeGroupId, isOwner }: { locale: Locale; activeGr
             variant='row'
             size='md'
             fullWidth
-            trailing={<span className='text-ink-faint text-xs'>→</span>}
+            leading={<IconSettings size={16} className='text-ink-faint' />}
+            trailing={<IconChevronRight size={14} className='text-ink-faint' />}
           >
             {t(locale, 'settings.editGroup')}
           </ButtonLink>
@@ -298,7 +300,8 @@ function GroupTab({ locale, activeGroupId, isOwner }: { locale: Locale; activeGr
             variant='row'
             size='md'
             fullWidth
-            trailing={<span className='text-ink-faint text-xs'>→</span>}
+            leading={<IconUsers size={16} className='text-ink-faint' />}
+            trailing={<IconChevronRight size={14} className='text-ink-faint' />}
           >
             {t(locale, 'settings.manageMembers')}
           </ButtonLink>
@@ -308,7 +311,8 @@ function GroupTab({ locale, activeGroupId, isOwner }: { locale: Locale; activeGr
           variant='row'
           size='md'
           fullWidth
-          trailing={<span className='text-ink-faint text-xs'>→</span>}
+          leading={<IconUsers size={16} className='text-ink-faint' />}
+          trailing={<IconChevronRight size={14} className='text-ink-faint' />}
         >
           {t(locale, 'settings.manageGroups')}
         </ButtonLink>
@@ -343,15 +347,17 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
   const connectionsFromUrl = searchParams.get('connections') === 'open'
   const sheetOpen = connectionsOpen || connectionsFromUrl
 
-  const rowArrow = <span className='text-ink-faint text-xs'>→</span>
-  const signOutArrow = <span className='text-xs opacity-60'>→</span>
+  const rowArrow = <IconChevronRight size={14} className='text-ink-faint' />
 
   const handleSignOut = () =>
     signOut.run(async () => {
-      await authClient.signOut()
-      applyLocalIdentity(null)
-      router.replace('/auth')
-      router.refresh()
+      try {
+        await authClient.signOut()
+      } finally {
+        applyLocalIdentity(null)
+        router.replace('/auth')
+        router.refresh()
+      }
     })
 
   return (
@@ -385,6 +391,7 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
         variant='row'
         size='md'
         fullWidth
+        leading={<IconLock size={16} className='text-ink-faint' />}
         trailing={rowArrow}
       >
         {t(locale, 'settings.changePassword')}
@@ -395,6 +402,7 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
         size='md'
         fullWidth
         onClick={() => setPasskeysOpen(true)}
+        leading={<IconKey size={16} className='text-ink-faint' />}
         trailing={rowArrow}
       >
         {t(locale, 'settings.managePasskeys')}
@@ -405,6 +413,7 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
         size='md'
         fullWidth
         onClick={() => setConnectionsOpen(true)}
+        leading={<IconLink size={16} className='text-ink-faint' />}
         trailing={rowArrow}
       >
         {t(locale, 'settings.manageConnections')}
@@ -434,7 +443,7 @@ function AccountTab({ locale, who }: { locale: Locale; who: string }) {
         pendingLabel={t(locale, 'settings.signingOut')}
         successLabel={t(locale, 'settings.signedOut')}
         errorLabel={t(locale, 'settings.signOutError')}
-        trailing={signOut.status === 'idle' ? signOutArrow : null}
+        leading={signOut.status === 'idle' ? <IconLogOut size={16} className='opacity-60' /> : null}
         onClick={handleSignOut}
       >
         {t(locale, 'settings.signOut')}
