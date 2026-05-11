@@ -28,7 +28,7 @@ export function Tabs<Id extends string>({
   return (
     <div
       role='tablist'
-      className='bg-bg-soft/60 border-line inline-flex gap-0.5 rounded-full border p-0.5'
+      className='bg-bg-soft/60 border-line inline-flex gap-1 rounded-full border p-1'
     >
       {items.map((item) => {
         const active = item.id === activeId
