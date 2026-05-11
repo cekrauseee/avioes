@@ -48,11 +48,7 @@ export function Tabs<Id extends string>({
                 transition={reduce ? { duration: 0 } : MOTION_SPRING.selection}
               />
             )}
-            <span
-              className={`font-display relative text-sm leading-none transition-colors duration-150 ${
-                active ? 'text-ink' : 'text-ink-faint'
-              }`}
-            >
+            <span className={`font-display relative text-sm leading-none transition-colors duration-150 ${active ? 'text-ink' : 'text-ink-faint'}`}>
               {t(locale, item.labelKey)}
             </span>
           </button>
