@@ -20,6 +20,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-11 — Mobile startup performance pass
+
+Vercel Speed Insights showed poor mobile FCP/LCP on `/auth` and `/`, while INP/FID were already good. Startup now avoids first-paint opacity/blur route animation, skips `/auth`'s offline hydration gate, short-circuits no-cookie Better Auth session lookups, removes the large splash PNGs from loading fallbacks, and delays service-worker registration until load/idle so precaching does not compete with first render. Critical illustrations that can become LCP now use optimized Next Image output with explicit `sizes` plus eager/high-priority loading. Route navigation is lighter: shorter/no-blur route transitions, prefetch warmed nav targets, and toolbar tabs use one router path instead of Link plus manual push.
+
 ### 2026-05-07 — Multi-step `/onboarding` wizard (name → username → photo → group)
 
 Profile collection moved out of the auth wizard into a dedicated post-creation flow. `auth-screen.tsx` ends right after the password step — `signUp.email({ email, password, name: t(locale, 'auth.namePlaceholderName') })` ("Novo usuário" / "New user"). `firstName` is `required: false` in better-auth additionalFields. OAuth (Google) still maps `given_name`/`family_name` into the user row at signup. Both paths land on `/onboarding` because `users.onboardingStatus` is `'pending'` for any newly-created user.

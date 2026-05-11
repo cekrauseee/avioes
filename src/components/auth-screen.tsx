@@ -4,9 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { z } from 'zod'
 import { getEmailAuthState, requestPasswordCreationForEmail } from '../actions'
-import { authClient } from '../lib/auth-client'
 import { DATE_LOCALE, t, tf } from '../lib/i18n'
 import { MOTION_OFFSET, MOTION_TRANSITION } from '../lib/motion'
 import { applyLocalIdentity, selectLocale, useOfflineState } from '../lib/offline-store'
@@ -20,9 +18,11 @@ const STEP_ORDER: Record<Step, number> = { welcome: 0, error: 0, email: 1, metho
 const RESEND_COOLDOWN_MS = 30 * 1000
 const timestamp: () => number = Date.now
 
-const emailSchema = z.email()
-const passwordSchemaMin = z.string().min(8)
-const passwordSchemaMax = z.string().max(128)
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+async function getAuthClient() {
+  return (await import('../lib/auth-client')).authClient
+}
 
 const slideVariants = {
   enter: (dir: number) => ({ x: dir * MOTION_OFFSET.step, opacity: 0 }),
@@ -83,6 +83,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
   const handleGoogle = async () => {
     setError(null)
     setLoading(true)
+    const authClient = await getAuthClient()
     const result = await authClient.signIn.social({
       provider: 'google',
       callbackURL: nextPath,
@@ -102,7 +103,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
   const submitEmail = async (e: React.FormEvent) => {
     e.preventDefault()
     const normalized = email.trim().toLowerCase()
-    if (!emailSchema.safeParse(normalized).success) {
+    if (!EMAIL_RE.test(normalized)) {
       setError(t(locale, 'auth.invalidEmail'))
       return
     }
@@ -119,6 +120,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
   const sendOtp = async (): Promise<boolean> => {
     setOtpSending(true)
     setError(null)
+    const authClient = await getAuthClient()
     const result = await authClient.emailOtp.sendVerificationOtp({
       email: email.trim().toLowerCase(),
       type: 'sign-in'
@@ -153,6 +155,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
   const verifyOtp = async (otpCode: string) => {
     setLoading(true)
     setError(null)
+    const authClient = await getAuthClient()
     const result = await authClient.signIn.emailOtp({
       email: email.trim().toLowerCase(),
       otp: otpCode
@@ -195,6 +198,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
   const handlePasskeySignIn = async () => {
     setPasskeyLoading(true)
     setError(null)
+    const authClient = await getAuthClient()
     const result = await authClient.signIn.passkey()
     setPasskeyLoading(false)
     if (!result?.error) {
@@ -231,6 +235,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
     if (accountExists) {
       setLoading(true)
       setError(null)
+      const authClient = await getAuthClient()
       const result = await authClient.signIn.email({ email: email.trim().toLowerCase(), password })
       setLoading(false)
       if (result.error) {
@@ -246,17 +251,18 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
       return
     }
 
-    if (!passwordSchemaMin.safeParse(password).success) {
+    if (password.length < 8) {
       setError(t(locale, 'auth.passwordTooShort'))
       return
     }
-    if (!passwordSchemaMax.safeParse(password).success) {
+    if (password.length > 128) {
       setError(t(locale, 'auth.passwordTooLong'))
       return
     }
 
     setLoading(true)
     setError(null)
+    const authClient = await getAuthClient()
     const result = await authClient.signUp.email({
       email: email.trim().toLowerCase(),
       password,
@@ -282,7 +288,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
     <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
       {/* Header */}
       <motion.header
-        initial={{ opacity: 0, y: -8 }}
+        initial={false}
         animate={{ opacity: 1, y: 0 }}
         transition={MOTION_TRANSITION.header}
         className='flex items-baseline justify-between'
@@ -297,6 +303,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
       <AnimatePresence
         mode='wait'
         custom={direction}
+        initial={false}
       >
         {step === 'error' ?
           <motion.div
@@ -323,8 +330,9 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 aria-hidden
                 width={480}
                 height={480}
-                unoptimized
-                priority
+                sizes='220px'
+                loading='eager'
+                fetchPriority='high'
                 className='theme-light-only h-auto w-full select-none'
                 draggable={false}
               />
@@ -334,8 +342,9 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 aria-hidden
                 width={480}
                 height={480}
-                unoptimized
-                priority
+                sizes='220px'
+                loading='eager'
+                fetchPriority='high'
                 className='theme-dark-only h-auto w-full select-none'
                 draggable={false}
               />
@@ -397,8 +406,9 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 aria-hidden
                 width={1254}
                 height={1254}
-                unoptimized
-                priority
+                sizes='(max-width: 420px) 82vw, 288px'
+                loading='eager'
+                fetchPriority='high'
                 className='theme-light-only h-auto w-full select-none'
                 draggable={false}
               />
@@ -408,8 +418,9 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
                 aria-hidden
                 width={1254}
                 height={1254}
-                unoptimized
-                priority
+                sizes='(max-width: 420px) 82vw, 288px'
+                loading='eager'
+                fetchPriority='high'
                 className='theme-dark-only h-auto w-full select-none'
                 draggable={false}
               />

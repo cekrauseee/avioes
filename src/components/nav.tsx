@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
+import { startTransition, useEffect } from 'react'
 import { useNavDirection } from '../lib/nav-direction'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 import { getMemberColor, type Identity } from '../lib/types'
@@ -24,6 +25,15 @@ export function Nav({ who }: { who: Identity }) {
 
   const currentIndex = links.findIndex((link) => link.id === pathname)
 
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      for (const link of links) {
+        if (link.href !== pathname) router.prefetch(link.href)
+      }
+    }, 250)
+    return () => window.clearTimeout(id)
+  }, [pathname, router])
+
   return (
     <ToolbarTabs
       items={links}
@@ -34,7 +44,7 @@ export function Nav({ who }: { who: Identity }) {
       onSelect={(id) => {
         const targetIndex = links.findIndex((link) => link.id === id)
         if (targetIndex !== currentIndex) setDirection(targetIndex > currentIndex ? 1 : -1)
-        router.push(id)
+        startTransition(() => router.push(id))
       }}
     />
   )

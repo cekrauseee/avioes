@@ -114,8 +114,9 @@ export function ToolbarTabs<Id extends string>({
               key={item.id}
               href={item.href}
               onClick={(event) => {
-                if (scrubbing) event.preventDefault()
-                if (index !== currentIndex) onSelect(item.id)
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return
+                event.preventDefault()
+                if (!scrubbing && index !== currentIndex) onSelect(item.id)
               }}
               aria-current={index === currentIndex ? 'page' : undefined}
               className={className}

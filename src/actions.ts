@@ -1,6 +1,7 @@
 'use server'
 
 import { del, put } from '@vercel/blob'
+import { getSessionCookie } from 'better-auth/cookies'
 import crypto from 'crypto'
 import { headers } from 'next/headers'
 import { auth } from './lib/auth'
@@ -74,7 +75,9 @@ const MAX_FUTURE_TS_MS = 5 * 60 * 1000
 const MAX_PAST_TS_MS = 7 * 24 * 60 * 60 * 1000
 
 async function getSessionUser() {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const h = await headers()
+  if (!getSessionCookie(h)) return null
+  const session = await auth.api.getSession({ headers: h })
   return session?.user ?? null
 }
 

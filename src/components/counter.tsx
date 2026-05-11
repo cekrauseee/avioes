@@ -176,7 +176,7 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
           className='relative z-10 mt-4 flex flex-1 flex-col items-end justify-center text-right transition-transform select-none active:scale-[0.99]'
           aria-label={t(locale, 'counter.ariaLabel')}
         >
-          <AnimatePresence>
+          <AnimatePresence initial={false}>
             {display === 0 && othersTotal === 0 && (
               <motion.div
                 key='empty-counter'
@@ -193,7 +193,9 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
                   aria-hidden
                   width={400}
                   height={400}
-                  unoptimized
+                  sizes='200px'
+                  loading='eager'
+                  fetchPriority='high'
                   className='theme-light-only h-auto w-full select-none'
                   draggable={false}
                 />
@@ -203,7 +205,9 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
                   aria-hidden
                   width={400}
                   height={400}
-                  unoptimized
+                  sizes='200px'
+                  loading='eager'
+                  fetchPriority='high'
                   className='theme-dark-only h-auto w-full select-none'
                   draggable={false}
                 />

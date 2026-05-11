@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { getSessionCookie } from 'better-auth/cookies'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { auth, type Session } from './auth'
@@ -26,7 +27,9 @@ export function safeNextPath(value: unknown): string {
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const h = await headers()
+  if (!getSessionCookie(h)) return null
+  const session = await auth.api.getSession({ headers: h })
   return session?.user ?? null
 }
 

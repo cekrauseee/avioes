@@ -1,34 +1,11 @@
-import Image from 'next/image'
+import { t } from '../lib/i18n'
 
 export default function Loading() {
   return (
     <div className='flex-1 overflow-hidden'>
       <main className='relative flex h-full flex-col items-center justify-center px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.25rem)]'>
-        <div className='relative w-[58%] max-w-60 animate-pulse'>
-          <Image
-            src='/splash-light.png'
-            alt=''
-            aria-hidden
-            width={480}
-            height={480}
-            priority
-            unoptimized
-            className='theme-light-only h-auto w-full select-none'
-            draggable={false}
-          />
-          <Image
-            src='/splash-dark.png'
-            alt=''
-            aria-hidden
-            width={480}
-            height={480}
-            priority
-            unoptimized
-            className='theme-dark-only h-auto w-full select-none'
-            draggable={false}
-          />
-        </div>
-        <p className='font-display text-ink-soft mt-6 text-sm italic'>preparando o céu…</p>
+        <div className='bg-sage h-2.5 w-2.5 animate-pulse rounded-full' />
+        <p className='font-display text-ink-soft mt-6 text-sm italic'>{t('pt', 'loading.text')}</p>
       </main>
     </div>
   )
