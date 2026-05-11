@@ -69,7 +69,7 @@ export function ProfileScreen() {
 
   const goBack = () => {
     setNavDirection(-1)
-    router.back()
+    router.push('/settings?tab=account')
   }
 
   const dirty = !!profile && !!original && JSON.stringify(profile) !== JSON.stringify(original)

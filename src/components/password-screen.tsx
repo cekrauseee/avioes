@@ -32,7 +32,7 @@ export function PasswordScreen() {
 
   const goBackToAccount = () => {
     setNavDirection(-1)
-    router.back()
+    router.push('/settings?tab=account')
   }
 
   useEffect(() => {

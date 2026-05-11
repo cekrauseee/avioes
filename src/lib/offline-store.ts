@@ -49,6 +49,7 @@ export function useOfflineRuntime(): void {
     document.documentElement.dataset.theme = theme
     document.documentElement.dataset.palette = palette
     document.documentElement.lang = locale === 'en' ? 'en' : 'pt-BR'
+    document.body.style.removeProperty('background-color')
     writeBootState({ userId: identity, activeGroupId, theme, palette, locale })
   }, [hydrated, identity, activeGroupId, theme, palette, locale])
 }
