@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { getEmailAuthState, requestPasswordCreationForEmail } from '../actions'
+import { getEmailAuthState, requestOtpEmail, requestPasswordCreationForEmail } from '../actions'
 import { DATE_LOCALE, t, tf } from '../lib/i18n'
 import { MOTION_OFFSET, MOTION_TRANSITION } from '../lib/motion'
 import { applyLocalIdentity, selectLocale, useOfflineState } from '../lib/offline-store'
@@ -120,13 +120,9 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
   const sendOtp = async (): Promise<boolean> => {
     setOtpSending(true)
     setError(null)
-    const authClient = await getAuthClient()
-    const result = await authClient.emailOtp.sendVerificationOtp({
-      email: email.trim().toLowerCase(),
-      type: 'sign-in'
-    })
+    const result = await requestOtpEmail(email.trim().toLowerCase())
     setOtpSending(false)
-    if (result.error) {
+    if (!result.ok) {
       setError(t(locale, 'auth.otpSendFailed'))
       return false
     }

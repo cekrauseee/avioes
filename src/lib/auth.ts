@@ -10,6 +10,14 @@ import { sendOtpEmail } from './email'
 import { OTP_ALLOWED_ATTEMPTS, OTP_EXPIRES_IN_SECONDS, OTP_LENGTH } from './otp-constants'
 import { findUserByEmail, readLocale } from './store'
 
+let lastOtpSendError: string | null = null
+
+export function consumeOtpSendError(): string | null {
+  const err = lastOtpSendError
+  lastOtpSendError = null
+  return err
+}
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: 'pg',
@@ -50,9 +58,14 @@ export const auth = betterAuth({
       sendVerificationOnSignUp: false,
       async sendVerificationOTP({ email, otp, type }) {
         if (type !== 'sign-in') return
-        const user = await findUserByEmail(email)
-        const locale = await readLocale(user?.id ?? null)
-        await sendOtpEmail(email, otp, Math.round(OTP_EXPIRES_IN_SECONDS / 60), locale)
+        lastOtpSendError = null
+        try {
+          const user = await findUserByEmail(email)
+          const locale = await readLocale(user?.id ?? null)
+          await sendOtpEmail(email, otp, Math.round(OTP_EXPIRES_IN_SECONDS / 60), locale)
+        } catch {
+          lastOtpSendError = email
+        }
       }
     })
   ],

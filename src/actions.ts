@@ -4,7 +4,7 @@ import { del, put } from '@vercel/blob'
 import { getSessionCookie } from 'better-auth/cookies'
 import crypto from 'crypto'
 import { headers } from 'next/headers'
-import { auth } from './lib/auth'
+import { auth, consumeOtpSendError } from './lib/auth'
 import { isCountryCode } from './lib/countries'
 import { sendInviteEmail, sendPasswordEmail } from './lib/email'
 import type { SyncSnapshot } from './lib/offline-model'
@@ -934,5 +934,17 @@ export async function consumePasswordChangeToken(
   } catch {
     return { ok: false, error: 'Erro ao alterar senha. Solicite um novo link.' }
   }
+  return { ok: true }
+}
+
+export async function requestOtpEmail(email: string): Promise<{ ok: true } | { ok: false }> {
+  if (!email || typeof email !== 'string') return { ok: false }
+  const normalized = email.trim().toLowerCase()
+
+  await auth.api.sendVerificationOTP({
+    body: { email: normalized, type: 'sign-in' }
+  })
+
+  if (consumeOtpSendError()) return { ok: false }
   return { ok: true }
 }
