@@ -504,7 +504,7 @@ export async function readLocale(userId: string | null): Promise<Locale> {
 
 export async function readOnboardingStatus(userId: string): Promise<OnboardingStatus> {
   const row = await db.select({ onboardingStatus: users.onboardingStatus }).from(users).where(eq(users.id, userId)).limit(1)
-  return row[0]?.onboardingStatus === 'pending' ? 'pending' : 'complete'
+  return row[0]?.onboardingStatus === 'complete' ? 'complete' : 'pending'
 }
 
 export async function writeOnboardingStatus(userId: string, status: OnboardingStatus): Promise<void> {
