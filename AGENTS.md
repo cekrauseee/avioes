@@ -43,7 +43,7 @@ Before writing non-trivial code, skim the relevant doc inside `node_modules/next
 
 - **Source code is English. UI strings flow through `t(locale, key)`.** Routes follow the source code (`/diary`, `/scoreboard`). Hardcoded JSX text is a bug — every visible string lives in `src/lib/i18n.ts`, with `pt` defining the key set and `en` mirroring it. Brand strings (`Aviões`, manifest name, page title) stay in Portuguese on purpose.
 - **Auth is better-auth, multi-tenant by group.** Don't reintroduce hardcoded identities. Every server action and route resolves the user via `auth.api.getSession({ headers })` and re-derives membership through `requireUser` / `requireActiveGroup` / `requireGroupMember` / `requireGroupOwner` in `src/lib/auth-guards.ts`. Trust nothing the client sends as `userId` / `groupId`.
-- **Persistence is Postgres via Drizzle.** Schema lives in `src/lib/db/schema.ts`. Reads/writes go through `src/lib/store.ts` and use membership-scoped queries (`readGroupMembership`, `readGroupMembersForMember`, `readEventsForMember`). `src/lib/db/index.ts` switches between `node-postgres` (dev) and `@neondatabase/serverless` (prod, when `VERCEL=1`). Schema changes are applied with `npm run db:push` — no migration files are generated.
+- **Persistence is Postgres via Drizzle.** Schema lives in `src/lib/db/schema.ts`. Reads/writes go through `src/lib/store.ts` and use membership-scoped queries (`readGroupMembership`, `readGroupMembersForMember`, `readEventsForMember`). `src/lib/db/index.ts` switches between `node-postgres` (dev) and `@neondatabase/serverless` (prod, when `VERCEL=1`). **Schema changes use migrations, not `db:push`.** After editing `schema.ts`, run `npm run db:generate` to create a migration in `drizzle/`, then `npm run db:migrate` to apply locally. For production, run `DATABASE_URL=<prod-url> npm run db:migrate`. The `db:push` script still exists for bootstrapping fresh dev databases but must never be used against production. See "Database operations" below.
 - **Cookies are `HttpOnly Secure SameSite=Lax` only.** No bearer token, session id, invite token, or password-reset token in localStorage / IndexedDB. Sensitive tokens are stored hashed at rest (SHA-256).
 - **Don't break Tailwind class detection.** No string-concatenated class names. Use the `MEMBER_COLORS` array + `getMemberColor` helper for per-member accents; per-palette tokens are CSS variables driven by `[data-palette]` selectors in `globals.css`.
 - **No `useEffect` to mirror props into state.** Use `useOptimistic`, the offline store (`useSyncExternalStore`), or render directly from props. The lint rule `react-hooks/set-state-in-effect` is a tripwire.
@@ -63,16 +63,30 @@ Before writing non-trivial code, skim the relevant doc inside `node_modules/next
 
 1. `npm run db:up` — `docker compose up -d`, starts Postgres on `localhost:5432` (matches `.env.example`).
 2. `cp .env.example .env.local` if you don't have one.
-3. `npm run db:push` — applies the Drizzle schema. Re-run whenever `src/lib/db/schema.ts` changes.
+3. `npm run db:migrate` — applies pending Drizzle migrations. For a brand-new dev database you can also use `npm run db:push` to bootstrap all tables at once.
 4. `npm run dev`.
 
 `npm run db:studio` opens Drizzle Studio if you need to peek at rows.
+
+## Database operations
+
+The app is in production on Neon. **Never run `db:push` against production** — it can drop columns/tables without warning.
+
+| Task                   | Command                                  | Notes                                                       |
+| ---------------------- | ---------------------------------------- | ----------------------------------------------------------- |
+| Edit schema            | Edit `src/lib/db/schema.ts`              | —                                                           |
+| Generate migration     | `npm run db:generate`                    | Creates a SQL file in `drizzle/`. Review before committing. |
+| Apply locally          | `npm run db:migrate`                     | First run auto-bootstraps the baseline.                     |
+| Apply to production    | `DATABASE_URL=<prod> npm run db:migrate` | Same script; baseline is auto-detected.                     |
+| Bootstrap fresh dev DB | `npm run db:push`                        | Local dev only. Faster than migrations for empty DBs.       |
+
+The migration script (`scripts/migrate.ts`) auto-detects first-time runs: it marks the baseline migration (0000) as already applied so existing tables aren't recreated. Subsequent migrations apply normally. Always review generated SQL before committing — Drizzle may generate destructive operations (column drops, type changes) that need manual adjustment.
 
 ## Verification before declaring done
 
 - `npm run build` passes.
 - `npm run lint` passes.
-- Local Postgres is running and `npm run db:push` is clean (no pending schema diff).
+- Local Postgres is running and `npm run db:migrate` is clean (no pending migrations).
 - For UI changes: open `npm run dev` and exercise the actual flow on a mobile-width viewport. Tests don't exist yet, so visual verification is the only check.
 - For PWA changes: test with a production build (`npm run build && npm run start`). The service worker cache name is tied to Next's `BUILD_ID` in `src/app/sw.js/route.ts`; there is no manual `CACHE` bump.
 

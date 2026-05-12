@@ -4,10 +4,11 @@ import { del, put } from '@vercel/blob'
 import { getSessionCookie } from 'better-auth/cookies'
 import crypto from 'crypto'
 import { headers } from 'next/headers'
-import { auth, consumeOtpSendError } from './lib/auth'
+import { auth, consumeOtpSendError, withOtpErrorScope } from './lib/auth'
 import { isCountryCode } from './lib/countries'
 import { sendInviteEmail, sendPasswordEmail } from './lib/email'
 import type { SyncSnapshot } from './lib/offline-model'
+import { checkRateLimit } from './lib/rate-limit'
 import type { UserProfile } from './lib/store'
 import {
   acceptInvitation as acceptInvitationInStore,
@@ -73,12 +74,20 @@ const MAX_INVITES_PER_HOUR = 10
 const MAX_SYNC_OPS = 250
 const MAX_FUTURE_TS_MS = 5 * 60 * 1000
 const MAX_PAST_TS_MS = 7 * 24 * 60 * 60 * 1000
+const MAX_GROUPS_PER_USER = 20
+const MAX_MEMBERS_PER_GROUP = 50
+const BETTER_AUTH_URL = process.env.BETTER_AUTH_URL ?? 'http://localhost:3000'
 
 async function getSessionUser() {
   const h = await headers()
   if (!getSessionCookie(h)) return null
   const session = await auth.api.getSession({ headers: h })
   return session?.user ?? null
+}
+
+async function getClientIp(): Promise<string> {
+  const h = await headers()
+  return h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? h.get('x-real-ip') ?? 'unknown'
 }
 
 export async function bootstrapState(): Promise<SyncSnapshot> {
@@ -286,6 +295,8 @@ export async function getUserGroups(): Promise<(Group & { memberCount: number })
 }
 
 export async function emailExists(email: string): Promise<boolean> {
+  const ip = await getClientIp()
+  if (!checkRateLimit(`email-exists:${ip}`, 20, 60_000)) return false
   const trimmed = email.trim().toLowerCase()
   if (!trimmed || !trimmed.includes('@')) return false
   const found = await findUserByEmail(trimmed)
@@ -295,10 +306,15 @@ export async function emailExists(email: string): Promise<boolean> {
 export async function createNewGroup(name: string): Promise<{ groupId: string } | { error: string }> {
   const user = await getSessionUser()
   if (!user) return { error: 'Não autenticado' }
-  if (!name.trim()) return { error: 'Nome inválido' }
+  const trimmed = name.trim()
+  if (!trimmed) return { error: 'Nome inválido' }
+  if (trimmed.length > 60) return { error: 'Nome muito longo' }
+
+  const existing = await readGroupsForUser(user.id)
+  if (existing.length >= MAX_GROUPS_PER_USER) return { error: 'Limite de grupos atingido' }
 
   const groupId = crypto.randomUUID()
-  await createGroup(groupId, name.trim(), user.id)
+  await createGroup(groupId, trimmed, user.id)
   await writeActiveGroupId(user.id, groupId)
 
   return { groupId }
@@ -344,10 +360,7 @@ function hashInviteToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex')
 }
 
-export async function createInvitation(
-  groupId: string,
-  email: string
-): Promise<{ ok: true; token: string; inviteUrl: string } | { ok: false; error: string }> {
+export async function createInvitation(groupId: string, email: string): Promise<{ ok: true; inviteUrl: string } | { ok: false; error: string }> {
   const user = await getSessionUser()
   if (!user) return { ok: false, error: 'Não autenticado' }
 
@@ -365,12 +378,14 @@ export async function createInvitation(
   const group = await readGroupForMember(groupId, user.id)
   if (!group) return { ok: false, error: 'Grupo não encontrado' }
 
+  const members = await readGroupMembersForMember(groupId, user.id)
+  if (members.length >= MAX_MEMBERS_PER_GROUP) return { ok: false, error: 'Limite de membros atingido' }
+
   const id = crypto.randomUUID()
   const token = crypto.randomUUID()
   const tokenHash = hashInviteToken(token)
   const expiresAt = Date.now() + INVITE_EXPIRY_MS
-  const baseUrl = process.env.BETTER_AUTH_URL ?? 'http://localhost:3000'
-  const inviteUrl = `${baseUrl}/invite/${token}`
+  const inviteUrl = `${BETTER_AUTH_URL}/invite/${token}`
 
   const result = await createOrReplaceInvitation({
     id,
@@ -383,7 +398,7 @@ export async function createInvitation(
   })
   if (!result.ok) return result
 
-  return { ok: true, token, inviteUrl }
+  return { ok: true, inviteUrl }
 }
 
 export async function sendInvitationEmail(groupId: string, email: string, inviteUrl: string): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -393,12 +408,28 @@ export async function sendInvitationEmail(groupId: string, email: string, invite
   const membership = await readGroupMembership(groupId, user.id)
   if (membership?.role !== 'owner') return { ok: false, error: 'not_owner' }
 
+  let token: string
+  try {
+    const parsed = new URL(inviteUrl)
+    const match = parsed.pathname.match(/^\/invite\/([a-f0-9-]+)$/)
+    if (!match) return { ok: false, error: 'invalid_url' }
+    token = match[1]
+  } catch {
+    return { ok: false, error: 'invalid_url' }
+  }
+
+  const invite = await readInvitationByToken(token)
+  if (!invite || invite.groupId !== groupId || invite.status !== 'pending') {
+    return { ok: false, error: 'invalid_invite' }
+  }
+
   const group = await readGroupForMember(groupId, user.id)
   if (!group) return { ok: false, error: 'group_not_found' }
 
+  const safeUrl = `${BETTER_AUTH_URL}/invite/${token}`
   const inviterName = user.firstName ?? user.name.split(' ')[0] ?? user.name
   try {
-    await sendInviteEmail(email, inviterName, group.name, inviteUrl)
+    await sendInviteEmail(email, inviterName, group.name, safeUrl)
   } catch {
     return { ok: false, error: 'send_failed' }
   }
@@ -540,7 +571,7 @@ async function snapshotForMember(
     return emptySnapshot(userId, null, [], settled, onboardingStatus)
   }
 
-  const [groupMembers, events, theme, palette, locale] = await Promise.all([
+  const [allMembers, events, theme, palette, locale] = await Promise.all([
     readGroupMembersForMember(groupId, userId),
     readEventsForMember(groupId, userId),
     readTheme(userId),
@@ -548,10 +579,13 @@ async function snapshotForMember(
     readLocale(userId)
   ])
 
-  if (!groupMembers.some((m) => m.userId === userId)) {
+  if (!allMembers.some((m) => m.userId === userId)) {
     if (clearStaleActiveGroup) await writeActiveGroupId(userId, null)
     return emptySnapshot(userId, null, [], settled, onboardingStatus)
   }
+
+  const isOwner = membership.role === 'owner'
+  const groupMembers = isOwner ? allMembers : allMembers.map((m) => (m.userId === userId ? m : { ...m, email: '' }))
 
   return {
     identity: userId,
@@ -617,6 +651,8 @@ export async function checkUsernameAvailable(value: string): Promise<'available'
   const trimmed = (value ?? '').trim().toLowerCase()
   if (!trimmed) return 'invalid'
   if (!USERNAME_RE.test(trimmed)) return 'invalid'
+  const ip = await getClientIp()
+  if (!checkRateLimit(`username-check:${ip}`, 30, 60_000)) return 'invalid'
   return (await usernameExists(trimmed)) ? 'taken' : 'available'
 }
 
@@ -809,8 +845,6 @@ function isPendingOp(op: unknown, userId: string): boolean {
 
 // --- Password token actions ---
 
-const BETTER_AUTH_URL = process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-
 export async function userHasPassword(email: string): Promise<boolean> {
   return userHasCredentialAccount(email.trim().toLowerCase())
 }
@@ -820,6 +854,8 @@ export async function checkUserHasPasskey(email: string): Promise<boolean> {
 }
 
 export async function getEmailAuthState(email: string): Promise<{ exists: boolean; hasPassword: boolean; hasPasskey: boolean }> {
+  const ip = await getClientIp()
+  if (!checkRateLimit(`auth-state:${ip}`, 20, 60_000)) return { exists: false, hasPassword: false, hasPasskey: false }
   const trimmed = email.trim().toLowerCase()
   if (!trimmed || !trimmed.includes('@')) return { exists: false, hasPassword: false, hasPasskey: false }
   const [user, hasPassword, hasPasskey] = await Promise.all([findUserByEmail(trimmed), userHasCredentialAccount(trimmed), userHasPasskeysInStore(trimmed)])
@@ -865,6 +901,10 @@ export async function requestPasswordCreation(reason?: string): Promise<{ ok: tr
 
 export async function requestPasswordCreationForEmail(email: string): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!email || typeof email !== 'string') return { ok: true }
+
+  const ip = await getClientIp()
+  if (!checkRateLimit(`pw-create:${ip}`, 5, 60_000)) return { ok: true }
+
   const normalized = email.trim().toLowerCase()
 
   const recentCount = await countRecentPasswordSends(normalized, 'create')
@@ -979,12 +1019,18 @@ export async function consumePasswordChangeToken(
 
 export async function requestOtpEmail(email: string): Promise<{ ok: true } | { ok: false }> {
   if (!email || typeof email !== 'string') return { ok: false }
+
+  const ip = await getClientIp()
+  if (!checkRateLimit(`otp:${ip}`, 5, 60_000)) return { ok: false }
+
   const normalized = email.trim().toLowerCase()
 
-  await auth.api.sendVerificationOTP({
-    body: { email: normalized, type: 'sign-in' }
-  })
+  return withOtpErrorScope(async () => {
+    await auth.api.sendVerificationOTP({
+      body: { email: normalized, type: 'sign-in' }
+    })
 
-  if (consumeOtpSendError()) return { ok: false }
-  return { ok: true }
+    if (consumeOtpSendError()) return { ok: false as const }
+    return { ok: true as const }
+  })
 }
