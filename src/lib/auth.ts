@@ -1,10 +1,10 @@
 import 'server-only'
 
-import { AsyncLocalStorage } from 'node:async_hooks'
 import { passkey } from '@better-auth/passkey'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { emailOTP } from 'better-auth/plugins'
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { db } from './db'
 import { accounts, passkeys, sessions, users, verifications } from './db/auth-schema'
 import { sendOtpEmail } from './email'

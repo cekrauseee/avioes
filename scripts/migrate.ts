@@ -1,10 +1,10 @@
+import { sql } from 'drizzle-orm'
+import { drizzle } from 'drizzle-orm/node-postgres'
+import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { sql } from 'drizzle-orm'
-import { drizzle } from 'drizzle-orm/node-postgres'
-import { migrate } from 'drizzle-orm/node-postgres/migrator'
 
 const url = process.env.DATABASE_URL!
 if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set')
@@ -39,9 +39,7 @@ async function main() {
     const baselineSql = fs.readFileSync(path.join(migrationsFolder, `${baselineEntry.tag}.sql`), 'utf8')
     const hash = crypto.createHash('sha256').update(baselineSql).digest('hex')
 
-    await db.execute(sql.raw(
-      `INSERT INTO "drizzle"."__drizzle_migrations" (hash, created_at) VALUES ('${hash}', ${baselineEntry.when})`
-    ))
+    await db.execute(sql.raw(`INSERT INTO "drizzle"."__drizzle_migrations" (hash, created_at) VALUES ('${hash}', ${baselineEntry.when})`))
 
     console.log(`Baseline ${baselineEntry.tag}.sql marked as applied (schema already exists)`)
   }

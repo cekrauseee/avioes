@@ -72,13 +72,13 @@ Before writing non-trivial code, skim the relevant doc inside `node_modules/next
 
 The app is in production on Neon. **Never run `db:push` against production** — it can drop columns/tables without warning.
 
-| Task | Command | Notes |
-|------|---------|-------|
-| Edit schema | Edit `src/lib/db/schema.ts` | — |
-| Generate migration | `npm run db:generate` | Creates a SQL file in `drizzle/`. Review before committing. |
-| Apply locally | `npm run db:migrate` | First run auto-bootstraps the baseline. |
-| Apply to production | `DATABASE_URL=<prod> npm run db:migrate` | Same script; baseline is auto-detected. |
-| Bootstrap fresh dev DB | `npm run db:push` | Local dev only. Faster than migrations for empty DBs. |
+| Task                   | Command                                  | Notes                                                       |
+| ---------------------- | ---------------------------------------- | ----------------------------------------------------------- |
+| Edit schema            | Edit `src/lib/db/schema.ts`              | —                                                           |
+| Generate migration     | `npm run db:generate`                    | Creates a SQL file in `drizzle/`. Review before committing. |
+| Apply locally          | `npm run db:migrate`                     | First run auto-bootstraps the baseline.                     |
+| Apply to production    | `DATABASE_URL=<prod> npm run db:migrate` | Same script; baseline is auto-detected.                     |
+| Bootstrap fresh dev DB | `npm run db:push`                        | Local dev only. Faster than migrations for empty DBs.       |
 
 The migration script (`scripts/migrate.ts`) auto-detects first-time runs: it marks the baseline migration (0000) as already applied so existing tables aren't recreated. Subsequent migrations apply normally. Always review generated SQL before committing — Drizzle may generate destructive operations (column drops, type changes) that need manual adjustment.
 
