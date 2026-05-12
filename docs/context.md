@@ -20,6 +20,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-11 — PWA install step in onboarding wizard
+
+New `install` step between photo and group in `OnboardingWizard`. On Chromium browsers, captures `beforeinstallprompt` and shows a one-tap install button. On iOS Safari, shows a 2-step instruction card (share → "Add to Home Screen"). Step skipped entirely when already running in standalone mode or on unsupported browsers. Dynamic step count keeps progress dots accurate. Platform detection uses `useSyncExternalStore` with server snapshots to avoid hydration mismatches and lint violations. New i18n keys: `onboarding.{title,italic,subtitle}.install`, `onboarding.installButton`, `onboarding.install.{step1,step2,hint}`. New icon: `IconDownload`.
+
 ### 2026-05-11 — OG metadata + illustration for invite links
 
 Invite URLs now produce rich link previews for WhatsApp, Twitter, iMessage, etc. `src/app/(standalone)/invite/[token]/opengraph-image.tsx` generates a 1200×630 dynamic OG image via `ImageResponse` — two-column layout with text (group name, inviter name, tagline) on the left and a hand-drawn paper airplane + envelope illustration on the right. `generateMetadata` in the invite page returns dynamic title, description, `openGraph`, and `twitter` metadata. Root layout gained `metadataBase`. Illustrations: `public/og-invite-{light,dark}.png` (512×512, transparent RGBA). `navigator.share()` in `InviteShareSheet` now includes `title` + `text` with group name via `tf()`. New i18n keys: `invite.metaTitle`, `invite.ogDescription`, `invite.ogDescriptionGeneric`, `invite.share.shareTitle`, `invite.share.shareText`.

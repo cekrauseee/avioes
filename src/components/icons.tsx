@@ -361,3 +361,13 @@ export function IconUserPlus(props: IconProps) {
     </I>
   )
 }
+
+export function IconDownload(props: IconProps) {
+  return (
+    <I {...props}>
+      <path d='M12 3v14' />
+      <path d='m7 12 5 5 5-5' />
+      <path d='M5 20h14' />
+    </I>
+  )
+}
