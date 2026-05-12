@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { z } from 'zod'
 import {
   checkUsernameAvailable,
@@ -20,12 +20,21 @@ import { applyLocalIdentity, applyServerSnapshot, selectLocale, useOfflineState 
 import { MEMBER_COLORS } from '../lib/types'
 import { Avatar } from './avatar'
 import { Button, usePromiseStatus } from './button'
-import { IconArrowLeft } from './icons'
+import { IconArrowLeft, IconDownload, IconPlus, IconShare } from './icons'
 
-type Step = 'name' | 'username' | 'photo' | 'group'
+type Step = 'name' | 'username' | 'photo' | 'install' | 'group'
 type UsernameStatus = 'idle' | 'pending' | 'available' | 'taken' | 'invalid'
 
-const STEPS: Step[] = ['name', 'username', 'photo', 'group']
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
+const noopSubscribe = () => () => {}
+const getIsStandalone = () => window.matchMedia('(display-mode: standalone)').matches
+const getIsIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && 'ontouchend' in document)
+const getFalse = () => false
+
 const USERNAME_RE = /^[a-z0-9_.]{3,24}$/
 const USERNAME_DEBOUNCE_MS = 350
 const MAX_IMAGE_BYTES = 180_000
@@ -70,14 +79,30 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
   const [groupName, setGroupName] = useState('')
   const signOutStatus = usePromiseStatus({ resetMs: 1400 })
 
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const isStandalone = useSyncExternalStore(noopSubscribe, getIsStandalone, getFalse)
+  const isIOS = useSyncExternalStore(noopSubscribe, getIsIOS, getFalse)
+
   useEffect(() => {
     return () => {
       if (usernameTimerRef.current) clearTimeout(usernameTimerRef.current)
     }
   }, [])
 
+  useEffect(() => {
+    const onPrompt = (e: Event) => {
+      e.preventDefault()
+      setInstallPrompt(e as BeforeInstallPromptEvent)
+    }
+    window.addEventListener('beforeinstallprompt', onPrompt)
+    return () => window.removeEventListener('beforeinstallprompt', onPrompt)
+  }, [])
+
+  const showInstallStep = !isStandalone && (installPrompt !== null || isIOS)
+  const steps: Step[] = showInstallStep ? ['name', 'username', 'photo', 'install', 'group'] : ['name', 'username', 'photo', 'group']
+
   const goTo = (next: Step) => {
-    setDirection(STEPS.indexOf(next) >= STEPS.indexOf(step) ? 1 : -1)
+    setDirection(steps.indexOf(next) >= steps.indexOf(step) ? 1 : -1)
     setStep(next)
     setError(null)
   }
@@ -256,7 +281,19 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
       }
     })
 
-  const stepIndex = STEPS.indexOf(step)
+  const handleInstallNext = async () => {
+    if (installPrompt) {
+      try {
+        await installPrompt.prompt()
+        await installPrompt.userChoice
+      } catch {}
+    }
+    const nextStep = steps[steps.indexOf('install') + 1]
+    setInstallPrompt(null)
+    goTo(nextStep)
+  }
+
+  const stepIndex = steps.indexOf(step)
   const onSubmit =
     step === 'name' ? handleNameNext
     : step === 'group' ? handleFinish
@@ -271,7 +308,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
         className='flex items-center justify-between'
       >
         <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
-        <span className='text-ink-faint text-xs'>{tf(locale, 'onboarding.progress', { n: stepIndex + 1, total: STEPS.length })}</span>
+        <span className='text-ink-faint text-xs'>{tf(locale, 'onboarding.progress', { n: stepIndex + 1, total: steps.length })}</span>
       </motion.header>
 
       <motion.div
@@ -280,7 +317,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
         transition={withMotionDelay(MOTION_TRANSITION.introEnter, 0.05)}
         className='mt-6 flex items-center justify-center gap-2'
       >
-        {STEPS.map((_, i) => (
+        {steps.map((_, i) => (
           <span
             key={i}
             className={`h-1.5 w-1.5 rounded-full transition-colors ${i <= stepIndex ? 'bg-sage' : 'bg-line'}`}
@@ -393,6 +430,13 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
               />
             )}
 
+            {step === 'install' && (
+              <InstallStep
+                locale={locale}
+                isIOS={isIOS}
+              />
+            )}
+
             {step === 'group' && (
               <div className='flex flex-col gap-1.5'>
                 <label className='text-ink-faint text-xs'>{t(locale, 'groups.new.nameLabel')}</label>
@@ -470,6 +514,18 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
             </Button>
           )}
 
+          {step === 'install' && (
+            <Button
+              type='button'
+              variant='primary'
+              size='md'
+              fullWidth
+              onClick={handleInstallNext}
+            >
+              {installPrompt ? t(locale, 'onboarding.installButton') : t(locale, 'onboarding.skip')}
+            </Button>
+          )}
+
           {step === 'group' && (
             <Button
               type='submit'
@@ -522,7 +578,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
                     size='sm'
                     shape='pill'
                     disabled={loading}
-                    onClick={() => goTo(STEPS[stepIndex - 1])}
+                    onClick={() => goTo(steps[stepIndex - 1])}
                     leading={<IconArrowLeft size={16} />}
                   >
                     {t(locale, 'onboarding.back')}
@@ -761,4 +817,36 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.onerror = reject
     img.src = src
   })
+}
+
+function InstallStep({ locale, isIOS }: { locale: ReturnType<typeof selectLocale>; isIOS: boolean }) {
+  if (isIOS) {
+    return (
+      <div className='flex flex-col gap-3 py-4'>
+        <ol className='border-line flex flex-col gap-4 rounded-xl border p-4'>
+          <li className='flex items-center gap-3'>
+            <span className='bg-sage-soft text-sage flex h-10 w-10 shrink-0 items-center justify-center rounded-xl'>
+              <IconShare size={20} />
+            </span>
+            <span className='text-ink text-sm'>{t(locale, 'onboarding.install.step1')}</span>
+          </li>
+          <li className='flex items-center gap-3'>
+            <span className='bg-sage-soft text-sage flex h-10 w-10 shrink-0 items-center justify-center rounded-xl'>
+              <IconPlus size={20} />
+            </span>
+            <span className='text-ink text-sm'>{t(locale, 'onboarding.install.step2')}</span>
+          </li>
+        </ol>
+      </div>
+    )
+  }
+
+  return (
+    <div className='flex flex-col items-center gap-4 py-8'>
+      <span className='bg-sage-soft text-sage flex h-20 w-20 items-center justify-center rounded-3xl'>
+        <IconDownload size={40} />
+      </span>
+      <p className='text-ink-faint text-center text-sm'>{t(locale, 'onboarding.install.hint')}</p>
+    </div>
+  )
 }

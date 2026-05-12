@@ -80,12 +80,15 @@ export async function redirectAuthenticatedUser(nextPathValue: unknown): Promise
   if (nextPath.startsWith('/invite/')) redirect(nextPath)
   if (nextPath === '/groups') redirect('/groups')
 
+  const onboarding = await readOnboardingStatus(user.id)
+  if (onboarding === 'pending') redirect('/onboarding')
+
   const activeGroupId = await readActiveGroupId(user.id)
-  if (!activeGroupId) redirect('/')
+  if (!activeGroupId) redirect('/groups')
   const membership = await readGroupMembership(activeGroupId, user.id)
   if (!membership) {
     await writeActiveGroupId(user.id, null)
-    redirect('/')
+    redirect('/groups')
   }
   redirect(nextPath)
 }

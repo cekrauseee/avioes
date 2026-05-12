@@ -562,7 +562,15 @@ const pt = {
   'onboarding.subtitle.photo': 'opcional — você pode adicionar depois.',
   'onboarding.title.group': 'seu primeiro',
   'onboarding.italic.group': 'grupo',
-  'onboarding.subtitle.group': 'você poderá convidar amigos depois.'
+  'onboarding.subtitle.group': 'você poderá convidar amigos depois.',
+
+  'onboarding.title.install': 'instale o',
+  'onboarding.italic.install': 'app',
+  'onboarding.subtitle.install': 'acesse mais rápido direto da tela inicial.',
+  'onboarding.installButton': 'instalar app',
+  'onboarding.install.step1': 'toque em compartilhar',
+  'onboarding.install.step2': '"Adicionar à Tela de Início"',
+  'onboarding.install.hint': 'tenha o app na tela inicial para abrir com um toque.'
 } as const
 
 type TranslationKey = keyof typeof pt
@@ -1129,7 +1137,15 @@ const en: Record<TranslationKey, string> = {
   'onboarding.subtitle.photo': 'optional — you can add it later.',
   'onboarding.title.group': 'your first',
   'onboarding.italic.group': 'group',
-  'onboarding.subtitle.group': 'you can invite friends later.'
+  'onboarding.subtitle.group': 'you can invite friends later.',
+
+  'onboarding.title.install': 'install the',
+  'onboarding.italic.install': 'app',
+  'onboarding.subtitle.install': 'quick access right from your home screen.',
+  'onboarding.installButton': 'install app',
+  'onboarding.install.step1': 'tap the share button',
+  'onboarding.install.step2': '"Add to Home Screen"',
+  'onboarding.install.hint': 'get the app on your home screen to open with one tap.'
 }
 
 const translations: Record<Locale, Record<TranslationKey, string>> = { pt, en }
