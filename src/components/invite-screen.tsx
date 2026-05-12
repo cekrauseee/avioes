@@ -42,6 +42,7 @@ export function InviteScreen({
   const locale = selectLocale(state)
   const [screenState, setScreenState] = useState<ScreenState>('viewing')
   const [acceptedGroupName, setAcceptedGroupName] = useState<string | null>(null)
+  const [needsOnboarding, setNeedsOnboarding] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [, startTransition] = useTransition()
 
@@ -90,6 +91,7 @@ export function InviteScreen({
       if (result.ok) {
         applyServerSnapshot(result.snapshot)
         setAcceptedGroupName(result.groupName)
+        setNeedsOnboarding(result.onboardingStatus === 'pending')
         setScreenState('accepted')
       } else {
         if (result.error === 'email_mismatch' || result.error === 'email_not_verified') {
@@ -171,9 +173,9 @@ export function InviteScreen({
               variant='primary'
               size='md'
               className='mt-8 px-8'
-              onClick={() => router.replace('/')}
+              onClick={() => router.replace(needsOnboarding ? '/onboarding' : '/')}
             >
-              {t(locale, 'invite.acceptedCta')}
+              {t(locale, needsOnboarding ? 'invite.acceptedCtaOnboarding' : 'invite.acceptedCta')}
             </Button>
           </motion.div>
         : screenState === 'rejected' ?

@@ -48,15 +48,15 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
 
   const expired = invitation.status === 'pending' && isExpired(invitation.expiresAt)
   const emailMatch = user && user.email.toLowerCase() === invitation.invitedEmail.toLowerCase()
-  const canSeeDetails = emailMatch && user.emailVerified
+  const isPending = !expired && invitation.status === 'pending'
 
   return (
     <InviteScreen
       token={token}
       status={expired ? 'expired' : invitation.status}
-      groupName={canSeeDetails ? invitation.groupName : undefined}
-      invitedByFirstName={canSeeDetails ? invitation.invitedByFirstName : undefined}
-      invitedByImage={canSeeDetails ? (invitation.invitedByImage ?? undefined) : undefined}
+      groupName={isPending ? invitation.groupName : undefined}
+      invitedByFirstName={isPending ? invitation.invitedByFirstName : undefined}
+      invitedByImage={isPending ? (invitation.invitedByImage ?? undefined) : undefined}
       isAuthenticated={!!user}
       emailMatch={emailMatch ?? false}
       emailVerified={user?.emailVerified ?? false}

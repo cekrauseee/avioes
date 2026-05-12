@@ -139,6 +139,7 @@ export type OnboardingState = {
   username: string | null
   image: string | null
   suggestedUsernames: string[]
+  hasGroup: boolean
 }
 
 export async function getOnboardingState(): Promise<OnboardingState | null> {
@@ -153,14 +154,18 @@ export async function getOnboardingState(): Promise<OnboardingState | null> {
   const rawLastName = user.lastName ?? null
   const lastName = rawLastName && rawLastName.trim().length > 0 ? rawLastName : null
 
-  const { suggestions } = await suggestUsernamesForSignup(profile.email, firstName ?? '')
+  const [{ suggestions }, groups] = await Promise.all([
+    suggestUsernamesForSignup(profile.email, firstName ?? ''),
+    readGroupsForUser(user.id)
+  ])
   return {
     email: profile.email,
     firstName,
     lastName,
     username: profile.username,
     image: profile.image,
-    suggestedUsernames: suggestions
+    suggestedUsernames: suggestions,
+    hasGroup: groups.length > 0
   }
 }
 
@@ -226,6 +231,23 @@ export async function finishOnboarding(input: {
   await writeOnboardingStatus(user.id, 'complete')
 
   const snapshot = await snapshotForMember(user.id, groupId, [], true, 'complete')
+  return { ok: true, snapshot }
+}
+
+export async function finishOnboardingProfile(): Promise<
+  { ok: true; snapshot: SyncSnapshot } | { ok: false; error: 'profile_incomplete' | 'no_group' | 'unknown' }
+> {
+  const user = await getSessionUser()
+  if (!user) return { ok: false, error: 'unknown' }
+
+  const profile = await readUserProfile(user.id)
+  if (!profile || !profile.username) return { ok: false, error: 'profile_incomplete' }
+
+  const activeGroupId = await readActiveGroupId(user.id)
+  if (!activeGroupId) return { ok: false, error: 'no_group' }
+
+  await writeOnboardingStatus(user.id, 'complete')
+  const snapshot = await snapshotForMember(user.id, activeGroupId, [], true, 'complete')
   return { ok: true, snapshot }
 }
 
@@ -385,7 +407,9 @@ export async function sendInvitationEmail(groupId: string, email: string, invite
 
 export async function acceptInvitation(
   token: string
-): Promise<{ ok: true; groupId: string; groupName: string; snapshot: SyncSnapshot } | { ok: false; error: string }> {
+): Promise<
+  { ok: true; groupId: string; groupName: string; snapshot: SyncSnapshot; onboardingStatus: OnboardingStatus } | { ok: false; error: string }
+> {
   const user = await getSessionUser()
   if (!user) return { ok: false, error: 'Não autenticado' }
   if (!user.emailVerified) return { ok: false, error: 'email_not_verified' }
@@ -399,9 +423,13 @@ export async function acceptInvitation(
   const result = await acceptInvitationInStore(token, user.id)
   if (!result.ok) return result
 
-  await writeOnboardingStatus(user.id, 'complete')
-  const snapshot = await snapshotForMember(user.id, result.groupId, [], true, 'complete')
-  return { ok: true, groupId: result.groupId, groupName: result.groupName, snapshot }
+  const onboardingStatus = await readOnboardingStatus(user.id)
+  if (onboardingStatus === 'complete') {
+    const snapshot = await snapshotForMember(user.id, result.groupId, [], true, 'complete')
+    return { ok: true, groupId: result.groupId, groupName: result.groupName, snapshot, onboardingStatus }
+  }
+  const snapshot = await snapshotForMember(user.id, result.groupId, [], true, 'pending')
+  return { ok: true, groupId: result.groupId, groupName: result.groupName, snapshot, onboardingStatus: 'pending' }
 }
 
 export async function rejectInvitation(token: string): Promise<{ ok: true } | { ok: false; error: string }> {
