@@ -20,6 +20,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-12 — Security hardening pass
+
+Applied fixes from full security audit. Key changes: CSP + security headers via `next.config.mts` (H2/M5/M6). `sendInvitationEmail` validates token + reconstructs URL server-side (H1). `createInvitation` no longer returns raw token (M2). OTP error tracking scoped per-request via `AsyncLocalStorage` (M4). IP-based rate limiting on `emailExists`, `getEmailAuthState`, `requestOtpEmail`, `requestPasswordCreationForEmail` via `src/lib/rate-limit.ts` (M1/M3). Group cap (20/user), member cap (50/group), group name length validation (L2/L3). Timing-safe cron auth (L1). `events.who` FK (L7). SW precache fail-fast (L5). Docker port bound to localhost (L8). `robots.txt` added (L10). Dev secret fallback also checks `VERCEL` env (L6). Locale cookie `Secure` flag (L4). **DB workflow changed from `db:push` to migrations** — `npm run db:generate` + `npm run db:migrate`. Baseline migration (0000) auto-bootstraps on first run. Run `npm run db:migrate` after pulling. For production: `DATABASE_URL=<prod> npm run db:migrate`.
+
 ### 2026-05-11 — OG metadata + illustration for invite links
 
 Invite URLs now produce rich link previews for WhatsApp, Twitter, iMessage, etc. `src/app/(standalone)/invite/[token]/opengraph-image.tsx` generates a 1200×630 dynamic OG image via `ImageResponse` — two-column layout with text (group name, inviter name, tagline) on the left and a hand-drawn paper airplane + envelope illustration on the right. `generateMetadata` in the invite page returns dynamic title, description, `openGraph`, and `twitter` metadata. Root layout gained `metadataBase`. Illustrations: `public/og-invite-{light,dark}.png` (512×512, transparent RGBA). `navigator.share()` in `InviteShareSheet` now includes `title` + `text` with group name via `tf()`. New i18n keys: `invite.metaTitle`, `invite.ogDescription`, `invite.ogDescriptionGeneric`, `invite.share.shareTitle`, `invite.share.shareText`.

@@ -60,7 +60,9 @@ export const events = pgTable(
   {
     id: serial('id').primaryKey(),
     clientId: text('client_id').unique(),
-    who: text('who').notNull(),
+    who: text('who')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
     groupId: text('group_id')
       .notNull()
       .references(() => groups.id, { onDelete: 'cascade' }),

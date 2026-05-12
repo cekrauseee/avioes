@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { passkey } from '@better-auth/passkey'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
@@ -10,11 +11,17 @@ import { sendOtpEmail } from './email'
 import { OTP_ALLOWED_ATTEMPTS, OTP_EXPIRES_IN_SECONDS, OTP_LENGTH } from './otp-constants'
 import { findUserByEmail, readLocale } from './store'
 
-let lastOtpSendError: string | null = null
+const otpErrorStore = new AsyncLocalStorage<{ error: string | null }>()
+
+export function withOtpErrorScope<T>(fn: () => Promise<T>): Promise<T> {
+  return otpErrorStore.run({ error: null }, fn)
+}
 
 export function consumeOtpSendError(): string | null {
-  const err = lastOtpSendError
-  lastOtpSendError = null
+  const store = otpErrorStore.getStore()
+  if (!store) return null
+  const err = store.error
+  store.error = null
   return err
 }
 
@@ -58,13 +65,14 @@ export const auth = betterAuth({
       sendVerificationOnSignUp: false,
       async sendVerificationOTP({ email, otp, type }) {
         if (type !== 'sign-in') return
-        lastOtpSendError = null
+        const store = otpErrorStore.getStore()
+        if (store) store.error = null
         try {
           const user = await findUserByEmail(email)
           const locale = await readLocale(user?.id ?? null)
           await sendOtpEmail(email, otp, Math.round(OTP_EXPIRES_IN_SECONDS / 60), locale)
         } catch {
-          lastOtpSendError = email
+          if (store) store.error = email
         }
       }
     })
@@ -86,9 +94,10 @@ export const auth = betterAuth({
     : undefined,
   secret: (() => {
     const s = process.env.BETTER_AUTH_SECRET
-    if (!s && process.env.NODE_ENV !== 'development') {
+    if (!s && (process.env.NODE_ENV !== 'development' || process.env.VERCEL)) {
       throw new Error('BETTER_AUTH_SECRET must be set outside local dev')
     }
+    if (!s) console.warn('[auth] Using dev fallback secret — set BETTER_AUTH_SECRET for production')
     return s ?? 'dev-secret-change-in-production-32ch'
   })(),
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000'

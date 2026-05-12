@@ -50,7 +50,6 @@ self.addEventListener('install', (event) => {
     caches
       .open(CACHE)
       .then((cache) => cache.addAll(PRECACHE))
-      .catch(() => {})
   )
   self.skipWaiting()
 })
