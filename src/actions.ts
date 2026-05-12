@@ -557,9 +557,7 @@ async function snapshotForMember(
   }
 
   const isOwner = membership.role === 'owner'
-  const groupMembers = isOwner
-    ? allMembers
-    : allMembers.map((m) => (m.userId === userId ? m : { ...m, email: '' }))
+  const groupMembers = isOwner ? allMembers : allMembers.map((m) => (m.userId === userId ? m : { ...m, email: '' }))
 
   return {
     identity: userId,
