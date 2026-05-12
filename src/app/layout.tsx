@@ -27,8 +27,8 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.BETTER_AUTH_URL ?? 'http://localhost:3000'),
   title: {
-    default: 'Airplanes',
-    template: '%s \\ Airplanes'
+    default: 'Aviões',
+    template: '%s \\ Aviões'
   },
   description: 'O diário de aviões da gente.',
   manifest: '/manifest.webmanifest',
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: 'Airplanes',
+    title: 'Aviões',
     statusBarStyle: 'default'
   }
 }

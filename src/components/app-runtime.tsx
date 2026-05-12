@@ -23,7 +23,7 @@ export function AppRuntime({ children }: { children: React.ReactNode }) {
   const state = useOfflineState()
   const pathname = usePathname()
   const locale = selectLocale(state)
-  const showLoading = !state.hydrated && pathname !== '/auth'
+  const showLoading = !state.hydrated && pathname !== '/auth' && pathname !== '/landing'
 
   useEffect(() => {
     const key = PAGE_TITLE_KEY[pathname]
@@ -52,7 +52,13 @@ export function AppRuntime({ children }: { children: React.ReactNode }) {
             className='flex min-h-0 flex-1 flex-col transition-opacity duration-180 ease-out'
             style={{ opacity: state.localeFading ? 0 : 1 }}
           >
-            <div className='mx-auto flex min-h-0 w-full max-w-[420px] flex-1 flex-col overflow-hidden'>
+            <div
+              className={
+                pathname === '/landing'
+                  ? 'flex min-h-0 w-full flex-1 flex-col'
+                  : 'mx-auto flex min-h-0 w-full max-w-[420px] flex-1 flex-col overflow-hidden'
+              }
+            >
               {state.storageError ?
                 <StorageGate />
               : children}
