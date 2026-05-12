@@ -163,10 +163,7 @@ export async function getOnboardingState(): Promise<OnboardingState | null> {
   const rawLastName = user.lastName ?? null
   const lastName = rawLastName && rawLastName.trim().length > 0 ? rawLastName : null
 
-  const [{ suggestions }, groups] = await Promise.all([
-    suggestUsernamesForSignup(profile.email, firstName ?? ''),
-    readGroupsForUser(user.id)
-  ])
+  const [{ suggestions }, groups] = await Promise.all([suggestUsernamesForSignup(profile.email, firstName ?? ''), readGroupsForUser(user.id)])
   return {
     email: profile.email,
     firstName,
@@ -438,9 +435,7 @@ export async function sendInvitationEmail(groupId: string, email: string, invite
 
 export async function acceptInvitation(
   token: string
-): Promise<
-  { ok: true; groupId: string; groupName: string; snapshot: SyncSnapshot; onboardingStatus: OnboardingStatus } | { ok: false; error: string }
-> {
+): Promise<{ ok: true; groupId: string; groupName: string; snapshot: SyncSnapshot; onboardingStatus: OnboardingStatus } | { ok: false; error: string }> {
   const user = await getSessionUser()
   if (!user) return { ok: false, error: 'Não autenticado' }
   if (!user.emailVerified) return { ok: false, error: 'email_not_verified' }
