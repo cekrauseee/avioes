@@ -54,9 +54,9 @@ export function AppRuntime({ children }: { children: React.ReactNode }) {
           >
             <div
               className={
-                pathname === '/landing'
-                  ? 'flex min-h-0 w-full flex-1 flex-col'
-                  : 'mx-auto flex min-h-0 w-full max-w-[420px] flex-1 flex-col overflow-hidden'
+                pathname === '/landing' ? 'flex min-h-0 w-full flex-1 flex-col' : (
+                  'mx-auto flex min-h-0 w-full max-w-[420px] flex-1 flex-col overflow-hidden'
+                )
               }
             >
               {state.storageError ?

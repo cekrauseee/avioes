@@ -564,7 +564,7 @@ const pt = {
   'onboarding.italic.group': 'grupo',
   'onboarding.subtitle.group': 'você poderá convidar amigos depois.',
 
-  'landing.metaTitle': 'Aviões — cada avião, uma memória',
+  'landing.metaTitle': 'cada avião, uma memória',
   'landing.metaDescription': 'um jogo de grupo pra quem olha pro céu. conte aviões com quem importa.',
   'landing.hero.tagline': 'cada avião',
   'landing.hero.taglineItalic': 'uma memória',
@@ -1161,7 +1161,7 @@ const en: Record<TranslationKey, string> = {
   'onboarding.italic.group': 'group',
   'onboarding.subtitle.group': 'you can invite friends later.',
 
-  'landing.metaTitle': 'Aviões — every airplane, a memory',
+  'landing.metaTitle': 'every airplane, a memory',
   'landing.metaDescription': 'a group game for those who look up. count airplanes with the ones who matter.',
   'landing.hero.tagline': 'every airplane',
   'landing.hero.taglineItalic': 'a memory',
@@ -1170,7 +1170,7 @@ const en: Record<TranslationKey, string> = {
   'landing.features.title': 'simple by',
   'landing.features.titleItalic': 'nature',
   'landing.features.counter.title': 'count together',
-  'landing.features.counter.body': 'spot a plane? one tap records it. everyone\'s count, in real time.',
+  'landing.features.counter.body': "spot a plane? one tap records it. everyone's count, in real time.",
   'landing.features.diary.title': 'relive moments',
   'landing.features.diary.body': 'every sighting becomes an entry. consecutive sightings become streaks — your shared diary.',
   'landing.features.scoreboard.title': 'who saw more?',

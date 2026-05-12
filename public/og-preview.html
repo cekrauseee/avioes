@@ -1,99 +1,134 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=1920">
-  <title>Aviões — OG Preview</title>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,400&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      width: 1920px;
-      height: 1080px;
-      background: #F6F1E7;
-      color: #1F2A24;
-      font-family: 'Fraunces', Georgia, serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      position: relative;
-    }
-    .noise {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0.05;
-      mix-blend-mode: multiply;
-      pointer-events: none;
-      z-index: 10;
-    }
-    .content {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      max-width: 1440px;
-      padding: 0 120px;
-      gap: 60px;
-    }
-    .text { flex: 1; }
-    h1 {
-      font-size: 128px;
-      font-weight: 400;
-      letter-spacing: -3px;
-      line-height: 0.92;
-      font-optical-sizing: auto;
-      font-variation-settings: 'SOFT' 50, 'WONK' 0;
-    }
-    .tagline {
-      font-size: 36px;
-      color: #4A5A52;
-      margin-top: 20px;
-      font-weight: 400;
-    }
-    .tagline em {
-      color: #7C9A82;
-      font-style: italic;
-    }
-    .body-text {
-      font-family: system-ui, -apple-system, sans-serif;
-      font-size: 24px;
-      color: #8A9890;
-      margin-top: 32px;
-      line-height: 1.5;
-      max-width: 500px;
-    }
-    .illustration {
-      flex-shrink: 0;
-      width: 500px;
-      height: 500px;
-    }
-    .illustration img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
-  </style>
-</head>
-<body>
-  <svg class="noise" aria-hidden="true">
-    <filter id="grain">
-      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
-      <feColorMatrix type="saturate" values="0"/>
-    </filter>
-    <rect width="100%" height="100%" filter="url(#grain)"/>
-  </svg>
-  <div class="content">
-    <div class="text">
-      <h1>Aviões</h1>
-      <p class="tagline">every airplane, <em>a memory</em></p>
-      <p class="body-text">a group game for those who look up.</p>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=1920"
+    />
+    <title>Aviões — OG Preview</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        width: 1920px;
+        height: 1080px;
+        background: #f6f1e7;
+        color: #1f2a24;
+        font-family: 'Fraunces', Georgia, serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        position: relative;
+      }
+      .noise {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0.05;
+        mix-blend-mode: multiply;
+        pointer-events: none;
+        z-index: 10;
+      }
+      .content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        max-width: 1440px;
+        padding: 0 120px;
+        gap: 60px;
+      }
+      .text {
+        flex: 1;
+      }
+      h1 {
+        font-size: 128px;
+        font-weight: 400;
+        letter-spacing: -3px;
+        line-height: 0.92;
+        font-optical-sizing: auto;
+        font-variation-settings:
+          'SOFT' 50,
+          'WONK' 0;
+      }
+      .tagline {
+        font-size: 36px;
+        color: #4a5a52;
+        margin-top: 20px;
+        font-weight: 400;
+      }
+      .tagline em {
+        color: #7c9a82;
+        font-style: italic;
+      }
+      .body-text {
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        font-size: 24px;
+        color: #8a9890;
+        margin-top: 32px;
+        line-height: 1.5;
+        max-width: 500px;
+      }
+      .illustration {
+        flex-shrink: 0;
+        width: 500px;
+        height: 500px;
+      }
+      .illustration img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+    </style>
+  </head>
+  <body>
+    <svg
+      class="noise"
+      aria-hidden="true"
+    >
+      <filter id="grain">
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.9"
+          numOctaves="2"
+          stitchTiles="stitch"
+        />
+        <feColorMatrix
+          type="saturate"
+          values="0"
+        />
+      </filter>
+      <rect
+        width="100%"
+        height="100%"
+        filter="url(#grain)"
+      />
+    </svg>
+    <div class="content">
+      <div class="text">
+        <h1>Aviões</h1>
+        <p class="tagline">every airplane, <em>a memory</em></p>
+        <p class="body-text">a group game for those who look up.</p>
+      </div>
+      <div class="illustration">
+        <img
+          src="/onboarding-hero-light.png"
+          alt=""
+        />
+      </div>
     </div>
-    <div class="illustration">
-      <img src="/onboarding-hero-light.png" alt="">
-    </div>
-  </div>
-</body>
+  </body>
 </html>
