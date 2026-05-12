@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
 const PROTECTED_PATHS = ['/', '/diary', '/scoreboard', '/settings', '/groups']
 
 function isProtected(pathname: string) {
-  return PROTECTED_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
+  return PROTECTED_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
 }
 
 export function proxy(request: NextRequest) {
