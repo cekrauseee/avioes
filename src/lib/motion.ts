@@ -44,7 +44,8 @@ export const MOTION_SPRING = {
   counter: { stiffness: 220, damping: 22 },
   selection: { type: 'spring' as const, stiffness: 400, damping: 30 },
   toolbarIndicator: { type: 'spring' as const, stiffness: 380, damping: 32 },
-  warning: { type: 'spring' as const, stiffness: 420, damping: 18 }
+  warning: { type: 'spring' as const, stiffness: 420, damping: 18 },
+  sidebar: { type: 'spring' as const, stiffness: 320, damping: 28 }
 } as const
 
 export function withMotionDelay<T extends object>(transition: T, delay: number): T & { delay: number } {

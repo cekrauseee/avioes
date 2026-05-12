@@ -6,6 +6,9 @@ const pt = {
   'nav.scoreboard': 'Placar',
   'nav.settings': 'Ajustes',
 
+  'sidebar.collapse': 'recolher',
+  'sidebar.expand': 'expandir',
+
   'world.title': 'Mundo',
   'world.subtitle': 'Onde seu grupo voa.',
   'world.window.all': 'Todos os tempos',
@@ -603,6 +606,9 @@ const en: Record<TranslationKey, string> = {
   'nav.diary': 'Diary',
   'nav.scoreboard': 'Score',
   'nav.settings': 'Settings',
+
+  'sidebar.collapse': 'collapse',
+  'sidebar.expand': 'expand',
 
   'world.title': 'World',
   'world.subtitle': 'Where your group flies.',

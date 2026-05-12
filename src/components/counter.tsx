@@ -117,7 +117,7 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
           <button
             type='button'
             onClick={() => setAccountOpen(true)}
-            className='group hover:bg-line/40 -ml-3 inline-flex min-h-11 items-center gap-2.5 rounded-full px-3 transition-colors active:scale-[0.97]'
+            className='group hover:bg-line/40 -ml-3 inline-flex min-h-11 items-center gap-2.5 rounded-full px-3 transition-[color,background-color,opacity] duration-200 ease-out active:scale-[0.97] lg:pointer-events-none lg:opacity-0'
           >
             <span
               className={`h-2.5 w-2.5 shrink-0 rounded-full ${me.bg} transition-transform group-hover:scale-125`}
@@ -137,7 +137,7 @@ function CounterContent({ state, who }: { state: ReturnType<typeof useOfflineSta
               }
             </span>
           </button>
-          <div className='flex items-center gap-2'>
+          <div className='flex items-center gap-2 lg:ml-auto'>
             <SyncStatus />
             {syncVisible && (
               <span

@@ -361,3 +361,27 @@ export function IconUserPlus(props: IconProps) {
     </I>
   )
 }
+
+export function IconHash(props: IconProps) {
+  return (
+    <I {...props}>
+      <path d='M4 9h16M4 15h16M10 3l-2 18M16 3l-2 18' />
+    </I>
+  )
+}
+
+export function IconBook(props: IconProps) {
+  return (
+    <I {...props}>
+      <path d='M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20' />
+    </I>
+  )
+}
+
+export function IconBarChart(props: IconProps) {
+  return (
+    <I {...props}>
+      <path d='M12 20V10M18 20V4M6 20v-4' />
+    </I>
+  )
+}

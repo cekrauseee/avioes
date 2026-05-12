@@ -20,6 +20,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-12 — Desktop sidebar navigation
+
+Added `DesktopNav` (`src/components/desktop-nav.tsx`) — a vertical side rail that appears at `lg` (1024px+). Brand "Aviões" at top, nav items with accent dots + display font labels, spring-animated indicator bar (`layoutId`), route prefetching. Sidebar floats in the left margin via `absolute right-full` on the tabs layout wrapper. Bottom nav hidden on desktop via `lg:hidden`. Root `template.tsx` and `app-runtime.tsx` gained `lg:overflow-visible` so the breakout sidebar isn't clipped. Mobile unchanged.
+
 ### 2026-05-12 — Security hardening pass
 
 Applied fixes from full security audit. Key changes: CSP + security headers via `next.config.mts` (H2/M5/M6). `sendInvitationEmail` validates token + reconstructs URL server-side (H1). `createInvitation` no longer returns raw token (M2). OTP error tracking scoped per-request via `AsyncLocalStorage` (M4). IP-based rate limiting on `emailExists`, `getEmailAuthState`, `requestOtpEmail`, `requestPasswordCreationForEmail` via `src/lib/rate-limit.ts` (M1/M3). Group cap (20/user), member cap (50/group), group name length validation (L2/L3). Timing-safe cron auth (L1). `events.who` FK (L7). SW precache fail-fast (L5). Docker port bound to localhost (L8). `robots.txt` added (L10). Dev secret fallback also checks `VERCEL` env (L6). Locale cookie `Secure` flag (L4). **DB workflow changed from `db:push` to migrations** — `npm run db:generate` + `npm run db:migrate`. Baseline migration (0000) auto-bootstraps on first run. Run `npm run db:migrate` after pulling. For production: `DATABASE_URL=<prod> npm run db:migrate`.

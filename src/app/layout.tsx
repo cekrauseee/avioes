@@ -108,6 +108,7 @@ export default async function RootLayout({
         suppressHydrationWarning
       >
         <script
+          suppressHydrationWarning
           nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var d=document.documentElement;var b=JSON.parse(localStorage.getItem('ap_boot')||'{}');if(b.theme)d.dataset.theme=b.theme;if(b.palette)d.dataset.palette=b.palette;var dk=b.theme==='dark'||(b.theme!=='light'&&matchMedia('(prefers-color-scheme:dark)').matches);if(dk)document.body.style.backgroundColor='#15191b';var l=b.locale||((navigator.language||'').slice(0,2)==='pt'?'pt':'en');d.lang=l==='en'?'en':'pt-BR';var u=function(){d.dataset.offline=navigator.onLine?'':'1'};u();addEventListener('online',u);addEventListener('offline',u)}catch(e){}})()`

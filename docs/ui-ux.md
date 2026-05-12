@@ -8,8 +8,9 @@ Three words to keep in mind: **simple**, **organic**, **calm**.
 
 ## Layout
 
-- The primary target is mobile, in portrait. Desktop is supported but is not the focus.
-- The whole app is wrapped in a 420px-wide centered column with thin side borders. On a phone this is full-width; on desktop it looks like a phone-shaped frame on the page.
+- The primary target is mobile, in portrait. Desktop is supported via a sidebar navigation that appears at `lg` (1024px+).
+- The whole app is wrapped in a 420px-wide centered column. On a phone this is full-width; on desktop the content stays at 420px with a side rail navigation floating in the left margin via absolute positioning (`right-full`).
+- On desktop (`lg+`), the bottom tab bar is hidden and replaced by `DesktopNav` (`src/components/desktop-nav.tsx`) — a vertical list of nav items with accent dots, display font labels, and a spring-animated indicator bar. The sidebar breaks out of the 420px container; `overflow-hidden` on the root template and app-runtime wrapper become `lg:overflow-visible` to allow this.
 - Each screen is a fixed view: the body has `overflow: hidden` and `overscroll-behavior: none`. Long screens (diary, scoreboard) scroll inside `.scroll-area`, which uses `overscroll-behavior: contain`. The browser bg never shows when you over-pull.
 - Respect `env(safe-area-inset-*)` on top and bottom paddings.
 
@@ -92,6 +93,6 @@ The app uses Motion (framer-motion v12). Animation should make the journey feel 
 
 - Don't add gradients, shadows, or glassmorphism. The aesthetic is matte paper.
 - Don't introduce external icon libraries. Use `src/components/icons.tsx` for all inline icons; use the hand-drawn PNG set for anything bigger.
-- Don't add a desktop-specific layout. Desktop is a centered phone frame.
+- Don't widen the content area for desktop — the 420px column is the design. The sidebar lives in the margin, not inside the content.
 - Don't add an "About" or "Help" page. The app is its own help.
 - Don't ship a new screen with a `<Placeholder/>` where a real illustration belongs. Either reuse an existing PNG, or request a new one via [`docs/images.md`](./images.md).
