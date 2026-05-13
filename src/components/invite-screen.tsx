@@ -122,189 +122,225 @@ export function InviteScreen({
   }
 
   return (
-    <main className='relative flex h-full w-full flex-col px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.25rem)] lg:mx-auto lg:max-w-[480px]'>
-      <header className='flex items-baseline justify-between'>
+    <main className='relative flex h-full w-full flex-col lg:flex-row'>
+      {/* Left panel — desktop only */}
+      <div className='hidden lg:flex lg:flex-1 lg:flex-col lg:justify-between lg:border-r lg:border-line lg:px-14 lg:py-14'>
         <span className='text-ink-faint text-xs'>{t(locale, 'invite.header')}</span>
-      </header>
+        <div>
+          <h2 className='font-display text-[52px] leading-[0.88] tracking-tight'>
+            {t(locale, 'invite.titleLine1')}
+            <br />
+            <span className='text-sage italic'>{t(locale, 'invite.titleItalic')}</span>
+          </h2>
+        </div>
+        <div className='relative mx-auto w-[65%] max-w-64'>
+          <Image
+            src='/invite-hero-light.png'
+            alt=''
+            aria-hidden
+            width={480}
+            height={480}
+            unoptimized
+            className='theme-light-only h-auto w-full select-none'
+            draggable={false}
+          />
+          <Image
+            src='/invite-hero-dark.png'
+            alt=''
+            aria-hidden
+            width={480}
+            height={480}
+            unoptimized
+            className='theme-dark-only h-auto w-full select-none'
+            draggable={false}
+          />
+        </div>
+      </div>
 
-      <AnimatePresence
-        mode='wait'
-        initial={false}
-      >
-        {screenState === 'accepted' ?
-          <motion.div
-            key='accepted'
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={MOTION_TRANSITION.sectionMedium}
-            className='flex flex-1 flex-col items-center justify-center text-center'
-          >
-            <div className='relative w-[60%] max-w-55'>
-              <Image
-                src='/invite-accepted-light.png'
-                alt=''
-                aria-hidden
-                width={480}
-                height={480}
-                unoptimized
-                className='theme-light-only h-auto w-full select-none'
-                draggable={false}
-              />
-              <Image
-                src='/invite-accepted-dark.png'
-                alt=''
-                aria-hidden
-                width={480}
-                height={480}
-                unoptimized
-                className='theme-dark-only h-auto w-full select-none'
-                draggable={false}
-              />
-            </div>
-            <h1 className='font-display mt-8 text-[34px] leading-[0.95] tracking-tight'>
-              {t(locale, 'invite.acceptedLine1')}
-              <br />
-              <span className='text-sage italic'>{t(locale, 'invite.acceptedItalic')}</span>
-            </h1>
-            <p className='font-display text-ink-soft mt-3 max-w-[26ch] text-sm italic'>
-              {tf(locale, 'invite.acceptedBody', { group: acceptedGroupName ?? groupName ?? '' })}
-            </p>
-            <Button
-              variant='primary'
-              size='md'
-              className='mt-8 px-8'
-              onClick={() => router.replace(needsOnboarding ? '/onboarding' : '/')}
-            >
-              {t(locale, needsOnboarding ? 'invite.acceptedCtaOnboarding' : 'invite.acceptedCta')}
-            </Button>
-          </motion.div>
-        : screenState === 'rejected' ?
-          <motion.div
-            key='rejected'
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={MOTION_TRANSITION.sectionMedium}
-            className='flex flex-1 flex-col items-center justify-center text-center'
-          >
-            <h1 className='font-display mt-8 text-[34px] leading-[0.95] tracking-tight'>
-              {t(locale, 'invite.rejectedLine1')}
-              <br />
-              <span className='text-sage italic'>{t(locale, 'invite.rejectedItalic')}</span>
-            </h1>
-            <p className='font-display text-ink-soft mt-3 max-w-[26ch] text-sm italic'>{t(locale, 'invite.rejectedBody')}</p>
-            <ButtonLink
-              href='/'
-              variant='secondary'
-              size='sm'
-              shape='pill'
-              className='font-display mt-8'
-            >
-              {t(locale, 'invite.rejectedCta')}
-            </ButtonLink>
-          </motion.div>
-        : <motion.div
-            key='viewing'
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={withMotionDelay(MOTION_TRANSITION.section, 0.08)}
-            className='mt-12 flex flex-1 flex-col'
-          >
-            <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
-              {t(locale, 'invite.titleLine1')}
-              <br />
-              <span className='text-sage italic'>{t(locale, 'invite.titleItalic')}</span>
-            </h1>
+      {/* Right panel */}
+      <div className='flex min-h-0 flex-1 flex-col px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.25rem)] lg:w-[420px] lg:flex-none lg:overflow-y-auto lg:pt-14 lg:pb-12'>
+        <header className='flex items-baseline justify-between lg:hidden'>
+          <span className='text-ink-faint text-xs'>{t(locale, 'invite.header')}</span>
+        </header>
 
-            <div className='mt-6 flex items-center gap-3'>
-              {invitedByImage ?
+        <AnimatePresence
+          mode='wait'
+          initial={false}
+        >
+          {screenState === 'accepted' ?
+            <motion.div
+              key='accepted'
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={MOTION_TRANSITION.sectionMedium}
+              className='flex flex-1 flex-col items-center justify-center text-center'
+            >
+              <div className='relative w-[60%] max-w-55'>
                 <Image
-                  src={resolveAvatarUrl(invitedByImage) ?? invitedByImage}
+                  src='/invite-accepted-light.png'
                   alt=''
-                  width={40}
-                  height={40}
+                  aria-hidden
+                  width={480}
+                  height={480}
                   unoptimized
-                  referrerPolicy='no-referrer'
-                  className='h-10 w-10 rounded-full object-cover'
+                  className='theme-light-only h-auto w-full select-none'
+                  draggable={false}
                 />
-              : <div className='bg-sage text-bg flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium'>
-                  {invitedByFirstName?.[0]?.toUpperCase() ?? '?'}
-                </div>
-              }
+                <Image
+                  src='/invite-accepted-dark.png'
+                  alt=''
+                  aria-hidden
+                  width={480}
+                  height={480}
+                  unoptimized
+                  className='theme-dark-only h-auto w-full select-none'
+                  draggable={false}
+                />
+              </div>
+              <h1 className='font-display mt-8 text-[34px] leading-[0.95] tracking-tight'>
+                {t(locale, 'invite.acceptedLine1')}
+                <br />
+                <span className='text-sage italic'>{t(locale, 'invite.acceptedItalic')}</span>
+              </h1>
+              <p className='font-display text-ink-soft mt-3 max-w-[26ch] text-sm italic'>
+                {tf(locale, 'invite.acceptedBody', { group: acceptedGroupName ?? groupName ?? '' })}
+              </p>
+              <Button
+                variant='primary'
+                size='md'
+                className='mt-8 px-8'
+                onClick={() => router.replace(needsOnboarding ? '/onboarding' : '/')}
+              >
+                {t(locale, needsOnboarding ? 'invite.acceptedCtaOnboarding' : 'invite.acceptedCta')}
+              </Button>
+            </motion.div>
+          : screenState === 'rejected' ?
+            <motion.div
+              key='rejected'
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={MOTION_TRANSITION.sectionMedium}
+              className='flex flex-1 flex-col items-center justify-center text-center'
+            >
+              <h1 className='font-display mt-8 text-[34px] leading-[0.95] tracking-tight'>
+                {t(locale, 'invite.rejectedLine1')}
+                <br />
+                <span className='text-sage italic'>{t(locale, 'invite.rejectedItalic')}</span>
+              </h1>
+              <p className='font-display text-ink-soft mt-3 max-w-[26ch] text-sm italic'>{t(locale, 'invite.rejectedBody')}</p>
+              <ButtonLink
+                href='/'
+                variant='secondary'
+                size='sm'
+                shape='pill'
+                className='font-display mt-8'
+              >
+                {t(locale, 'invite.rejectedCta')}
+              </ButtonLink>
+            </motion.div>
+          : <motion.div
+              key='viewing'
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={withMotionDelay(MOTION_TRANSITION.section, 0.08)}
+              className='mt-12 flex flex-1 flex-col lg:mt-0 lg:justify-between'
+            >
               <div>
-                <p className='text-ink text-sm font-medium'>{tf(locale, 'invite.invitedBy', { name: invitedByFirstName ?? '' })}</p>
-                <p className='text-ink-faint text-xs'>{groupName}</p>
+                <h1 className='font-display text-[38px] leading-[0.92] tracking-tight lg:hidden'>
+                  {t(locale, 'invite.titleLine1')}
+                  <br />
+                  <span className='text-sage italic'>{t(locale, 'invite.titleItalic')}</span>
+                </h1>
+
+                <div className='mt-6 flex items-center gap-3 lg:mt-0'>
+                  {invitedByImage ?
+                    <Image
+                      src={resolveAvatarUrl(invitedByImage) ?? invitedByImage}
+                      alt=''
+                      width={40}
+                      height={40}
+                      unoptimized
+                      referrerPolicy='no-referrer'
+                      className='h-10 w-10 rounded-full object-cover'
+                    />
+                  : <div className='bg-sage text-bg flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium'>
+                      {invitedByFirstName?.[0]?.toUpperCase() ?? '?'}
+                    </div>
+                  }
+                  <div>
+                    <p className='text-ink text-sm font-medium'>{tf(locale, 'invite.invitedBy', { name: invitedByFirstName ?? '' })}</p>
+                    <p className='text-ink-faint text-xs'>{groupName}</p>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div className='relative mx-auto my-auto w-[60%] max-w-55'>
-              <Image
-                src='/invite-hero-light.png'
-                alt=''
-                aria-hidden
-                width={480}
-                height={480}
-                unoptimized
-                className='theme-light-only h-auto w-full select-none'
-                draggable={false}
-              />
-              <Image
-                src='/invite-hero-dark.png'
-                alt=''
-                aria-hidden
-                width={480}
-                height={480}
-                unoptimized
-                className='theme-dark-only h-auto w-full select-none'
-                draggable={false}
-              />
-            </div>
+              <div className='relative mx-auto my-auto w-[60%] max-w-55 lg:hidden'>
+                <Image
+                  src='/invite-hero-light.png'
+                  alt=''
+                  aria-hidden
+                  width={480}
+                  height={480}
+                  unoptimized
+                  className='theme-light-only h-auto w-full select-none'
+                  draggable={false}
+                />
+                <Image
+                  src='/invite-hero-dark.png'
+                  alt=''
+                  aria-hidden
+                  width={480}
+                  height={480}
+                  unoptimized
+                  className='theme-dark-only h-auto w-full select-none'
+                  draggable={false}
+                />
+              </div>
 
-            {errorMsg && <p className='text-clay mb-3 text-center text-sm'>{errorMsg}</p>}
-
-            {isAuthenticated && emailMatch ?
               <div className='flex flex-col gap-3'>
-                {!emailVerified && <p className='text-clay text-center text-sm'>{t(locale, 'invite.emailNotVerified')}</p>}
-                <Button
-                  variant='primary'
-                  size='md'
-                  fullWidth
-                  disabled={screenState === 'rejecting'}
-                  status={screenState === 'accepting' ? 'pending' : 'idle'}
-                  pendingLabel={t(locale, 'invite.accepting')}
-                  onClick={handleAccept}
-                >
-                  {t(locale, 'invite.accept')}
-                </Button>
-                <Button
-                  variant='secondary'
-                  size='md'
-                  fullWidth
-                  disabled={screenState === 'accepting'}
-                  status={screenState === 'rejecting' ? 'pending' : 'idle'}
-                  pendingLabel={t(locale, 'invite.rejecting')}
-                  onClick={handleReject}
-                >
-                  {t(locale, 'invite.reject')}
-                </Button>
+                {errorMsg && <p className='text-clay text-center text-sm'>{errorMsg}</p>}
+                {isAuthenticated && emailMatch ?
+                  <>
+                    {!emailVerified && <p className='text-clay text-center text-sm'>{t(locale, 'invite.emailNotVerified')}</p>}
+                    <Button
+                      variant='primary'
+                      size='md'
+                      fullWidth
+                      disabled={screenState === 'rejecting'}
+                      status={screenState === 'accepting' ? 'pending' : 'idle'}
+                      pendingLabel={t(locale, 'invite.accepting')}
+                      onClick={handleAccept}
+                    >
+                      {t(locale, 'invite.accept')}
+                    </Button>
+                    <Button
+                      variant='secondary'
+                      size='md'
+                      fullWidth
+                      disabled={screenState === 'accepting'}
+                      status={screenState === 'rejecting' ? 'pending' : 'idle'}
+                      pendingLabel={t(locale, 'invite.rejecting')}
+                      onClick={handleReject}
+                    >
+                      {t(locale, 'invite.reject')}
+                    </Button>
+                  </>
+                : isAuthenticated && !emailMatch ?
+                  <p className='text-ink-faint text-center text-sm'>{t(locale, 'invite.emailMismatch')}</p>
+                : <Button
+                    variant='primary'
+                    size='md'
+                    fullWidth
+                    onClick={() => router.push(`/auth?next=${encodeURIComponent(`/invite/${token}`)}`)}
+                  >
+                    {t(locale, 'invite.signIn')}
+                  </Button>
+                }
               </div>
-            : isAuthenticated && !emailMatch ?
-              <div className='flex flex-col gap-3'>
-                <p className='text-ink-faint text-center text-sm'>{t(locale, 'invite.emailMismatch')}</p>
-              </div>
-            : <div className='flex flex-col gap-3'>
-                <Button
-                  variant='primary'
-                  size='md'
-                  fullWidth
-                  onClick={() => router.push(`/auth?next=${encodeURIComponent(`/invite/${token}`)}`)}
-                >
-                  {t(locale, 'invite.signIn')}
-                </Button>
-              </div>
-            }
-          </motion.div>
-        }
-      </AnimatePresence>
+            </motion.div>
+          }
+        </AnimatePresence>
+      </div>
     </main>
   )
 }
