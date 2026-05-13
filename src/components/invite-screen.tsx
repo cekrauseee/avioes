@@ -124,36 +124,36 @@ export function InviteScreen({
   return (
     <main className='relative flex h-full w-full flex-col lg:flex-row'>
       {/* Left panel — desktop only */}
-      <div className='hidden lg:flex lg:flex-1 lg:flex-col lg:justify-between lg:border-r lg:border-line lg:px-14 lg:py-14'>
+      <div className='lg:border-line hidden lg:flex lg:flex-1 lg:flex-col lg:border-r lg:px-14 lg:py-14'>
         <span className='text-ink-faint text-xs'>{t(locale, 'invite.header')}</span>
-        <div>
+        <div className='my-auto'>
           <h2 className='font-display text-[52px] leading-[0.88] tracking-tight'>
             {t(locale, 'invite.titleLine1')}
             <br />
             <span className='text-sage italic'>{t(locale, 'invite.titleItalic')}</span>
           </h2>
-        </div>
-        <div className='relative mx-auto w-[65%] max-w-64'>
-          <Image
-            src='/invite-hero-light.png'
-            alt=''
-            aria-hidden
-            width={480}
-            height={480}
-            unoptimized
-            className='theme-light-only h-auto w-full select-none'
-            draggable={false}
-          />
-          <Image
-            src='/invite-hero-dark.png'
-            alt=''
-            aria-hidden
-            width={480}
-            height={480}
-            unoptimized
-            className='theme-dark-only h-auto w-full select-none'
-            draggable={false}
-          />
+          <div className='relative mt-10 w-[65%] max-w-64'>
+            <Image
+              src='/invite-hero-light.png'
+              alt=''
+              aria-hidden
+              width={480}
+              height={480}
+              unoptimized
+              className='theme-light-only h-auto w-full select-none'
+              draggable={false}
+            />
+            <Image
+              src='/invite-hero-dark.png'
+              alt=''
+              aria-hidden
+              width={480}
+              height={480}
+              unoptimized
+              className='theme-dark-only h-auto w-full select-none'
+              draggable={false}
+            />
+          </div>
         </div>
       </div>
 
