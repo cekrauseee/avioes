@@ -101,12 +101,12 @@ export function GroupsScreen({ from }: { from?: string }) {
   }
 
   return (
-    <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
+    <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)] lg:pt-10 lg:pb-12'>
       <motion.header
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={MOTION_TRANSITION.header}
-        className='flex items-center justify-between gap-3'
+        className={`flex items-center gap-3 ${from === 'settings' ? 'justify-between' : 'justify-between lg:justify-end'}`}
       >
         {from === 'settings' ?
           <Button
@@ -118,7 +118,7 @@ export function GroupsScreen({ from }: { from?: string }) {
           >
             {t(locale, 'groups.manage.back')}
           </Button>
-        : <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>}
+        : <span className='text-ink-faint font-display text-sm italic lg:hidden'>{t(locale, 'auth.header')}</span>}
         <ButtonLink
           href='/groups/new'
           variant='row-accent'

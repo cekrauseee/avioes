@@ -47,7 +47,7 @@ function SidebarTooltip({ children, label, show }: { children: React.ReactNode; 
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -4 }}
               transition={MOTION_TRANSITION.fastFade}
-              className='bg-bg border-line font-display text-ink pointer-events-none fixed z-50 rounded-md border px-3 py-1.5 text-sm -translate-y-1/2'
+              className='bg-bg border-line font-display text-ink pointer-events-none fixed z-50 -translate-y-1/2 rounded-md border px-3 py-1.5 text-sm'
               style={{ top: pos.top, left: pos.left }}
             >
               {label}

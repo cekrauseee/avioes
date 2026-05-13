@@ -119,18 +119,19 @@ export function ManageGroupScreen({ groupId }: { groupId: string }) {
 
   return (
     <div className='flex h-full flex-col overflow-hidden'>
-      <div className='flex flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)]'>
+      <div className='flex flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] lg:pt-10'>
         <motion.header
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={MOTION_TRANSITION.header}
           className='flex items-center justify-between gap-3'
         >
-          <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
+          <span className='text-ink-faint font-display text-sm italic lg:hidden'>{t(locale, 'auth.header')}</span>
           <Button
             variant='secondary'
             size='sm'
             shape='pill'
+            className='lg:order-first'
             onClick={() => router.back()}
             leading={<IconArrowLeft size={16} />}
           >

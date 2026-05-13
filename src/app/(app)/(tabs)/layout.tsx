@@ -10,7 +10,7 @@ export default function TabsLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className='flex min-h-0 flex-1 flex-col'>
       <SwipeableContent>{children}</SwipeableContent>
-      <div className='transition-[opacity,max-height] overflow-hidden duration-200 ease-out lg:max-h-0 lg:opacity-0 lg:pointer-events-none'>
+      <div className='overflow-hidden transition-[opacity,max-height] duration-200 ease-out lg:pointer-events-none lg:max-h-0 lg:opacity-0'>
         <NavBar who={state.identity!} />
       </div>
     </div>
