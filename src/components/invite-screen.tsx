@@ -122,7 +122,7 @@ export function InviteScreen({
   }
 
   return (
-    <main className='relative flex h-full w-full flex-col px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.25rem)]'>
+    <main className='relative flex h-full w-full flex-col px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.25rem)] lg:mx-auto lg:max-w-[480px]'>
       <header className='flex items-baseline justify-between'>
         <span className='text-ink-faint text-xs'>{t(locale, 'invite.header')}</span>
       </header>
@@ -311,7 +311,7 @@ export function InviteScreen({
 
 function ErrorScreen({ locale, line1Key, italicKey, bodyKey }: { locale: 'pt' | 'en'; line1Key: string; italicKey: string; bodyKey: string }) {
   return (
-    <main className='relative flex h-full w-full flex-col px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.25rem)]'>
+    <main className='relative flex h-full w-full flex-col px-5 pt-[max(env(safe-area-inset-top),1rem)] pb-[max(env(safe-area-inset-bottom),1.25rem)] lg:mx-auto lg:max-w-[480px]'>
       <header className='flex items-baseline justify-between'>
         <span className='text-ink-faint text-xs'>{t(locale, 'invite.header')}</span>
       </header>

@@ -283,7 +283,7 @@ export function OnboardingWizard({ initial }: { initial: OnboardingState }) {
     : (e: React.FormEvent) => e.preventDefault()
 
   return (
-    <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
+    <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)] lg:mx-auto lg:w-full lg:max-w-[480px]'>
       <motion.header
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}

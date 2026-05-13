@@ -30,7 +30,7 @@ export function PasswordCreateScreen({ token, valid }: { token: string; valid: b
 
   if (!valid) {
     return (
-      <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
+      <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)] lg:mx-auto lg:w-full lg:max-w-[480px]'>
         <Header locale={locale} />
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -106,7 +106,7 @@ export function PasswordCreateScreen({ token, valid }: { token: string; valid: b
 
   if (step === 'confirm-unlink') {
     return (
-      <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
+      <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)] lg:mx-auto lg:w-full lg:max-w-[480px]'>
         <Header locale={locale} />
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -161,7 +161,7 @@ export function PasswordCreateScreen({ token, valid }: { token: string; valid: b
 
   if (step === 'done') {
     return (
-      <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
+      <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)] lg:mx-auto lg:w-full lg:max-w-[480px]'>
         <Header locale={locale} />
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -197,7 +197,7 @@ export function PasswordCreateScreen({ token, valid }: { token: string; valid: b
   }
 
   return (
-    <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
+    <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)] lg:mx-auto lg:w-full lg:max-w-[480px]'>
       <Header locale={locale} />
 
       <motion.div

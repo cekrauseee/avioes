@@ -284,171 +284,217 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
   }
 
   return (
-    <div className='flex h-full flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)]'>
-      {/* Header */}
-      <motion.header
-        initial={false}
-        animate={{ opacity: 1, y: 0 }}
-        transition={MOTION_TRANSITION.header}
-        className='flex items-baseline justify-between'
-      >
-        <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
-        <span className='text-ink-faint text-xs'>
-          {new Intl.DateTimeFormat(DATE_LOCALE[locale], { day: '2-digit', month: 'short' }).format(new Date())}
-        </span>
-      </motion.header>
+    <div className='flex h-full flex-col lg:flex-row'>
+      {/* Left panel — desktop only */}
+      <div className='hidden lg:flex lg:flex-1 lg:flex-col lg:justify-between lg:border-r lg:border-line lg:px-14 lg:py-14'>
+        <div className='flex items-baseline justify-between'>
+          <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
+          <span className='text-ink-faint text-xs'>
+            {new Intl.DateTimeFormat(DATE_LOCALE[locale], { day: '2-digit', month: 'short' }).format(new Date())}
+          </span>
+        </div>
+        <div>
+          <h2 className='font-display text-[52px] leading-[0.88] tracking-tight'>
+            {t(locale, isInviteFlow ? 'auth.inviteWelcomeLine1' : 'auth.welcomeLine1')}
+            <br />
+            <span className='text-sage italic'>{t(locale, isInviteFlow ? 'auth.inviteWelcomeItalic' : 'auth.welcomeItalic')}</span>
+          </h2>
+          <p className='text-ink-faint mt-4 text-sm'>{t(locale, isInviteFlow ? 'auth.inviteWelcomeBody' : 'auth.welcomeBody')}</p>
+        </div>
+        <div className='relative mx-auto w-[65%] max-w-64'>
+          <Image
+            src={isInviteFlow ? '/invite-hero-light.png' : '/onboarding-hero-light.png'}
+            alt=''
+            aria-hidden
+            width={1254}
+            height={1254}
+            sizes='256px'
+            loading='eager'
+            fetchPriority='high'
+            className='theme-light-only h-auto w-full select-none'
+            draggable={false}
+          />
+          <Image
+            src={isInviteFlow ? '/invite-hero-dark.png' : '/onboarding-hero-dark.png'}
+            alt=''
+            aria-hidden
+            width={1254}
+            height={1254}
+            sizes='256px'
+            loading='eager'
+            fetchPriority='high'
+            className='theme-dark-only h-auto w-full select-none'
+            draggable={false}
+          />
+        </div>
+      </div>
 
-      {/* Body — error screen, welcome screen, or auth form */}
-      <AnimatePresence
-        mode='wait'
-        custom={direction}
-        initial={false}
-      >
-        {step === 'error' ?
-          <motion.div
-            key='error'
-            custom={direction}
-            variants={screenVariants}
-            initial='enter'
-            animate='center'
-            exit='exit'
-            transition={MOTION_TRANSITION.screen}
-            className='mt-12 flex flex-1 flex-col'
-          >
-            <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
-              {t(locale, 'auth.errorLine1')}
-              <br />
-              <span className='text-clay italic'>{t(locale, 'auth.errorItalic')}</span>
-            </h1>
-            <p className='text-ink-faint mt-3 text-sm'>{t(locale, 'auth.errorBody')}</p>
+      {/* Right panel */}
+      <div className='flex min-h-0 flex-1 flex-col px-6 pt-[max(env(safe-area-inset-top),1.5rem)] pb-[max(env(safe-area-inset-bottom),2rem)] lg:w-[420px] lg:flex-none lg:overflow-y-auto lg:pt-14 lg:pb-12'>
+        {/* Header — mobile only */}
+        <motion.header
+          initial={false}
+          animate={{ opacity: 1, y: 0 }}
+          transition={MOTION_TRANSITION.header}
+          className='flex items-baseline justify-between lg:hidden'
+        >
+          <span className='text-ink-faint font-display text-sm italic'>{t(locale, 'auth.header')}</span>
+          <span className='text-ink-faint text-xs'>
+            {new Intl.DateTimeFormat(DATE_LOCALE[locale], { day: '2-digit', month: 'short' }).format(new Date())}
+          </span>
+        </motion.header>
 
-            <div className='relative mx-auto my-auto w-[60%] max-w-55'>
-              <Image
-                src='/airplane-error-light.png'
-                alt=''
-                aria-hidden
-                width={480}
-                height={480}
-                sizes='220px'
-                loading='eager'
-                fetchPriority='high'
-                className='theme-light-only h-auto w-full select-none'
-                draggable={false}
-              />
-              <Image
-                src='/airplane-error-dark.png'
-                alt=''
-                aria-hidden
-                width={480}
-                height={480}
-                sizes='220px'
-                loading='eager'
-                fetchPriority='high'
-                className='theme-dark-only h-auto w-full select-none'
-                draggable={false}
-              />
-            </div>
+        {/* Body — error screen, welcome screen, or auth form */}
+        <AnimatePresence
+          mode='wait'
+          custom={direction}
+          initial={false}
+        >
+          {step === 'error' ?
+            <motion.div
+              key='error'
+              custom={direction}
+              variants={screenVariants}
+              initial='enter'
+              animate='center'
+              exit='exit'
+              transition={MOTION_TRANSITION.screen}
+              className='mt-12 flex flex-1 flex-col lg:mt-0 lg:justify-center'
+            >
+              <h1 className='font-display text-[38px] leading-[0.92] tracking-tight lg:hidden'>
+                {t(locale, 'auth.errorLine1')}
+                <br />
+                <span className='text-clay italic'>{t(locale, 'auth.errorItalic')}</span>
+              </h1>
+              <p className='text-ink-faint mt-3 text-sm lg:hidden'>{t(locale, 'auth.errorBody')}</p>
 
-            <div className='flex flex-col gap-3'>
-              <Button
-                variant='secondary'
-                size='md'
-                fullWidth
-                onClick={handleGoogle}
-                status={loading ? 'pending' : 'idle'}
-                pendingLabel={t(locale, 'auth.redirecting')}
-                leading={!loading ? <GoogleMark /> : null}
-              >
-                {t(locale, 'auth.tryGoogle')}
-              </Button>
-              <Button
-                variant='primary'
-                size='md'
-                fullWidth
-                onClick={() => advanceTo('email')}
-              >
-                {t(locale, 'auth.continueEmail')}
-              </Button>
-              <Button
-                variant='secondary'
-                size='sm'
-                shape='pill'
-                className='self-start'
-                onClick={() => advanceTo('welcome')}
-                leading={<IconArrowLeft size={16} />}
-              >
-                {t(locale, 'auth.back')}
-              </Button>
-            </div>
-          </motion.div>
-        : step === 'welcome' ?
-          <motion.div
-            key='welcome'
-            custom={direction}
-            variants={screenVariants}
-            initial='enter'
-            animate='center'
-            exit='exit'
-            transition={MOTION_TRANSITION.screen}
-            className='mt-12 flex flex-1 flex-col'
-          >
-            <h1 className='font-display text-[38px] leading-[0.92] tracking-tight'>
-              {t(locale, isInviteFlow ? 'auth.inviteWelcomeLine1' : 'auth.welcomeLine1')}
-              <br />
-              <span className='text-sage italic'>{t(locale, isInviteFlow ? 'auth.inviteWelcomeItalic' : 'auth.welcomeItalic')}</span>
-            </h1>
-            <p className='text-ink-faint mt-3 text-sm'>{t(locale, isInviteFlow ? 'auth.inviteWelcomeBody' : 'auth.welcomeBody')}</p>
+              <div className='relative mx-auto my-auto w-[60%] max-w-55 lg:hidden'>
+                <Image
+                  src='/airplane-error-light.png'
+                  alt=''
+                  aria-hidden
+                  width={480}
+                  height={480}
+                  sizes='220px'
+                  loading='eager'
+                  fetchPriority='high'
+                  className='theme-light-only h-auto w-full select-none'
+                  draggable={false}
+                />
+                <Image
+                  src='/airplane-error-dark.png'
+                  alt=''
+                  aria-hidden
+                  width={480}
+                  height={480}
+                  sizes='220px'
+                  loading='eager'
+                  fetchPriority='high'
+                  className='theme-dark-only h-auto w-full select-none'
+                  draggable={false}
+                />
+              </div>
 
-            <div className='relative mx-auto my-auto w-[82%] max-w-72'>
-              <Image
-                src={isInviteFlow ? '/invite-hero-light.png' : '/onboarding-hero-light.png'}
-                alt=''
-                aria-hidden
-                width={1254}
-                height={1254}
-                sizes='(max-width: 420px) 82vw, 288px'
-                loading='eager'
-                fetchPriority='high'
-                className='theme-light-only h-auto w-full select-none'
-                draggable={false}
-              />
-              <Image
-                src={isInviteFlow ? '/invite-hero-dark.png' : '/onboarding-hero-dark.png'}
-                alt=''
-                aria-hidden
-                width={1254}
-                height={1254}
-                sizes='(max-width: 420px) 82vw, 288px'
-                loading='eager'
-                fetchPriority='high'
-                className='theme-dark-only h-auto w-full select-none'
-                draggable={false}
-              />
-            </div>
+              <div className='flex flex-col gap-3'>
+                <Button
+                  variant='secondary'
+                  size='md'
+                  fullWidth
+                  onClick={handleGoogle}
+                  status={loading ? 'pending' : 'idle'}
+                  pendingLabel={t(locale, 'auth.redirecting')}
+                  leading={!loading ? <GoogleMark /> : null}
+                >
+                  {t(locale, 'auth.tryGoogle')}
+                </Button>
+                <Button
+                  variant='primary'
+                  size='md'
+                  fullWidth
+                  onClick={() => advanceTo('email')}
+                >
+                  {t(locale, 'auth.continueEmail')}
+                </Button>
+                <Button
+                  variant='secondary'
+                  size='sm'
+                  shape='pill'
+                  className='self-start'
+                  onClick={() => advanceTo('welcome')}
+                  leading={<IconArrowLeft size={16} />}
+                >
+                  {t(locale, 'auth.back')}
+                </Button>
+              </div>
+            </motion.div>
+          : step === 'welcome' ?
+            <motion.div
+              key='welcome'
+              custom={direction}
+              variants={screenVariants}
+              initial='enter'
+              animate='center'
+              exit='exit'
+              transition={MOTION_TRANSITION.screen}
+              className='mt-12 flex flex-1 flex-col lg:mt-0 lg:justify-center'
+            >
+              <h1 className='font-display text-[38px] leading-[0.92] tracking-tight lg:hidden'>
+                {t(locale, isInviteFlow ? 'auth.inviteWelcomeLine1' : 'auth.welcomeLine1')}
+                <br />
+                <span className='text-sage italic'>{t(locale, isInviteFlow ? 'auth.inviteWelcomeItalic' : 'auth.welcomeItalic')}</span>
+              </h1>
+              <p className='text-ink-faint mt-3 text-sm lg:hidden'>{t(locale, isInviteFlow ? 'auth.inviteWelcomeBody' : 'auth.welcomeBody')}</p>
 
-            <div className='flex flex-col gap-3'>
-              <Button
-                variant='secondary'
-                size='md'
-                fullWidth
-                onClick={handleGoogle}
-                status={loading ? 'pending' : 'idle'}
-                pendingLabel={t(locale, 'auth.redirecting')}
-                leading={!loading ? <GoogleMark /> : null}
-              >
-                {t(locale, 'auth.continueGoogle')}
-              </Button>
-              <Button
-                variant='primary'
-                size='md'
-                fullWidth
-                onClick={() => advanceTo('email')}
-              >
-                {t(locale, 'auth.continueEmail')}
-              </Button>
-            </div>
-          </motion.div>
-        : <motion.div
+              <div className='relative mx-auto my-auto w-[82%] max-w-72 lg:hidden'>
+                <Image
+                  src={isInviteFlow ? '/invite-hero-light.png' : '/onboarding-hero-light.png'}
+                  alt=''
+                  aria-hidden
+                  width={1254}
+                  height={1254}
+                  sizes='(max-width: 420px) 82vw, 288px'
+                  loading='eager'
+                  fetchPriority='high'
+                  className='theme-light-only h-auto w-full select-none'
+                  draggable={false}
+                />
+                <Image
+                  src={isInviteFlow ? '/invite-hero-dark.png' : '/onboarding-hero-dark.png'}
+                  alt=''
+                  aria-hidden
+                  width={1254}
+                  height={1254}
+                  sizes='(max-width: 420px) 82vw, 288px'
+                  loading='eager'
+                  fetchPriority='high'
+                  className='theme-dark-only h-auto w-full select-none'
+                  draggable={false}
+                />
+              </div>
+
+              <div className='flex flex-col gap-3'>
+                <Button
+                  variant='secondary'
+                  size='md'
+                  fullWidth
+                  onClick={handleGoogle}
+                  status={loading ? 'pending' : 'idle'}
+                  pendingLabel={t(locale, 'auth.redirecting')}
+                  leading={!loading ? <GoogleMark /> : null}
+                >
+                  {t(locale, 'auth.continueGoogle')}
+                </Button>
+                <Button
+                  variant='primary'
+                  size='md'
+                  fullWidth
+                  onClick={() => advanceTo('email')}
+                >
+                  {t(locale, 'auth.continueEmail')}
+                </Button>
+              </div>
+            </motion.div>
+          : <motion.div
             key='form'
             custom={direction}
             variants={screenVariants}
@@ -456,7 +502,7 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
             animate='center'
             exit='exit'
             transition={MOTION_TRANSITION.screen}
-            className='mt-12 flex flex-1 flex-col'
+            className='mt-12 flex flex-1 flex-col lg:mt-6'
           >
             <div className='relative'>
               <AnimatePresence
@@ -829,8 +875,9 @@ export function AuthScreen({ nextPath, oauthError }: { nextPath: string; oauthEr
               </AnimatePresence>
             </form>
           </motion.div>
-        }
-      </AnimatePresence>
+          }
+        </AnimatePresence>
+      </div>
     </div>
   )
 }
