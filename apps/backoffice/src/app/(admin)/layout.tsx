@@ -12,7 +12,10 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   return (
     <div className='flex h-dvh'>
-      <Sidebar userName={name} locale={locale} />
+      <Sidebar
+        userName={name}
+        locale={locale}
+      />
       <main className='flex-1 overflow-y-auto p-6'>{children}</main>
     </div>
   )

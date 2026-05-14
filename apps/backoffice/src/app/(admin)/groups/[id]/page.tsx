@@ -9,5 +9,10 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
   const locale = detectLocaleFromHeader(h.get('accept-language'))
   const group = await getGroup(id)
   if (!group) notFound()
-  return <GroupDetail group={group} locale={locale} />
+  return (
+    <GroupDetail
+      group={group}
+      locale={locale}
+    />
+  )
 }

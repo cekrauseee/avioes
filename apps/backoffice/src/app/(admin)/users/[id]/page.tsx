@@ -9,5 +9,10 @@ export default async function UserPage({ params }: { params: Promise<{ id: strin
   const locale = detectLocaleFromHeader(h.get('accept-language'))
   const user = await getUser(id)
   if (!user) notFound()
-  return <UserDetail user={user} locale={locale} />
+  return (
+    <UserDetail
+      user={user}
+      locale={locale}
+    />
+  )
 }

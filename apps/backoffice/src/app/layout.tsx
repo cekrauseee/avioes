@@ -1,7 +1,7 @@
-import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
-import { headers } from 'next/headers'
 import { DATE_LOCALE, detectLocaleFromHeader } from '@airplanes/i18n'
+import type { Metadata } from 'next'
+import { headers } from 'next/headers'
+import type { ReactNode } from 'react'
 import './globals.css'
 
 export const metadata: Metadata = {

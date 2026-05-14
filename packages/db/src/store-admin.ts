@@ -202,12 +202,7 @@ export async function adminRestoreUser(userId: string): Promise<{ ok: true } | {
   const conflicts = await db
     .select({ id: users.id })
     .from(users)
-    .where(
-      and(
-        isNull(users.deletedAt),
-        or(eq(users.email, target.email), target.username ? eq(users.username, target.username) : undefined)
-      )
-    )
+    .where(and(isNull(users.deletedAt), or(eq(users.email, target.email), target.username ? eq(users.username, target.username) : undefined)))
     .limit(1)
 
   if (conflicts.length > 0) return { ok: false, error: 'email_or_username_taken' }

@@ -1,7 +1,7 @@
 'use client'
 
-import type { Locale } from '@airplanes/types'
 import { t, type TKey } from '@airplanes/i18n'
+import type { Locale } from '@airplanes/types'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 

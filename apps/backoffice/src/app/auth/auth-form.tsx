@@ -1,7 +1,7 @@
 'use client'
 
-import type { Locale } from '@airplanes/types'
 import { t } from '@airplanes/i18n'
+import type { Locale } from '@airplanes/types'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { authClient } from '../../lib/auth-client'

@@ -1,8 +1,8 @@
 'use client'
 
-import type { Locale } from '@airplanes/types'
 import type { AdminGroupRow } from '@airplanes/db/store-admin'
 import { DATE_LOCALE, t } from '@airplanes/i18n'
+import type { Locale } from '@airplanes/types'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useState, useTransition } from 'react'
@@ -10,7 +10,17 @@ import { listGroups } from '../../../actions/admin'
 
 type Data = { items: AdminGroupRow[]; nextCursor: string | null }
 
-export function GroupsList({ initialData, initialSearch, initialStatus, locale }: { initialData: Data; initialSearch: string; initialStatus: string; locale: Locale }) {
+export function GroupsList({
+  initialData,
+  initialSearch,
+  initialStatus,
+  locale
+}: {
+  initialData: Data
+  initialSearch: string
+  initialStatus: string
+  locale: Locale
+}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [data, setData] = useState(initialData)

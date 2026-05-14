@@ -74,11 +74,12 @@ function StatCard({
     </>
   )
   const cls = 'border-line bg-paper rounded-xl border p-5 no-underline transition-shadow hover:shadow-sm'
-  return href ? (
-    <Link href={href} className={cls}>
-      {inner}
-    </Link>
-  ) : (
-    <div className={cls}>{inner}</div>
-  )
+  return href ?
+      <Link
+        href={href}
+        className={cls}
+      >
+        {inner}
+      </Link>
+    : <div className={cls}>{inner}</div>
 }

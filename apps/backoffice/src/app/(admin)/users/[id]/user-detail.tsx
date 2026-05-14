@@ -1,7 +1,7 @@
 'use client'
 
-import type { Locale } from '@airplanes/types'
 import { DATE_LOCALE, t } from '@airplanes/i18n'
+import type { Locale } from '@airplanes/types'
 import { KNOWN_FEATURE_FLAGS } from '@airplanes/types/feature-flags'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'

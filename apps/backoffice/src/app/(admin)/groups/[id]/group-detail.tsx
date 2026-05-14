@@ -1,7 +1,7 @@
 'use client'
 
-import type { Locale } from '@airplanes/types'
 import { DATE_LOCALE, t } from '@airplanes/i18n'
+import type { Locale } from '@airplanes/types'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
@@ -151,7 +151,9 @@ export function GroupDetail({ group, locale }: { group: GroupData; locale: Local
                   {m.userName}
                 </Link>
                 <span className='text-ink-faint ml-2'>{m.userEmail}</span>
-                {m.userId === group.ownerId && <span className='bg-sage-soft text-sage ml-2 rounded px-1.5 py-0.5 text-xs'>{t(locale, 'admin.user.owner')}</span>}
+                {m.userId === group.ownerId && (
+                  <span className='bg-sage-soft text-sage ml-2 rounded px-1.5 py-0.5 text-xs'>{t(locale, 'admin.user.owner')}</span>
+                )}
               </div>
               {m.userId !== group.ownerId && (
                 <button
