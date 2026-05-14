@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { bigint, index, pgEnum, pgTable, primaryKey, serial, text, uniqueIndex } from 'drizzle-orm/pg-core'
+import { bigint, index, pgEnum, pgTable, primaryKey, serial, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core'
 import { users } from './auth-schema'
 
 export const themeEnum = pgEnum('theme', ['light', 'dark', 'system'])
@@ -8,14 +8,19 @@ export const localeEnum = pgEnum('locale', ['pt', 'en'])
 export const groupRoleEnum = pgEnum('group_role', ['owner', 'member'])
 export const invitationStatusEnum = pgEnum('invitation_status', ['pending', 'accepted', 'rejected', 'cancelled', 'expired'])
 
-export const groups = pgTable('groups', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  ownerId: text('owner_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  createdAt: bigint('created_at', { mode: 'number' }).notNull()
-})
+export const groups = pgTable(
+  'groups',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    ownerId: text('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: bigint('created_at', { mode: 'number' }).notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true })
+  },
+  (t) => [index('idx_groups_deleted_at').on(t.deletedAt).where(sql`deleted_at IS NOT NULL`)]
+)
 
 export const groupMembers = pgTable(
   'group_members',
@@ -27,9 +32,13 @@ export const groupMembers = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     role: groupRoleEnum('role').notNull().default('member'),
-    joinedAt: bigint('joined_at', { mode: 'number' }).notNull()
+    joinedAt: bigint('joined_at', { mode: 'number' }).notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true })
   },
-  (t) => [primaryKey({ columns: [t.groupId, t.userId] })]
+  (t) => [
+    primaryKey({ columns: [t.groupId, t.userId] }),
+    index('idx_group_members_deleted_at').on(t.deletedAt).where(sql`deleted_at IS NOT NULL`)
+  ]
 )
 
 export const groupInvitations = pgTable(
@@ -66,9 +75,13 @@ export const events = pgTable(
     groupId: text('group_id')
       .notNull()
       .references(() => groups.id, { onDelete: 'cascade' }),
-    ts: bigint('ts', { mode: 'number' }).notNull()
+    ts: bigint('ts', { mode: 'number' }).notNull(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true })
   },
-  (t) => [index('idx_events_group_ts').on(t.groupId, t.ts)]
+  (t) => [
+    index('idx_events_group_ts').on(t.groupId, t.ts),
+    index('idx_events_deleted_at').on(t.deletedAt).where(sql`deleted_at IS NOT NULL`)
+  ]
 )
 
 export const preferences = pgTable('preferences', {
