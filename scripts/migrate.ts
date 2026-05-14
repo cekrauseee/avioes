@@ -24,15 +24,21 @@ async function main() {
   }
 }
 
+const MIGRATION_SIGNATURES: Record<string, string> = {
+  '0000_nasty_hellion': `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='user') AS e`,
+  '0001_equal_proemial_gods': `SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema='public' AND table_name='group_invitations') AS e`,
+  '0002_vengeful_black_crow': `SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name='groups' AND column_name='deleted_at') AS e`,
+}
+
 async function seedBaselineIfNeeded(pool: pg.Pool) {
-  const { rows: tableCheck } = await pool.query(`
+  const { rows: schemaCheck } = await pool.query(`
     SELECT EXISTS (
       SELECT FROM information_schema.tables
-      WHERE table_schema = 'public' AND table_name = '__drizzle_migrations'
+      WHERE table_schema = 'drizzle' AND table_name = '__drizzle_migrations'
     ) AS "exists"
   `)
-  if (tableCheck[0].exists) {
-    const { rows } = await pool.query('SELECT count(*)::int AS n FROM "__drizzle_migrations"')
+  if (schemaCheck[0].exists) {
+    const { rows } = await pool.query('SELECT count(*)::int AS n FROM drizzle."__drizzle_migrations"')
     if (rows[0].n > 0) return
   }
 
@@ -46,19 +52,28 @@ async function seedBaselineIfNeeded(pool: pg.Pool) {
 
   console.log('Existing database detected without migration records. Seeding baseline…')
 
+  await pool.query('CREATE SCHEMA IF NOT EXISTS drizzle')
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS "__drizzle_migrations" (
+    CREATE TABLE IF NOT EXISTS drizzle."__drizzle_migrations" (
       id serial PRIMARY KEY,
       hash text NOT NULL,
-      created_at bigint NOT NULL
+      created_at bigint
     )
   `)
 
   const journal = JSON.parse(fs.readFileSync(path.join(migrationsFolder, 'meta/_journal.json'), 'utf-8'))
   for (const entry of journal.entries as { tag: string; when: number }[]) {
-    const sql = fs.readFileSync(path.join(migrationsFolder, `${entry.tag}.sql`), 'utf-8')
-    const hash = crypto.createHash('sha256').update(sql).digest('hex')
-    await pool.query('INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES ($1, $2)', [hash, entry.when])
+    const signature = MIGRATION_SIGNATURES[entry.tag]
+    if (signature) {
+      const { rows } = await pool.query(signature)
+      if (!rows[0].e) {
+        console.log(`  Not yet present: ${entry.tag} — will be applied by migrate`)
+        continue
+      }
+    }
+    const sqlContent = fs.readFileSync(path.join(migrationsFolder, `${entry.tag}.sql`), 'utf-8')
+    const hash = crypto.createHash('sha256').update(sqlContent).digest('hex')
+    await pool.query('INSERT INTO drizzle."__drizzle_migrations" (hash, created_at) VALUES ($1, $2)', [hash, entry.when])
     console.log(`  Marked as applied: ${entry.tag}`)
   }
 }
