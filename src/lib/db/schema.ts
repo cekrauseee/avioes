@@ -19,7 +19,11 @@ export const groups = pgTable(
     createdAt: bigint('created_at', { mode: 'number' }).notNull(),
     deletedAt: timestamp('deleted_at', { withTimezone: true })
   },
-  (t) => [index('idx_groups_deleted_at').on(t.deletedAt).where(sql`deleted_at IS NOT NULL`)]
+  (t) => [
+    index('idx_groups_deleted_at')
+      .on(t.deletedAt)
+      .where(sql`deleted_at IS NOT NULL`)
+  ]
 )
 
 export const groupMembers = pgTable(
@@ -37,7 +41,9 @@ export const groupMembers = pgTable(
   },
   (t) => [
     primaryKey({ columns: [t.groupId, t.userId] }),
-    index('idx_group_members_deleted_at').on(t.deletedAt).where(sql`deleted_at IS NOT NULL`)
+    index('idx_group_members_deleted_at')
+      .on(t.deletedAt)
+      .where(sql`deleted_at IS NOT NULL`)
   ]
 )
 
@@ -80,7 +86,9 @@ export const events = pgTable(
   },
   (t) => [
     index('idx_events_group_ts').on(t.groupId, t.ts),
-    index('idx_events_deleted_at').on(t.deletedAt).where(sql`deleted_at IS NOT NULL`)
+    index('idx_events_deleted_at')
+      .on(t.deletedAt)
+      .where(sql`deleted_at IS NOT NULL`)
   ]
 )
 

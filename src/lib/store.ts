@@ -92,9 +92,18 @@ export async function deleteGroup(groupId: string): Promise<void> {
   await db.transaction(async (tx) => {
     const now = new Date()
     await tx.update(preferences).set({ activeGroupId: null }).where(eq(preferences.activeGroupId, groupId))
-    await tx.update(groups).set({ deletedAt: now }).where(and(eq(groups.id, groupId), isNull(groups.deletedAt)))
-    await tx.update(groupMembers).set({ deletedAt: now }).where(and(eq(groupMembers.groupId, groupId), isNull(groupMembers.deletedAt)))
-    await tx.update(events).set({ deletedAt: now }).where(and(eq(events.groupId, groupId), isNull(events.deletedAt)))
+    await tx
+      .update(groups)
+      .set({ deletedAt: now })
+      .where(and(eq(groups.id, groupId), isNull(groups.deletedAt)))
+    await tx
+      .update(groupMembers)
+      .set({ deletedAt: now })
+      .where(and(eq(groupMembers.groupId, groupId), isNull(groupMembers.deletedAt)))
+    await tx
+      .update(events)
+      .set({ deletedAt: now })
+      .where(and(eq(events.groupId, groupId), isNull(events.deletedAt)))
   })
 }
 
@@ -399,14 +408,22 @@ export async function readUserProfile(userId: string): Promise<UserProfile | nul
 }
 
 export async function isUsernameTaken(username: string, exceptUserId: string): Promise<boolean> {
-  const row = await db.select({ id: users.id }).from(users).where(and(eq(users.username, username), isNull(users.deletedAt))).limit(1)
+  const row = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.username, username), isNull(users.deletedAt)))
+    .limit(1)
   const found = row[0]
   if (!found) return false
   return found.id !== exceptUserId
 }
 
 export async function usernameExists(username: string): Promise<boolean> {
-  const row = await db.select({ id: users.id }).from(users).where(and(eq(users.username, username), isNull(users.deletedAt))).limit(1)
+  const row = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.username, username), isNull(users.deletedAt)))
+    .limit(1)
   return row.length > 0
 }
 
@@ -519,7 +536,11 @@ export async function readLocale(userId: string | null): Promise<Locale> {
 }
 
 export async function readOnboardingStatus(userId: string): Promise<OnboardingStatus> {
-  const row = await db.select({ onboardingStatus: users.onboardingStatus }).from(users).where(and(eq(users.id, userId), isNull(users.deletedAt))).limit(1)
+  const row = await db
+    .select({ onboardingStatus: users.onboardingStatus })
+    .from(users)
+    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+    .limit(1)
   return row[0]?.onboardingStatus === 'pending' ? 'pending' : 'complete'
 }
 
@@ -558,9 +579,15 @@ export async function applyOps(ops: PendingOp[], userId: string, groupId: string
         } else if (op.kind === 'delete-event') {
           const serverId = parseServerEventId(op.eventId)
           if (serverId !== null) {
-            await tx.update(events).set({ deletedAt: new Date() }).where(and(eq(events.id, serverId), eq(events.who, userId), eq(events.groupId, groupId), isNull(events.deletedAt)))
+            await tx
+              .update(events)
+              .set({ deletedAt: new Date() })
+              .where(and(eq(events.id, serverId), eq(events.who, userId), eq(events.groupId, groupId), isNull(events.deletedAt)))
           } else {
-            await tx.update(events).set({ deletedAt: new Date() }).where(and(eq(events.clientId, op.eventId), eq(events.who, userId), eq(events.groupId, groupId), isNull(events.deletedAt)))
+            await tx
+              .update(events)
+              .set({ deletedAt: new Date() })
+              .where(and(eq(events.clientId, op.eventId), eq(events.who, userId), eq(events.groupId, groupId), isNull(events.deletedAt)))
           }
         } else if (op.kind === 'set-theme') {
           await tx
@@ -760,19 +787,29 @@ export async function userHasPasskeys(email: string): Promise<boolean> {
 // --- Soft-delete helpers (used by backoffice admin actions) ---
 
 export async function isUserActive(userId: string): Promise<boolean> {
-  const row = await db.select({ id: users.id }).from(users).where(and(eq(users.id, userId), isNull(users.deletedAt))).limit(1)
+  const row = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+    .limit(1)
   return row.length > 0
 }
 
 export async function softDeleteUser(userId: string): Promise<void> {
   await db.transaction(async (tx) => {
-    await tx.update(users).set({ deletedAt: new Date(), updatedAt: new Date() }).where(and(eq(users.id, userId), isNull(users.deletedAt)))
+    await tx
+      .update(users)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(users.id, userId), isNull(users.deletedAt)))
     await tx.delete(sessions).where(eq(sessions.userId, userId))
   })
 }
 
 export async function restoreUser(userId: string): Promise<void> {
-  await db.update(users).set({ deletedAt: null, updatedAt: new Date() }).where(and(eq(users.id, userId), sql`${users.deletedAt} IS NOT NULL`))
+  await db
+    .update(users)
+    .set({ deletedAt: null, updatedAt: new Date() })
+    .where(and(eq(users.id, userId), sql`${users.deletedAt} IS NOT NULL`))
 }
 
 export async function restoreGroup(groupId: string): Promise<void> {
@@ -801,5 +838,8 @@ export async function restoreGroupMember(groupId: string, userId: string): Promi
 }
 
 export async function restoreEvent(eventId: number): Promise<void> {
-  await db.update(events).set({ deletedAt: null }).where(and(eq(events.id, eventId), sql`${events.deletedAt} IS NOT NULL`))
+  await db
+    .update(events)
+    .set({ deletedAt: null })
+    .where(and(eq(events.id, eventId), sql`${events.deletedAt} IS NOT NULL`))
 }

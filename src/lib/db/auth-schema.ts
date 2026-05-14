@@ -15,15 +15,24 @@ export const users = pgTable(
     emailVerified: boolean('email_verified').notNull(),
     image: text('image'),
     onboardingStatus: text('onboarding_status'),
-    featureFlags: text('feature_flags').array().notNull().default(sql`'{}'::text[]`),
+    featureFlags: text('feature_flags')
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
     createdAt: timestamp('created_at').notNull(),
     updatedAt: timestamp('updated_at').notNull()
   },
   (t) => [
-    uniqueIndex('user_email_unique_active').on(t.email).where(sql`deleted_at IS NULL`),
-    uniqueIndex('user_username_unique_active').on(t.username).where(sql`deleted_at IS NULL AND username IS NOT NULL`),
-    index('idx_user_deleted_at').on(t.deletedAt).where(sql`deleted_at IS NOT NULL`)
+    uniqueIndex('user_email_unique_active')
+      .on(t.email)
+      .where(sql`deleted_at IS NULL`),
+    uniqueIndex('user_username_unique_active')
+      .on(t.username)
+      .where(sql`deleted_at IS NULL AND username IS NOT NULL`),
+    index('idx_user_deleted_at')
+      .on(t.deletedAt)
+      .where(sql`deleted_at IS NOT NULL`)
   ]
 )
 
