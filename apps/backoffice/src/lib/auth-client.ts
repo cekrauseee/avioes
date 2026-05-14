@@ -1,8 +1,8 @@
 'use client'
 
+import type { auth } from '@airplanes/auth/server'
 import { inferAdditionalFields } from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
-import type { auth } from '@airplanes/auth/server'
 
 export const authClient = createAuthClient({
   plugins: [inferAdditionalFields<typeof auth>()]

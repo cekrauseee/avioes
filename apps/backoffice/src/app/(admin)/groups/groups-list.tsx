@@ -40,14 +40,14 @@ export function GroupsList({ initialData, initialSearch, initialStatus }: { init
 
   return (
     <div>
-      <div className="mb-4 flex gap-3">
+      <div className='mb-4 flex gap-3'>
         <input
-          type="text"
-          placeholder="Buscar…"
+          type='text'
+          placeholder='Buscar…'
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && applyFilters(search, status)}
-          className="rounded-lg border border-line bg-paper px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-sage"
+          className='border-line bg-paper focus:ring-sage rounded-lg border px-3 py-2 text-sm outline-none focus:ring-1'
         />
         <select
           value={status}
@@ -55,45 +55,54 @@ export function GroupsList({ initialData, initialSearch, initialStatus }: { init
             setStatus(e.target.value)
             applyFilters(search, e.target.value)
           }}
-          className="rounded-lg border border-line bg-paper px-3 py-2 text-sm outline-none"
+          className='border-line bg-paper rounded-lg border px-3 py-2 text-sm outline-none'
         >
-          <option value="all">Todos</option>
-          <option value="active">Ativos</option>
-          <option value="deleted">Deletados</option>
+          <option value='all'>Todos</option>
+          <option value='active'>Ativos</option>
+          <option value='deleted'>Deletados</option>
         </select>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-line bg-paper">
-        <table className="w-full text-left text-sm">
+      <div className='border-line bg-paper overflow-x-auto rounded-xl border'>
+        <table className='w-full text-left text-sm'>
           <thead>
-            <tr className="border-b border-line text-xs text-ink-faint">
-              <th className="px-4 py-3 font-medium">Nome</th>
-              <th className="px-4 py-3 font-medium">Dono</th>
-              <th className="px-4 py-3 font-medium">Membros</th>
-              <th className="px-4 py-3 font-medium">Eventos</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Criado em</th>
+            <tr className='border-line text-ink-faint border-b text-xs'>
+              <th className='px-4 py-3 font-medium'>Nome</th>
+              <th className='px-4 py-3 font-medium'>Dono</th>
+              <th className='px-4 py-3 font-medium'>Membros</th>
+              <th className='px-4 py-3 font-medium'>Eventos</th>
+              <th className='px-4 py-3 font-medium'>Status</th>
+              <th className='px-4 py-3 font-medium'>Criado em</th>
             </tr>
           </thead>
           <tbody>
             {data.items.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-ink-faint">
+                <td
+                  colSpan={6}
+                  className='text-ink-faint px-4 py-8 text-center'
+                >
                   Nenhum grupo encontrado.
                 </td>
               </tr>
             )}
             {data.items.map((group) => (
-              <tr key={group.id} className="border-b border-line last:border-0 hover:bg-bg-soft">
-                <td className="px-4 py-3">
-                  <Link href={`/groups/${group.id}`} className="font-medium">
+              <tr
+                key={group.id}
+                className='border-line hover:bg-bg-soft border-b last:border-0'
+              >
+                <td className='px-4 py-3'>
+                  <Link
+                    href={`/groups/${group.id}`}
+                    className='font-medium'
+                  >
                     {group.name}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-ink-soft">{group.ownerName}</td>
-                <td className="px-4 py-3 tabular-nums text-ink-soft">{group.memberCount}</td>
-                <td className="px-4 py-3 tabular-nums text-ink-soft">{group.eventCount}</td>
-                <td className="px-4 py-3">
+                <td className='text-ink-soft px-4 py-3'>{group.ownerName}</td>
+                <td className='text-ink-soft px-4 py-3 tabular-nums'>{group.memberCount}</td>
+                <td className='text-ink-soft px-4 py-3 tabular-nums'>{group.eventCount}</td>
+                <td className='px-4 py-3'>
                   <span
                     className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                       group.deletedAt ? 'bg-clay-soft text-clay' : 'bg-sage-soft text-sage'
@@ -102,7 +111,7 @@ export function GroupsList({ initialData, initialSearch, initialStatus }: { init
                     {group.deletedAt ? 'Deletado' : 'Ativo'}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-ink-faint">{new Date(group.createdAt).toLocaleDateString('pt-BR')}</td>
+                <td className='text-ink-faint px-4 py-3'>{new Date(group.createdAt).toLocaleDateString('pt-BR')}</td>
               </tr>
             ))}
           </tbody>
@@ -113,7 +122,7 @@ export function GroupsList({ initialData, initialSearch, initialStatus }: { init
         <button
           onClick={loadMore}
           disabled={isPending}
-          className="mt-4 rounded-lg border border-line px-4 py-2 text-sm text-ink-soft hover:bg-bg-soft disabled:opacity-50"
+          className='border-line text-ink-soft hover:bg-bg-soft mt-4 rounded-lg border px-4 py-2 text-sm disabled:opacity-50'
         >
           {isPending ? 'Carregando…' : 'Carregar mais'}
         </button>

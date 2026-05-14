@@ -133,11 +133,7 @@ export async function adminGetUser(id: string) {
     .innerJoin(groupMembers, and(eq(groupMembers.groupId, groups.id), eq(groupMembers.userId, id), isNull(groupMembers.deletedAt)))
     .where(isNull(groups.deletedAt))
 
-  const [activeGroupRow] = await db
-    .select({ activeGroupId: preferences.activeGroupId })
-    .from(preferences)
-    .where(eq(preferences.userId, id))
-    .limit(1)
+  const [activeGroupRow] = await db.select({ activeGroupId: preferences.activeGroupId }).from(preferences).where(eq(preferences.userId, id)).limit(1)
 
   return { ...user, groups: userGroups, activeGroupId: activeGroupRow?.activeGroupId ?? null }
 }
@@ -176,10 +172,7 @@ export async function adminUpdateUser(
 export async function adminSetFeatureFlags(id: string, flags: string[]) {
   const { KNOWN_FEATURE_FLAGS } = await import('@airplanes/types/feature-flags')
   const valid = flags.filter((f) => (KNOWN_FEATURE_FLAGS as readonly string[]).includes(f))
-  await db
-    .update(users)
-    .set({ featureFlags: valid, updatedAt: new Date() })
-    .where(eq(users.id, id))
+  await db.update(users).set({ featureFlags: valid, updatedAt: new Date() }).where(eq(users.id, id))
 }
 
 export async function adminSoftDeleteUser(userId: string): Promise<{ ok: true } | { ok: false; error: string; groupIds?: string[] }> {

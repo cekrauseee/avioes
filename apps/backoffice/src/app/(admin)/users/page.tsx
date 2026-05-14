@@ -7,8 +7,12 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-semibold">Usuários</h1>
-      <UsersList initialData={data} initialSearch={params.q ?? ''} initialStatus={params.status ?? 'all'} />
+      <h1 className='mb-6 text-2xl font-semibold'>Usuários</h1>
+      <UsersList
+        initialData={data}
+        initialSearch={params.q ?? ''}
+        initialStatus={params.status ?? 'all'}
+      />
     </div>
   )
 }

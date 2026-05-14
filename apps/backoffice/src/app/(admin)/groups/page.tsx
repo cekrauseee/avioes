@@ -7,8 +7,12 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-semibold">Grupos</h1>
-      <GroupsList initialData={data} initialSearch={params.q ?? ''} initialStatus={params.status ?? 'all'} />
+      <h1 className='mb-6 text-2xl font-semibold'>Grupos</h1>
+      <GroupsList
+        initialData={data}
+        initialSearch={params.q ?? ''}
+        initialStatus={params.status ?? 'all'}
+      />
     </div>
   )
 }

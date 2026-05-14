@@ -25,9 +25,10 @@ export function consumeOtpSendError(): string | null {
 }
 
 const cookieDomain = process.env.COOKIE_DOMAIN || undefined
-const trustedOrigins = process.env.TRUSTED_ORIGINS?.split(',')
-  .map((s) => s.trim())
-  .filter(Boolean) ?? []
+const trustedOrigins =
+  process.env.TRUSTED_ORIGINS?.split(',')
+    .map((s) => s.trim())
+    .filter(Boolean) ?? []
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -41,8 +42,9 @@ export const auth = betterAuth({
     }
   }),
   trustedOrigins,
-  advanced: cookieDomain
-    ? {
+  advanced:
+    cookieDomain ?
+      {
         crossSubDomainCookies: { enabled: true, domain: cookieDomain },
         defaultCookieAttributes: { sameSite: 'lax' as const, secure: true, domain: cookieDomain }
       }

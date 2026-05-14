@@ -74,38 +74,46 @@ export function GroupDetail({ group }: { group: GroupData }) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <Link href="/groups" className="mb-4 inline-block text-sm text-ink-faint hover:text-ink-soft">
+    <div className='mx-auto max-w-2xl'>
+      <Link
+        href='/groups'
+        className='text-ink-faint hover:text-ink-soft mb-4 inline-block text-sm'
+      >
         ← voltar
       </Link>
-      <h1 className="mb-6 text-2xl font-semibold">{group.name}</h1>
+      <h1 className='mb-6 text-2xl font-semibold'>{group.name}</h1>
 
       {group.deletedAt && (
-        <div className="mb-4 rounded-lg bg-clay-soft p-3 text-sm text-clay">
-          Grupo deletado em {new Date(group.deletedAt).toLocaleDateString('pt-BR')}
-        </div>
+        <div className='bg-clay-soft text-clay mb-4 rounded-lg p-3 text-sm'>Grupo deletado em {new Date(group.deletedAt).toLocaleDateString('pt-BR')}</div>
       )}
 
-      <section className="mb-6 rounded-xl border border-line bg-paper p-5">
-        <h2 className="mb-4 text-sm font-medium text-ink-faint">Identidade</h2>
-        <div className="space-y-3">
+      <section className='border-line bg-paper mb-6 rounded-xl border p-5'>
+        <h2 className='text-ink-faint mb-4 text-sm font-medium'>Identidade</h2>
+        <div className='space-y-3'>
           <div>
-            <label className="mb-1 block text-xs text-ink-faint">Nome</label>
+            <label className='text-ink-faint mb-1 block text-xs'>Nome</label>
             <input
-              type="text"
+              type='text'
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full rounded border border-line px-2 py-1.5 text-sm outline-none focus:ring-1 focus:ring-sage"
+              className='border-line focus:ring-sage w-full rounded border px-2 py-1.5 text-sm outline-none focus:ring-1'
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-ink-faint">Transferir propriedade</label>
-            <select value={transferTo} onChange={(e) => setTransferTo(e.target.value)} className="rounded border border-line px-2 py-1.5 text-sm">
-              <option value="">Manter dono atual</option>
+            <label className='text-ink-faint mb-1 block text-xs'>Transferir propriedade</label>
+            <select
+              value={transferTo}
+              onChange={(e) => setTransferTo(e.target.value)}
+              className='border-line rounded border px-2 py-1.5 text-sm'
+            >
+              <option value=''>Manter dono atual</option>
               {group.members
                 .filter((m) => m.userId !== group.ownerId)
                 .map((m) => (
-                  <option key={m.userId} value={m.userId}>
+                  <option
+                    key={m.userId}
+                    value={m.userId}
+                  >
                     {m.userName} ({m.userEmail})
                   </option>
                 ))}
@@ -115,26 +123,36 @@ export function GroupDetail({ group }: { group: GroupData }) {
         <button
           onClick={handleSave}
           disabled={isPending}
-          className="mt-4 rounded-lg bg-sage px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className='bg-sage mt-4 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50'
         >
           {isPending ? 'Salvando…' : 'Salvar'}
         </button>
       </section>
 
-      <section className="mb-6 rounded-xl border border-line bg-paper p-5">
-        <h2 className="mb-4 text-sm font-medium text-ink-faint">Membros ({group.members.length})</h2>
-        <div className="space-y-2">
+      <section className='border-line bg-paper mb-6 rounded-xl border p-5'>
+        <h2 className='text-ink-faint mb-4 text-sm font-medium'>Membros ({group.members.length})</h2>
+        <div className='space-y-2'>
           {group.members.map((m) => (
-            <div key={m.userId} className="flex items-center justify-between rounded-lg border border-line px-3 py-2 text-sm">
+            <div
+              key={m.userId}
+              className='border-line flex items-center justify-between rounded-lg border px-3 py-2 text-sm'
+            >
               <div>
-                <Link href={`/users/${m.userId}`} className="font-medium">
+                <Link
+                  href={`/users/${m.userId}`}
+                  className='font-medium'
+                >
                   {m.userName}
                 </Link>
-                <span className="ml-2 text-ink-faint">{m.userEmail}</span>
-                {m.userId === group.ownerId && <span className="ml-2 rounded bg-sage-soft px-1.5 py-0.5 text-xs text-sage">dono</span>}
+                <span className='text-ink-faint ml-2'>{m.userEmail}</span>
+                {m.userId === group.ownerId && <span className='bg-sage-soft text-sage ml-2 rounded px-1.5 py-0.5 text-xs'>dono</span>}
               </div>
               {m.userId !== group.ownerId && (
-                <button onClick={() => handleRemoveMember(m.userId)} disabled={isPending} className="text-xs text-clay hover:underline disabled:opacity-50">
+                <button
+                  onClick={() => handleRemoveMember(m.userId)}
+                  disabled={isPending}
+                  className='text-clay text-xs hover:underline disabled:opacity-50'
+                >
                   Remover
                 </button>
               )}
@@ -143,25 +161,32 @@ export function GroupDetail({ group }: { group: GroupData }) {
         </div>
       </section>
 
-      <section className="mb-6 rounded-xl border border-line bg-paper p-5">
-        <h2 className="mb-4 text-sm font-medium text-ink-faint">Eventos</h2>
-        <p className="text-sm text-ink-soft">{group.eventCount} eventos ativos</p>
+      <section className='border-line bg-paper mb-6 rounded-xl border p-5'>
+        <h2 className='text-ink-faint mb-4 text-sm font-medium'>Eventos</h2>
+        <p className='text-ink-soft text-sm'>{group.eventCount} eventos ativos</p>
       </section>
 
-      <section className="rounded-xl border border-line bg-paper p-5">
-        <h2 className="mb-4 text-sm font-medium text-ink-faint">Status</h2>
-        {group.deletedAt ? (
-          <button onClick={handleRestore} disabled={isPending} className="rounded-lg bg-sage px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+      <section className='border-line bg-paper rounded-xl border p-5'>
+        <h2 className='text-ink-faint mb-4 text-sm font-medium'>Status</h2>
+        {group.deletedAt ?
+          <button
+            onClick={handleRestore}
+            disabled={isPending}
+            className='bg-sage rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50'
+          >
             Restaurar grupo
           </button>
-        ) : (
-          <button onClick={handleDelete} disabled={isPending} className="rounded-lg bg-clay px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+        : <button
+            onClick={handleDelete}
+            disabled={isPending}
+            className='bg-clay rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50'
+          >
             Deletar grupo
           </button>
-        )}
+        }
       </section>
 
-      {message && <p className="mt-4 text-sm text-sage">{message}</p>}
+      {message && <p className='text-sage mt-4 text-sm'>{message}</p>}
     </div>
   )
 }

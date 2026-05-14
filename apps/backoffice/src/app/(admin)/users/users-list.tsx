@@ -36,14 +36,14 @@ export function UsersList({ initialData, initialSearch, initialStatus }: { initi
 
   return (
     <div>
-      <div className="mb-4 flex gap-3">
+      <div className='mb-4 flex gap-3'>
         <input
-          type="text"
-          placeholder="Buscar…"
+          type='text'
+          placeholder='Buscar…'
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && applyFilters(search, status)}
-          className="rounded-lg border border-line bg-paper px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-sage"
+          className='border-line bg-paper focus:ring-sage rounded-lg border px-3 py-2 text-sm outline-none focus:ring-1'
         />
         <select
           value={status}
@@ -51,56 +51,68 @@ export function UsersList({ initialData, initialSearch, initialStatus }: { initi
             setStatus(e.target.value)
             applyFilters(search, e.target.value)
           }}
-          className="rounded-lg border border-line bg-paper px-3 py-2 text-sm outline-none"
+          className='border-line bg-paper rounded-lg border px-3 py-2 text-sm outline-none'
         >
-          <option value="all">Todos</option>
-          <option value="active">Ativos</option>
-          <option value="deleted">Deletados</option>
+          <option value='all'>Todos</option>
+          <option value='active'>Ativos</option>
+          <option value='deleted'>Deletados</option>
         </select>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-line bg-paper">
-        <table className="w-full text-left text-sm">
+      <div className='border-line bg-paper overflow-x-auto rounded-xl border'>
+        <table className='w-full text-left text-sm'>
           <thead>
-            <tr className="border-b border-line text-xs text-ink-faint">
-              <th className="px-4 py-3 font-medium">Nome</th>
-              <th className="px-4 py-3 font-medium">E-mail</th>
-              <th className="px-4 py-3 font-medium">Username</th>
-              <th className="px-4 py-3 font-medium">País</th>
-              <th className="px-4 py-3 font-medium">Flags</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Criado em</th>
+            <tr className='border-line text-ink-faint border-b text-xs'>
+              <th className='px-4 py-3 font-medium'>Nome</th>
+              <th className='px-4 py-3 font-medium'>E-mail</th>
+              <th className='px-4 py-3 font-medium'>Username</th>
+              <th className='px-4 py-3 font-medium'>País</th>
+              <th className='px-4 py-3 font-medium'>Flags</th>
+              <th className='px-4 py-3 font-medium'>Status</th>
+              <th className='px-4 py-3 font-medium'>Criado em</th>
             </tr>
           </thead>
           <tbody>
             {data.items.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-ink-faint">
+                <td
+                  colSpan={7}
+                  className='text-ink-faint px-4 py-8 text-center'
+                >
                   Nenhum usuário encontrado.
                 </td>
               </tr>
             )}
             {data.items.map((user) => (
-              <tr key={user.id} className="border-b border-line last:border-0 hover:bg-bg-soft">
-                <td className="px-4 py-3">
-                  <Link href={`/users/${user.id}`} className="font-medium">
+              <tr
+                key={user.id}
+                className='border-line hover:bg-bg-soft border-b last:border-0'
+              >
+                <td className='px-4 py-3'>
+                  <Link
+                    href={`/users/${user.id}`}
+                    className='font-medium'
+                  >
                     {user.firstName ?? user.name}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-ink-soft">{user.email}</td>
-                <td className="px-4 py-3 text-ink-soft">{user.username ?? '—'}</td>
-                <td className="px-4 py-3 text-ink-soft">{user.country ?? '—'}</td>
-                <td className="px-4 py-3">
+                <td className='text-ink-soft px-4 py-3'>{user.email}</td>
+                <td className='text-ink-soft px-4 py-3'>{user.username ?? '—'}</td>
+                <td className='text-ink-soft px-4 py-3'>{user.country ?? '—'}</td>
+                <td className='px-4 py-3'>
                   {user.featureFlags.map((f) => (
-                    <span key={f} className="mr-1 inline-block rounded bg-sage-soft px-1.5 py-0.5 text-xs text-sage">
+                    <span
+                      key={f}
+                      className='bg-sage-soft text-sage mr-1 inline-block rounded px-1.5 py-0.5 text-xs'
+                    >
                       {f}
                     </span>
                   ))}
                 </td>
-                <td className="px-4 py-3">
+                <td className='px-4 py-3'>
                   <StatusBadge deleted={!!user.deletedAt} />
                 </td>
-                <td className="px-4 py-3 text-ink-faint">{new Date(user.createdAt).toLocaleDateString('pt-BR')}</td>
+                <td className='text-ink-faint px-4 py-3'>{new Date(user.createdAt).toLocaleDateString('pt-BR')}</td>
               </tr>
             ))}
           </tbody>
@@ -111,7 +123,7 @@ export function UsersList({ initialData, initialSearch, initialStatus }: { initi
         <button
           onClick={loadMore}
           disabled={isPending}
-          className="mt-4 rounded-lg border border-line px-4 py-2 text-sm text-ink-soft hover:bg-bg-soft disabled:opacity-50"
+          className='border-line text-ink-soft hover:bg-bg-soft mt-4 rounded-lg border px-4 py-2 text-sm disabled:opacity-50'
         >
           {isPending ? 'Carregando…' : 'Carregar mais'}
         </button>
@@ -122,9 +134,7 @@ export function UsersList({ initialData, initialSearch, initialStatus }: { initi
 
 function StatusBadge({ deleted }: { deleted: boolean }) {
   return (
-    <span
-      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${deleted ? 'bg-clay-soft text-clay' : 'bg-sage-soft text-sage'}`}
-    >
+    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${deleted ? 'bg-clay-soft text-clay' : 'bg-sage-soft text-sage'}`}>
       {deleted ? 'Deletado' : 'Ativo'}
     </span>
   )
