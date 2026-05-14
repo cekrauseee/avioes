@@ -1,0 +1,23 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@airplanes/db": ["../../packages/db/src/index.ts"],
+      "@airplanes/db/store": ["../../packages/db/src/store.ts"],
+      "@airplanes/db/schema": ["../../packages/db/src/schema.ts"],
+      "@airplanes/auth/server": ["../../packages/auth/src/server.ts"],
+      "@airplanes/auth/client": ["../../packages/auth/src/client.ts"],
+      "@airplanes/auth/guards": ["../../packages/auth/src/guards.ts"],
+      "@airplanes/auth/cookies": ["../../packages/auth/src/cookies.ts"],
+      "@airplanes/auth/email": ["../../packages/auth/src/email/email.tsx"],
+      "@airplanes/auth/rate-limit": ["../../packages/auth/src/rate-limit.ts"],
+      "@airplanes/auth/otp-constants": ["../../packages/auth/src/otp-constants.ts"],
+      "@airplanes/types": ["../../packages/types/src/index.ts"],
+      "@airplanes/i18n": ["../../packages/i18n/src/index.ts"],
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts", "**/*.mts"],
+  "exclude": ["node_modules"]
+}

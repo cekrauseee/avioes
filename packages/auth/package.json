@@ -1,0 +1,24 @@
+{
+  "name": "@airplanes/auth",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./server": "./src/server.ts",
+    "./client": "./src/client.ts",
+    "./guards": "./src/guards.ts",
+    "./cookies": "./src/cookies.ts",
+    "./email": "./src/email/email.tsx",
+    "./rate-limit": "./src/rate-limit.ts",
+    "./otp-constants": "./src/otp-constants.ts"
+  },
+  "dependencies": {
+    "@airplanes/db": "*",
+    "@airplanes/i18n": "*",
+    "@airplanes/types": "*",
+    "@better-auth/passkey": "^1.6.9",
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.0.8",
+    "better-auth": "^1.6.9",
+    "resend": "^6.12.2"
+  }
+}
