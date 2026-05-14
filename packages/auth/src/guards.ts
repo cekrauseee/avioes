@@ -78,6 +78,15 @@ export async function requireGroupOwner(groupId: string, nextPath: string): Prom
   return user
 }
 
+export async function requireBackofficeUser(nextPath: string): Promise<User> {
+  const user = await requireUser(nextPath)
+  const flags = (user as User & { featureFlags?: string[] }).featureFlags ?? []
+  if (!flags.includes('backoffice')) {
+    redirect(`/auth?next=${encodeURIComponent(nextPath)}&error=no_access`)
+  }
+  return user
+}
+
 export async function redirectAuthenticatedUser(nextPathValue: unknown): Promise<void> {
   const user = await getCurrentUser()
   if (!user) return

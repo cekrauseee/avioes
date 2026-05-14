@@ -20,6 +20,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-14 — Backoffice admin app
+
+New app at `apps/backoffice` for managing users, groups, and events. Gated by `requireBackofficeUser` guard — only users with `featureFlags` containing `'backoffice'` get in. Auth via same better-auth instance with cross-subdomain cookie support (`COOKIE_DOMAIN`, `TRUSTED_ORIGINS` env vars). Admin DB helpers in `packages/db/src/store-admin.ts` (separate entry point, never imported by web app). Screens: dashboard with stats, paginated user/group lists with search/filter, user detail (edit identity + feature flags + soft-delete/restore), group detail (edit name + transfer ownership + manage members + soft-delete/restore). Feature flags type in `packages/types/src/feature-flags.ts`. Admin i18n keys under `admin.*` namespace. First admin promoted manually via Drizzle Studio (`feature_flags = '{backoffice}'`).
+
 ### 2026-05-14 — Turborepo monorepo extraction
 
 Repo restructured into npm workspaces + Turborepo. `apps/web` (PWA), `apps/backoffice` (skeleton). Shared packages: `packages/db` (schema, store, migrations), `packages/auth` (better-auth instance, guards, client, cookies, email), `packages/i18n`, `packages/types`. All imports rewritten from relative `../lib/*` to `@airplanes/*` package paths. `turbo.json` drives `dev`, `build`, `lint`, `typecheck`, `db:*` tasks. Root `tsconfig.base.json` holds path aliases. Both apps transpile shared packages via `next.config.mts transpilePackages`. Turbopack root set to monorepo root. `.env.local` stays at root, symlinked into apps. Backoffice skeleton boots on port 3001 with shared auth session. `npm run build` builds both apps clean.

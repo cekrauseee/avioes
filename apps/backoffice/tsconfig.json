@@ -6,6 +6,7 @@
       "@airplanes/db": ["../../packages/db/src/index.ts"],
       "@airplanes/db/store": ["../../packages/db/src/store.ts"],
       "@airplanes/db/schema": ["../../packages/db/src/schema.ts"],
+      "@airplanes/db/store-admin": ["../../packages/db/src/store-admin.ts"],
       "@airplanes/auth/server": ["../../packages/auth/src/server.ts"],
       "@airplanes/auth/client": ["../../packages/auth/src/client.ts"],
       "@airplanes/auth/guards": ["../../packages/auth/src/guards.ts"],
@@ -14,6 +15,7 @@
       "@airplanes/auth/rate-limit": ["../../packages/auth/src/rate-limit.ts"],
       "@airplanes/auth/otp-constants": ["../../packages/auth/src/otp-constants.ts"],
       "@airplanes/types": ["../../packages/types/src/index.ts"],
+      "@airplanes/types/feature-flags": ["../../packages/types/src/feature-flags.ts"],
       "@airplanes/i18n": ["../../packages/i18n/src/index.ts"],
       "@/*": ["./src/*"]
     }
