@@ -20,6 +20,14 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-05-14 — Turborepo monorepo extraction
+
+Repo restructured into npm workspaces + Turborepo. `apps/web` (PWA), `apps/backoffice` (skeleton). Shared packages: `packages/db` (schema, store, migrations), `packages/auth` (better-auth instance, guards, client, cookies, email), `packages/i18n`, `packages/types`. All imports rewritten from relative `../lib/*` to `@airplanes/*` package paths. `turbo.json` drives `dev`, `build`, `lint`, `typecheck`, `db:*` tasks. Root `tsconfig.base.json` holds path aliases. Both apps transpile shared packages via `next.config.mts transpilePackages`. Turbopack root set to monorepo root. `.env.local` stays at root, symlinked into apps. Backoffice skeleton boots on port 3001 with shared auth session. `npm run build` builds both apps clean.
+
+### 2026-05-14 — Soft deletes across all domain tables
+
+All destructive operations now stamp `deletedAt` instead of hard-deleting. Affected tables: `groups`, `group_members`, `events`, `user`. Every read query filters `isNull(*.deletedAt)`. Cascading soft-delete on group deletion (same timestamp on members + events). Restore helpers keyed off cascade timestamp so independently soft-deleted children stay deleted. `groupMembers` rejoin via `onConflictDoUpdate` (un-deletes existing PK row). `user` gained `featureFlags text[]` column + partial unique indexes on `email`/`username` (`WHERE deleted_at IS NULL`). `getCurrentUser` checks `isUserActive` and force-signs-out soft-deleted users. Migration: `drizzle/0002_vengeful_black_crow.sql`. `scripts/migrate.ts` created (was missing — pre-existing gap).
+
 ### 2026-05-12 — Desktop sidebar navigation
 
 Added `DesktopNav` (`src/components/desktop-nav.tsx`) — a vertical side rail that appears at `lg` (1024px+). Brand "Aviões" at top, nav items with accent dots + display font labels, spring-animated indicator bar (`layoutId`), route prefetching. Sidebar floats in the left margin via `absolute right-full` on the tabs layout wrapper. Bottom nav hidden on desktop via `lg:hidden`. Root `template.tsx` and `app-runtime.tsx` gained `lg:overflow-visible` so the breakout sidebar isn't clipped. Mobile unchanged.

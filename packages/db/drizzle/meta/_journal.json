@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1778587886312,
+      "tag": "0000_nasty_hellion",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778587893184,
+      "tag": "0001_equal_proemial_gods",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778774583547,
+      "tag": "0002_vengeful_black_crow",
+      "breakpoints": true
+    }
+  ]
+}
