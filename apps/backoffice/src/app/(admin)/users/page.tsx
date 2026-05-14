@@ -9,6 +9,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
     <div>
       <h1 className='mb-6 text-2xl font-semibold'>Usuários</h1>
       <UsersList
+        key={`${params.q ?? ''}-${params.status ?? 'all'}`}
         initialData={data}
         initialSearch={params.q ?? ''}
         initialStatus={params.status ?? 'all'}

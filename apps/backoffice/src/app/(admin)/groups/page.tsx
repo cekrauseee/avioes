@@ -9,6 +9,7 @@ export default async function GroupsPage({ searchParams }: { searchParams: Promi
     <div>
       <h1 className='mb-6 text-2xl font-semibold'>Grupos</h1>
       <GroupsList
+        key={`${params.q ?? ''}-${params.status ?? 'all'}`}
         initialData={data}
         initialSearch={params.q ?? ''}
         initialStatus={params.status ?? 'all'}

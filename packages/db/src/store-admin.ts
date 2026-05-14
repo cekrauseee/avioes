@@ -301,6 +301,12 @@ export async function adminUpdateGroup(id: string, patch: { name?: string; owner
     await db.transaction(async (tx) => {
       const [current] = await tx.select({ ownerId: groups.ownerId }).from(groups).where(eq(groups.id, id)).limit(1)
       if (!current) return
+      const [targetMember] = await tx
+        .select({ userId: groupMembers.userId })
+        .from(groupMembers)
+        .where(and(eq(groupMembers.groupId, id), eq(groupMembers.userId, patch.ownerId!), isNull(groupMembers.deletedAt)))
+        .limit(1)
+      if (!targetMember) return
       await tx.update(groups).set({ ownerId: patch.ownerId! }).where(eq(groups.id, id))
       await tx
         .update(groupMembers)
