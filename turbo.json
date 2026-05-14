@@ -6,8 +6,10 @@
       "outputs": [".next/**", "dist/**"],
       "env": [
         "DATABASE_URL",
+        "DRIZZLE_DRIVER",
         "BETTER_AUTH_SECRET",
         "BETTER_AUTH_URL",
+        "NEXT_PUBLIC_BETTER_AUTH_URL",
         "COOKIE_DOMAIN",
         "TRUSTED_ORIGINS",
         "GOOGLE_CLIENT_ID",

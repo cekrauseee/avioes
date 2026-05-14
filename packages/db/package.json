@@ -5,6 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./store": "./src/store.ts",
+    "./store-admin": "./src/store-admin.ts",
     "./schema": "./src/schema.ts"
   },
   "scripts": {
