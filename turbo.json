@@ -3,7 +3,21 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "dist/**"]
+      "outputs": [".next/**", "dist/**"],
+      "env": [
+        "DATABASE_URL",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "COOKIE_DOMAIN",
+        "TRUSTED_ORIGINS",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "RESEND_API_KEY",
+        "EMAIL_FROM",
+        "BLOB_READ_WRITE_TOKEN",
+        "CRON_SECRET",
+        "VERCEL"
+      ]
     },
     "dev": {
       "cache": false,
