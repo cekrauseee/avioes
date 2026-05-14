@@ -1,9 +1,9 @@
 import 'server-only'
 
 import crypto from 'crypto'
-import { and, eq, gt, like, sql } from 'drizzle-orm'
+import { and, eq, gt, isNull, like, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
-import { accounts, db, events, groupInvitations, groupMembers, groups, passkeys, preferences, processedOps, users, verifications } from './db'
+import { accounts, db, events, groupInvitations, groupMembers, groups, passkeys, preferences, processedOps, sessions, users, verifications } from './db'
 import type { AirplaneEvent, Group, GroupMember, GroupRole, Locale, OnboardingStatus, Palette, PendingOp, Theme } from './types'
 
 const groupMembersForCount = alias(groupMembers, 'group_members_for_count')
@@ -17,8 +17,9 @@ export async function readGroupsForUser(userId: string): Promise<(Group & { memb
       memberCount: sql<number>`count(${groupMembersForCount.userId})::int`
     })
     .from(groups)
-    .innerJoin(groupMembers, and(eq(groupMembers.groupId, groups.id), eq(groupMembers.userId, userId)))
-    .leftJoin(groupMembersForCount, eq(groupMembersForCount.groupId, groups.id))
+    .innerJoin(groupMembers, and(eq(groupMembers.groupId, groups.id), eq(groupMembers.userId, userId), isNull(groupMembers.deletedAt)))
+    .leftJoin(groupMembersForCount, and(eq(groupMembersForCount.groupId, groups.id), isNull(groupMembersForCount.deletedAt)))
+    .where(isNull(groups.deletedAt))
     .groupBy(groups.id, groups.name, groups.ownerId)
   return rows
 }
@@ -27,7 +28,7 @@ export async function readGroupMembership(groupId: string, userId: string): Prom
   const row = await db
     .select({ userId: groupMembers.userId, role: groupMembers.role })
     .from(groupMembers)
-    .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+    .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId), isNull(groupMembers.deletedAt)))
     .limit(1)
   return row[0] ?? null
 }
@@ -37,8 +38,8 @@ export async function readGroupForMember(groupId: string, userId: string): Promi
   const row = await db
     .select({ id: groups.id, name: groups.name, ownerId: groups.ownerId })
     .from(groups)
-    .innerJoin(requester, and(eq(requester.groupId, groups.id), eq(requester.userId, userId)))
-    .where(eq(groups.id, groupId))
+    .innerJoin(requester, and(eq(requester.groupId, groups.id), eq(requester.userId, userId), isNull(requester.deletedAt)))
+    .where(and(eq(groups.id, groupId), isNull(groups.deletedAt)))
     .limit(1)
   return row[0] ?? null
 }
@@ -56,9 +57,9 @@ export async function readGroupMembersForMember(groupId: string, userId: string)
       role: groupMembers.role
     })
     .from(groupMembers)
-    .innerJoin(requester, and(eq(requester.groupId, groupMembers.groupId), eq(requester.userId, userId)))
-    .innerJoin(users, eq(users.id, groupMembers.userId))
-    .where(eq(groupMembers.groupId, groupId))
+    .innerJoin(requester, and(eq(requester.groupId, groupMembers.groupId), eq(requester.userId, userId), isNull(requester.deletedAt)))
+    .innerJoin(users, and(eq(users.id, groupMembers.userId), isNull(users.deletedAt)))
+    .where(and(eq(groupMembers.groupId, groupId), isNull(groupMembers.deletedAt)))
     .orderBy(groupMembers.joinedAt)
   return rows.map(({ name, firstName, ...rest }) => ({
     ...rest,
@@ -89,14 +90,29 @@ export async function updateGroup(groupId: string, updates: { name?: string }): 
 
 export async function deleteGroup(groupId: string): Promise<void> {
   await db.transaction(async (tx) => {
+    const now = new Date()
     await tx.update(preferences).set({ activeGroupId: null }).where(eq(preferences.activeGroupId, groupId))
-    await tx.delete(groups).where(eq(groups.id, groupId))
+    await tx
+      .update(groups)
+      .set({ deletedAt: now })
+      .where(and(eq(groups.id, groupId), isNull(groups.deletedAt)))
+    await tx
+      .update(groupMembers)
+      .set({ deletedAt: now })
+      .where(and(eq(groupMembers.groupId, groupId), isNull(groupMembers.deletedAt)))
+    await tx
+      .update(events)
+      .set({ deletedAt: now })
+      .where(and(eq(events.groupId, groupId), isNull(events.deletedAt)))
   })
 }
 
 export async function leaveGroup(groupId: string, userId: string): Promise<void> {
   await db.transaction(async (tx) => {
-    await tx.delete(groupMembers).where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+    await tx
+      .update(groupMembers)
+      .set({ deletedAt: new Date() })
+      .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId), isNull(groupMembers.deletedAt)))
     await tx
       .update(preferences)
       .set({ activeGroupId: null })
@@ -105,12 +121,18 @@ export async function leaveGroup(groupId: string, userId: string): Promise<void>
 }
 
 export async function addGroupMember(groupId: string, userId: string): Promise<void> {
-  await db.insert(groupMembers).values({ groupId, userId, role: 'member', joinedAt: Date.now() }).onConflictDoNothing()
+  await db
+    .insert(groupMembers)
+    .values({ groupId, userId, role: 'member', joinedAt: Date.now() })
+    .onConflictDoUpdate({ target: [groupMembers.groupId, groupMembers.userId], set: { role: 'member', deletedAt: null, joinedAt: Date.now() } })
 }
 
 export async function removeGroupMember(groupId: string, userId: string): Promise<void> {
   await db.transaction(async (tx) => {
-    await tx.delete(groupMembers).where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+    await tx
+      .update(groupMembers)
+      .set({ deletedAt: new Date() })
+      .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId), isNull(groupMembers.deletedAt)))
     await tx
       .update(preferences)
       .set({ activeGroupId: null })
@@ -197,8 +219,8 @@ export async function readInvitationByToken(token: string): Promise<InvitationDe
       expiresAt: groupInvitations.expiresAt
     })
     .from(groupInvitations)
-    .innerJoin(groups, eq(groups.id, groupInvitations.groupId))
-    .innerJoin(users, eq(users.id, groupInvitations.invitedByUserId))
+    .innerJoin(groups, and(eq(groups.id, groupInvitations.groupId), isNull(groups.deletedAt)))
+    .innerJoin(users, and(eq(users.id, groupInvitations.invitedByUserId), isNull(users.deletedAt)))
     .where(eq(groupInvitations.token, tokenHash))
     .limit(1)
   const found = row[0]
@@ -253,7 +275,7 @@ export async function acceptInvitation(
         expiresAt: groupInvitations.expiresAt
       })
       .from(groupInvitations)
-      .innerJoin(groups, eq(groups.id, groupInvitations.groupId))
+      .innerJoin(groups, and(eq(groups.id, groupInvitations.groupId), isNull(groups.deletedAt)))
       .where(eq(groupInvitations.token, tokenHash))
       .limit(1)
 
@@ -273,7 +295,7 @@ export async function acceptInvitation(
     const existing = await tx
       .select({ userId: groupMembers.userId })
       .from(groupMembers)
-      .where(and(eq(groupMembers.groupId, inv.groupId), eq(groupMembers.userId, userId)))
+      .where(and(eq(groupMembers.groupId, inv.groupId), eq(groupMembers.userId, userId), isNull(groupMembers.deletedAt)))
       .limit(1)
     if (existing.length > 0) return { ok: false as const, error: 'already_member' as const }
 
@@ -284,7 +306,10 @@ export async function acceptInvitation(
       .returning({ id: groupInvitations.id })
     if (claimed.length === 0) return { ok: false as const, error: 'already_used' as const }
 
-    await tx.insert(groupMembers).values({ groupId: inv.groupId, userId, role: 'member', joinedAt: Date.now() }).onConflictDoNothing()
+    await tx
+      .insert(groupMembers)
+      .values({ groupId: inv.groupId, userId, role: 'member', joinedAt: Date.now() })
+      .onConflictDoUpdate({ target: [groupMembers.groupId, groupMembers.userId], set: { role: 'member', deletedAt: null, joinedAt: Date.now() } })
     await tx
       .insert(preferences)
       .values({ userId, activeGroupId: inv.groupId })
@@ -367,7 +392,7 @@ export async function readUserProfile(userId: string): Promise<UserProfile | nul
       city: users.city
     })
     .from(users)
-    .where(eq(users.id, userId))
+    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
     .limit(1)
   const found = row[0]
   if (!found) return null
@@ -383,14 +408,22 @@ export async function readUserProfile(userId: string): Promise<UserProfile | nul
 }
 
 export async function isUsernameTaken(username: string, exceptUserId: string): Promise<boolean> {
-  const row = await db.select({ id: users.id }).from(users).where(eq(users.username, username)).limit(1)
+  const row = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.username, username), isNull(users.deletedAt)))
+    .limit(1)
   const found = row[0]
   if (!found) return false
   return found.id !== exceptUserId
 }
 
 export async function usernameExists(username: string): Promise<boolean> {
-  const row = await db.select({ id: users.id }).from(users).where(eq(users.username, username)).limit(1)
+  const row = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.username, username), isNull(users.deletedAt)))
+    .limit(1)
   return row.length > 0
 }
 
@@ -412,7 +445,7 @@ export async function updateUserProfile(
         name: composedName,
         updatedAt: new Date()
       })
-      .where(eq(users.id, userId))
+      .where(and(eq(users.id, userId), isNull(users.deletedAt)))
     return { ok: true }
   } catch (e: unknown) {
     if (isUniqueViolation(e, 'username')) return { ok: false, reason: 'username_taken' }
@@ -433,7 +466,7 @@ export async function findUserByEmail(email: string): Promise<{ id: string; firs
   const row = await db
     .select({ id: users.id, firstName: users.firstName, lastName: users.lastName, name: users.name, email: users.email })
     .from(users)
-    .where(eq(users.email, email))
+    .where(and(eq(users.email, email), isNull(users.deletedAt)))
     .limit(1)
   const found = row[0]
   if (!found) return null
@@ -450,8 +483,8 @@ export async function readEventsForMember(groupId: string, userId: string): Prom
   const rows = await db
     .select({ id: events.id, clientId: events.clientId, who: events.who, ts: events.ts })
     .from(events)
-    .innerJoin(requester, and(eq(requester.groupId, events.groupId), eq(requester.userId, userId)))
-    .where(eq(events.groupId, groupId))
+    .innerJoin(requester, and(eq(requester.groupId, events.groupId), eq(requester.userId, userId), isNull(requester.deletedAt)))
+    .where(and(eq(events.groupId, groupId), isNull(events.deletedAt)))
     .orderBy(events.ts, events.id)
   return rows.map((row) => ({
     id: row.clientId ?? `server:${row.id}`,
@@ -463,7 +496,7 @@ export async function readEventsForMember(groupId: string, userId: string): Prom
 export type WorldRankingRow = { groupId: string; name: string; score: number; firstEventTs: number }
 
 export async function readWorldRanking(opts: { window: 'all' | 'week'; weekStartTs?: number }): Promise<WorldRankingRow[]> {
-  const where = opts.window === 'week' && opts.weekStartTs !== undefined ? sql`${events.ts} >= ${opts.weekStartTs}` : sql`true`
+  const timeFilter = opts.window === 'week' && opts.weekStartTs !== undefined ? sql`${events.ts} >= ${opts.weekStartTs}` : sql`true`
   const rows = await db
     .select({
       groupId: events.groupId,
@@ -472,8 +505,8 @@ export async function readWorldRanking(opts: { window: 'all' | 'week'; weekStart
       firstEventTs: sql<number>`min(${events.ts})::bigint`
     })
     .from(events)
-    .innerJoin(groups, eq(groups.id, events.groupId))
-    .where(where)
+    .innerJoin(groups, and(eq(groups.id, events.groupId), isNull(groups.deletedAt)))
+    .where(and(timeFilter, isNull(events.deletedAt)))
     .groupBy(events.groupId, groups.name)
     .orderBy(sql`count(${events.id}) desc, min(${events.ts}) asc`)
   return rows.map((r) => ({
@@ -503,7 +536,11 @@ export async function readLocale(userId: string | null): Promise<Locale> {
 }
 
 export async function readOnboardingStatus(userId: string): Promise<OnboardingStatus> {
-  const row = await db.select({ onboardingStatus: users.onboardingStatus }).from(users).where(eq(users.id, userId)).limit(1)
+  const row = await db
+    .select({ onboardingStatus: users.onboardingStatus })
+    .from(users)
+    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+    .limit(1)
   return row[0]?.onboardingStatus === 'pending' ? 'pending' : 'complete'
 }
 
@@ -533,7 +570,7 @@ export async function applyOps(ops: PendingOp[], userId: string, groupId: string
         const membership = await tx
           .select({ userId: groupMembers.userId })
           .from(groupMembers)
-          .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+          .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId), isNull(groupMembers.deletedAt)))
           .limit(1)
         if (membership.length === 0) return
         if (op.kind === 'add-event') {
@@ -542,9 +579,15 @@ export async function applyOps(ops: PendingOp[], userId: string, groupId: string
         } else if (op.kind === 'delete-event') {
           const serverId = parseServerEventId(op.eventId)
           if (serverId !== null) {
-            await tx.delete(events).where(and(eq(events.id, serverId), eq(events.who, userId), eq(events.groupId, groupId)))
+            await tx
+              .update(events)
+              .set({ deletedAt: new Date() })
+              .where(and(eq(events.id, serverId), eq(events.who, userId), eq(events.groupId, groupId), isNull(events.deletedAt)))
           } else {
-            await tx.delete(events).where(and(eq(events.clientId, op.eventId), eq(events.who, userId), eq(events.groupId, groupId)))
+            await tx
+              .update(events)
+              .set({ deletedAt: new Date() })
+              .where(and(eq(events.clientId, op.eventId), eq(events.who, userId), eq(events.groupId, groupId), isNull(events.deletedAt)))
           }
         } else if (op.kind === 'set-theme') {
           await tx
@@ -670,7 +713,7 @@ export async function userHasCredentialAccount(email: string): Promise<boolean> 
   const row = await db
     .select({ id: accounts.id })
     .from(accounts)
-    .innerJoin(users, eq(users.id, accounts.userId))
+    .innerJoin(users, and(eq(users.id, accounts.userId), isNull(users.deletedAt)))
     .where(and(eq(users.email, email.toLowerCase()), eq(accounts.providerId, 'credential')))
     .limit(1)
   return row.length > 0
@@ -680,7 +723,7 @@ export async function getCredentialPasswordHash(email: string): Promise<string |
   const row = await db
     .select({ password: accounts.password })
     .from(accounts)
-    .innerJoin(users, eq(users.id, accounts.userId))
+    .innerJoin(users, and(eq(users.id, accounts.userId), isNull(users.deletedAt)))
     .where(and(eq(users.email, email.toLowerCase()), eq(accounts.providerId, 'credential')))
     .limit(1)
   return row[0]?.password ?? null
@@ -732,6 +775,71 @@ export async function createCredentialAccount(userId: string, passwordHash: stri
 }
 
 export async function userHasPasskeys(email: string): Promise<boolean> {
-  const row = await db.select({ id: passkeys.id }).from(passkeys).innerJoin(users, eq(users.id, passkeys.userId)).where(eq(users.email, email)).limit(1)
+  const row = await db
+    .select({ id: passkeys.id })
+    .from(passkeys)
+    .innerJoin(users, and(eq(users.id, passkeys.userId), isNull(users.deletedAt)))
+    .where(eq(users.email, email))
+    .limit(1)
   return row.length > 0
+}
+
+// --- Soft-delete helpers (used by backoffice admin actions) ---
+
+export async function isUserActive(userId: string): Promise<boolean> {
+  const row = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+    .limit(1)
+  return row.length > 0
+}
+
+export async function softDeleteUser(userId: string): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx
+      .update(users)
+      .set({ deletedAt: new Date(), updatedAt: new Date() })
+      .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+    await tx.delete(sessions).where(eq(sessions.userId, userId))
+  })
+}
+
+export async function restoreUser(userId: string): Promise<void> {
+  await db
+    .update(users)
+    .set({ deletedAt: null, updatedAt: new Date() })
+    .where(and(eq(users.id, userId), sql`${users.deletedAt} IS NOT NULL`))
+}
+
+export async function restoreGroup(groupId: string): Promise<void> {
+  await db.transaction(async (tx) => {
+    const row = await tx.select({ deletedAt: groups.deletedAt }).from(groups).where(eq(groups.id, groupId)).limit(1)
+    const groupDeletedAt = row[0]?.deletedAt
+    if (!groupDeletedAt) return
+
+    await tx.update(groups).set({ deletedAt: null }).where(eq(groups.id, groupId))
+    await tx
+      .update(groupMembers)
+      .set({ deletedAt: null })
+      .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.deletedAt, groupDeletedAt)))
+    await tx
+      .update(events)
+      .set({ deletedAt: null })
+      .where(and(eq(events.groupId, groupId), eq(events.deletedAt, groupDeletedAt)))
+  })
+}
+
+export async function restoreGroupMember(groupId: string, userId: string): Promise<void> {
+  await db
+    .update(groupMembers)
+    .set({ deletedAt: null })
+    .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId), sql`${groupMembers.deletedAt} IS NOT NULL`))
+}
+
+export async function restoreEvent(eventId: number): Promise<void> {
+  await db
+    .update(events)
+    .set({ deletedAt: null })
+    .where(and(eq(events.id, eventId), sql`${events.deletedAt} IS NOT NULL`))
 }

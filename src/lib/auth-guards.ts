@@ -4,7 +4,7 @@ import { getSessionCookie } from 'better-auth/cookies'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { auth, type Session } from './auth'
-import { readActiveGroupId, readGroupMembership, readOnboardingStatus, writeActiveGroupId } from './store'
+import { isUserActive, readActiveGroupId, readGroupMembership, readOnboardingStatus, writeActiveGroupId } from './store'
 
 type User = Session['user']
 
@@ -30,7 +30,13 @@ export async function getCurrentUser(): Promise<User | null> {
   const h = await headers()
   if (!getSessionCookie(h)) return null
   const session = await auth.api.getSession({ headers: h })
-  return session?.user ?? null
+  const user = session?.user ?? null
+  if (!user) return null
+  if (!(await isUserActive(user.id))) {
+    await auth.api.signOut({ headers: h })
+    return null
+  }
+  return user
 }
 
 export async function requireUser(nextPath: string): Promise<User> {
