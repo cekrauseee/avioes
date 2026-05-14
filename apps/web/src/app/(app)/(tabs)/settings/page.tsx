@@ -1,6 +1,6 @@
 import { SettingsView } from '@/components/settings-view'
-import { requireActiveGroup } from '@airplanes/auth/guards'
 import { readLocale } from '@airplanes/auth/cookies'
+import { requireActiveGroup } from '@airplanes/auth/guards'
 import { t } from '@airplanes/i18n'
 import { Suspense } from 'react'
 import Loading from './loading'

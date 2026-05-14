@@ -1,10 +1,10 @@
 'use client'
 
+import { t } from '@airplanes/i18n'
 import Image from 'next/image'
 import { startTransition } from 'react'
 import { Button, ButtonLink } from '../components/button'
 import { IconRefresh } from '../components/icons'
-import { t } from '@airplanes/i18n'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 
 export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {

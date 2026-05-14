@@ -1,5 +1,8 @@
 'use client'
 
+import { authClient } from '@airplanes/auth/client'
+import { t, tf } from '@airplanes/i18n'
+import { MEMBER_COLORS } from '@airplanes/types'
 import { AnimatePresence, motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
@@ -13,12 +16,9 @@ import {
   uploadProfileImage,
   type OnboardingState
 } from '../actions'
-import { authClient } from '@airplanes/auth/client'
 import { resolveAvatarUrl } from '../lib/avatar'
-import { t, tf } from '@airplanes/i18n'
 import { MOTION_OFFSET, MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { applyLocalIdentity, applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
-import { MEMBER_COLORS } from '@airplanes/types'
 import { Avatar } from './avatar'
 import { Button, usePromiseStatus } from './button'
 import { IconArrowLeft } from './icons'

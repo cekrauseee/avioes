@@ -1,3 +1,4 @@
+import { detectLocaleFromHeader } from '@airplanes/i18n'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import type { Metadata, Viewport } from 'next'
@@ -5,7 +6,6 @@ import { Fraunces, Geist, Geist_Mono } from 'next/font/google'
 import { headers } from 'next/headers'
 import { AppRuntime } from '../components/app-runtime'
 import { Noise } from '../components/noise'
-import { detectLocaleFromHeader } from '@airplanes/i18n'
 import './globals.css'
 
 const geistSans = Geist({

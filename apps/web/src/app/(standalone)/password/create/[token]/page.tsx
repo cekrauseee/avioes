@@ -1,7 +1,7 @@
 import { PasswordCreateScreen } from '@/components/password-create-screen'
 import { readLocale } from '@airplanes/auth/cookies'
-import { t } from '@airplanes/i18n'
 import { validatePasswordToken } from '@airplanes/db/store'
+import { t } from '@airplanes/i18n'
 
 export async function generateMetadata() {
   const locale = await readLocale()

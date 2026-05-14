@@ -1,6 +1,6 @@
-import { Body, Button, Container, Font, Head, Heading, Hr, Html, Img, Preview, Text } from '@react-email/components'
 import { t } from '@airplanes/i18n'
 import type { Locale } from '@airplanes/types'
+import { Body, Button, Container, Font, Head, Heading, Hr, Html, Img, Preview, Text } from '@react-email/components'
 import { COLORS, FONT_BODY, FONT_DISPLAY, FRAUNCES_FONTS } from './shared'
 
 const BASE_URL = process.env.BETTER_AUTH_URL ?? 'http://localhost:3000'

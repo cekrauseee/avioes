@@ -1,8 +1,8 @@
 import { PasswordChangeVerifyScreen } from '@/components/password-change-verify-screen'
-import { requireUser } from '@airplanes/auth/guards'
 import { readLocale } from '@airplanes/auth/cookies'
-import { t } from '@airplanes/i18n'
+import { requireUser } from '@airplanes/auth/guards'
 import { validatePasswordToken } from '@airplanes/db/store'
+import { t } from '@airplanes/i18n'
 
 export async function generateMetadata() {
   const locale = await readLocale()

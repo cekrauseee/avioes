@@ -1,7 +1,7 @@
 'use client'
 
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { t } from '@airplanes/i18n'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { MOTION_OFFSET, MOTION_TRANSITION } from '../lib/motion'
 import { isOffline, selectLocale, selectPendingCount, useOfflineState } from '../lib/offline-store'
 

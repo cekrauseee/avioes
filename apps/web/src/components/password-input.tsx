@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
 import { t } from '@airplanes/i18n'
 import type { Locale } from '@airplanes/types'
+import { useState } from 'react'
 
 export function PasswordInput({
   value,

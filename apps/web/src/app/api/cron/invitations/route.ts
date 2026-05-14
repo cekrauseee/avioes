@@ -1,6 +1,6 @@
+import { expirePendingInvitations } from '@airplanes/db/store'
 import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import { expirePendingInvitations } from '@airplanes/db/store'
 
 function timingSafeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) return false

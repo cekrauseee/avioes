@@ -1,6 +1,6 @@
 import { EditGroupScreen } from '@/components/edit-group-screen'
-import { requireGroupOwner } from '@airplanes/auth/guards'
 import { readLocale } from '@airplanes/auth/cookies'
+import { requireGroupOwner } from '@airplanes/auth/guards'
 import { t } from '@airplanes/i18n'
 
 export async function generateMetadata() {

@@ -1,12 +1,12 @@
 import 'server-only'
 
+import { accounts, db, passkeys, sessions, users, verifications } from '@airplanes/db'
+import { findUserByEmail, readLocale } from '@airplanes/db/store'
 import { passkey } from '@better-auth/passkey'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { emailOTP } from 'better-auth/plugins'
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { accounts, db, passkeys, sessions, users, verifications } from '@airplanes/db'
-import { findUserByEmail, readLocale } from '@airplanes/db/store'
 import { sendOtpEmail } from './email/email'
 import { OTP_ALLOWED_ATTEMPTS, OTP_EXPIRES_IN_SECONDS, OTP_LENGTH } from './otp-constants'
 

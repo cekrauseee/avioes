@@ -1,9 +1,9 @@
 import 'server-only'
 
+import { isUserActive, readActiveGroupId, readGroupMembership, readOnboardingStatus, writeActiveGroupId } from '@airplanes/db/store'
 import { getSessionCookie } from 'better-auth/cookies'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { isUserActive, readActiveGroupId, readGroupMembership, readOnboardingStatus, writeActiveGroupId } from '@airplanes/db/store'
 import { auth, type Session } from './server'
 
 type User = Session['user']

@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { authClient } from '@airplanes/auth/client'
 import { t } from '@airplanes/i18n'
 import type { Locale } from '@airplanes/types'
+import { useEffect, useState } from 'react'
 import { AnimatedLayoutBlock, AnimatedList, AnimatedListGroup, AnimatedListItem } from './animated-list'
 import { Button } from './button'
 import { ConfirmActionSlot, ConfirmRow, ConfirmTriggerRow } from './confirm-row'

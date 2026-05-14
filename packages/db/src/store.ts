@@ -1,10 +1,10 @@
 import 'server-only'
 
+import type { AirplaneEvent, Group, GroupMember, GroupRole, Locale, OnboardingStatus, Palette, PendingOp, Theme } from '@airplanes/types'
 import crypto from 'crypto'
 import { and, eq, gt, isNull, like, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import { accounts, db, events, groupInvitations, groupMembers, groups, passkeys, preferences, processedOps, sessions, users, verifications } from '.'
-import type { AirplaneEvent, Group, GroupMember, GroupRole, Locale, OnboardingStatus, Palette, PendingOp, Theme } from '@airplanes/types'
 
 const groupMembersForCount = alias(groupMembers, 'group_members_for_count')
 

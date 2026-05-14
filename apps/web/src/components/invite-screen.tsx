@@ -1,12 +1,12 @@
 'use client'
 
+import { t, tf } from '@airplanes/i18n'
 import { AnimatePresence, motion } from 'motion/react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { acceptInvitation, rejectInvitation } from '../actions'
 import { resolveAvatarUrl } from '../lib/avatar'
-import { t, tf } from '@airplanes/i18n'
 import { MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { applyServerSnapshot, selectLocale, useOfflineState } from '../lib/offline-store'
 import { Button, ButtonLink } from './button'

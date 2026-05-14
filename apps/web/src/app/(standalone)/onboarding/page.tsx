@@ -1,9 +1,9 @@
 import { getOnboardingState } from '@/actions'
 import { OnboardingWizard } from '@/components/onboarding-wizard'
-import { requireUser } from '@airplanes/auth/guards'
 import { readLocale } from '@airplanes/auth/cookies'
-import { t } from '@airplanes/i18n'
+import { requireUser } from '@airplanes/auth/guards'
 import { readOnboardingStatus } from '@airplanes/db/store'
+import { t } from '@airplanes/i18n'
 import { redirect } from 'next/navigation'
 
 export async function generateMetadata() {

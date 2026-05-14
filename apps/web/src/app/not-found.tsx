@@ -1,9 +1,9 @@
 'use client'
 
+import { t } from '@airplanes/i18n'
 import Image from 'next/image'
 import Link from 'next/link'
 import { IconArrowLeft } from '../components/icons'
-import { t } from '@airplanes/i18n'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 
 export default function NotFound() {

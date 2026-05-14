@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { authClient } from '@airplanes/auth/client'
 import { t } from '@airplanes/i18n'
 import type { Locale } from '@airplanes/types'
+import { useEffect, useState } from 'react'
 import { GoogleMark } from './auth-screen'
 import { Button, ButtonLink } from './button'
 import { ConfirmActionSlot, ConfirmRow, ConfirmTriggerRow } from './confirm-row'

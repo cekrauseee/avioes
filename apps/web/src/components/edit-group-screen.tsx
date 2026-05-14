@@ -1,10 +1,10 @@
 'use client'
 
+import { t } from '@airplanes/i18n'
 import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useTransition } from 'react'
 import { getGroupDetails, updateGroup } from '../actions'
-import { t } from '@airplanes/i18n'
 import { MOTION_TRANSITION, withMotionDelay } from '../lib/motion'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 import { Button } from './button'

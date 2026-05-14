@@ -1,7 +1,7 @@
 import 'server-only'
 
-import { cookies } from 'next/headers'
 import type { Locale } from '@airplanes/types'
+import { cookies } from 'next/headers'
 
 const LOCALE_COOKIE = 'ap_locale'
 

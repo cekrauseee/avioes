@@ -1,5 +1,5 @@
-import { totals } from './streaks'
 import type { AirplaneEvent, GroupMember, Identity, Locale, OnboardingStatus, Palette, PendingOp, Theme } from '@airplanes/types'
+import { totals } from './streaks'
 
 export type AddEventOp = Extract<PendingOp, { kind: 'add-event' }>
 export type DeleteEventOp = Extract<PendingOp, { kind: 'delete-event' }>

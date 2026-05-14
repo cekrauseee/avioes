@@ -1,6 +1,6 @@
 import { ProfileScreen } from '@/components/profile-screen'
-import { requireOnboardedUser } from '@airplanes/auth/guards'
 import { readLocale } from '@airplanes/auth/cookies'
+import { requireOnboardedUser } from '@airplanes/auth/guards'
 import { t } from '@airplanes/i18n'
 import { Suspense } from 'react'
 

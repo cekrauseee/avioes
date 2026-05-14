@@ -1,11 +1,11 @@
 'use client'
 
+import { t, type TKey } from '@airplanes/i18n'
+import type { Locale } from '@airplanes/types'
 import { motion, useMotionValue, useReducedMotion, type PanInfo } from 'motion/react'
 import Link from 'next/link'
 import { useRef, useState } from 'react'
-import { t, type TKey } from '@airplanes/i18n'
 import { MOTION_SPRING } from '../lib/motion'
-import type { Locale } from '@airplanes/types'
 
 export type ToolbarTabItem<Id extends string> = {
   id: Id

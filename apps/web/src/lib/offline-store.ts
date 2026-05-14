@@ -1,5 +1,6 @@
 'use client'
 
+import type { AirplaneEvent, GroupMember, Identity, Locale, Palette, PendingOp, Theme } from '@airplanes/types'
 import { useCallback, useEffect } from 'react'
 import { writeBootState } from './offline-db'
 import {
@@ -14,7 +15,6 @@ import {
   useAppStore,
   type AppState
 } from './store/app-store'
-import type { AirplaneEvent, GroupMember, Identity, Locale, Palette, PendingOp, Theme } from '@airplanes/types'
 
 // ---------------------------------------------------------------------------
 // Re-export the state type under the old name for consumers

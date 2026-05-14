@@ -1,5 +1,5 @@
-import type { OfflineSnapshot } from './offline-model'
 import type { AirplaneEvent, Locale, Palette, PendingOp, Theme } from '@airplanes/types'
+import type { OfflineSnapshot } from './offline-model'
 
 export type PersistedOfflineState = OfflineSnapshot & {
   version: 3

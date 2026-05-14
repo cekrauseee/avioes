@@ -1,8 +1,8 @@
 import { InviteScreen } from '@/components/invite-screen'
-import { getCurrentUser } from '@airplanes/auth/guards'
 import { readLocale } from '@airplanes/auth/cookies'
-import { t } from '@airplanes/i18n'
+import { getCurrentUser } from '@airplanes/auth/guards'
 import { readInvitationByToken } from '@airplanes/db/store'
+import { t } from '@airplanes/i18n'
 import type { Metadata } from 'next'
 
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {

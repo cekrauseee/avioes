@@ -1,10 +1,10 @@
 'use client'
 
+import { t, type TKey } from '@airplanes/i18n'
+import type { Locale } from '@airplanes/types'
 import { AnimatePresence, motion, useReducedMotion, type PanInfo } from 'motion/react'
 import { useState } from 'react'
-import { t, type TKey } from '@airplanes/i18n'
 import { MOTION_TRANSITION } from '../lib/motion'
-import type { Locale } from '@airplanes/types'
 import { IconArrowLeft, IconArrowRight } from './icons'
 import { Placeholder } from './placeholder'
 

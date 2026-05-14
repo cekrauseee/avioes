@@ -1,10 +1,10 @@
 'use client'
 
+import { getMemberColor, type Identity } from '@airplanes/types'
 import { usePathname, useRouter } from 'next/navigation'
 import { startTransition, useEffect } from 'react'
 import { useNavDirection } from '../lib/nav-direction'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
-import { getMemberColor, type Identity } from '@airplanes/types'
 import { ToolbarTabs, type ToolbarTabItem } from './toolbar-tabs'
 
 const links = [

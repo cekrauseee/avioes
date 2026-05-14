@@ -1,10 +1,10 @@
 'use client'
 
-import Image from 'next/image'
 import { DATE_LOCALE, t } from '@airplanes/i18n'
+import { getMemberColor, getMemberFirstName, type Locale } from '@airplanes/types'
+import Image from 'next/image'
 import { selectEvents, selectLocale, useOfflineState } from '../lib/offline-store'
 import { computeStreaks } from '../lib/streaks'
-import { getMemberColor, getMemberFirstName, type Locale } from '@airplanes/types'
 import { AppShell } from './app-shell'
 import { Onboarding } from './onboarding'
 import { SyncStatus } from './sync-status'

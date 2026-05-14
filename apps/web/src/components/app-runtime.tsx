@@ -1,9 +1,9 @@
 'use client'
 
+import { t, type TKey } from '@airplanes/i18n'
 import { AnimatePresence, motion } from 'motion/react'
 import { usePathname } from 'next/navigation'
 import { useEffect } from 'react'
-import { t, type TKey } from '@airplanes/i18n'
 import { MOTION_TRANSITION } from '../lib/motion'
 import { NavDirectionProvider } from '../lib/nav-direction'
 import { selectLocale, useOfflineRuntime, useOfflineState } from '../lib/offline-store'

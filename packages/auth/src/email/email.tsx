@@ -1,9 +1,9 @@
 import 'server-only'
 
-import { render } from '@react-email/render'
-import { Resend } from 'resend'
 import { t, tf } from '@airplanes/i18n'
 import type { Locale } from '@airplanes/types'
+import { render } from '@react-email/render'
+import { Resend } from 'resend'
 import { InviteEmail } from './templates/invite'
 import { OtpLoginEmail } from './templates/otp-login'
 import { PasswordRequestEmail } from './templates/password-request'

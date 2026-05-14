@@ -1,8 +1,8 @@
 'use client'
 
+import { t, tf } from '@airplanes/i18n'
 import { useCallback, useEffect, useState } from 'react'
 import { sendInvitationEmail } from '../actions'
-import { t, tf } from '@airplanes/i18n'
 import { selectLocale, useOfflineState } from '../lib/offline-store'
 import { Button, usePromiseStatus } from './button'
 import { IconCopy, IconMail, IconSend, IconShare } from './icons'

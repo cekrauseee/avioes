@@ -1,10 +1,10 @@
 'use client'
 
+import { t, type TKey } from '@airplanes/i18n'
+import type { Locale } from '@airplanes/types'
 import { motion, useReducedMotion, type PanInfo } from 'motion/react'
 import { useRef, useState } from 'react'
-import { t, type TKey } from '@airplanes/i18n'
 import { MOTION_SPRING } from '../lib/motion'
-import type { Locale } from '@airplanes/types'
 
 export type TabItem<Id extends string> = {
   id: Id

@@ -1,10 +1,10 @@
 'use client'
 
-import type { ComponentType } from 'react'
 import type { TKey } from '@airplanes/i18n'
 import { t, tf } from '@airplanes/i18n'
-import { queueTheme, selectLocale, selectTheme, useOfflineState } from '../lib/offline-store'
 import type { Theme } from '@airplanes/types'
+import type { ComponentType } from 'react'
+import { queueTheme, selectLocale, selectTheme, useOfflineState } from '../lib/offline-store'
 import { IconMoon, IconSun, IconSunMoon } from './icons'
 
 const order: Theme[] = ['system', 'light', 'dark']

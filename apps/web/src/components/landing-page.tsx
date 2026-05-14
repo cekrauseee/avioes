@@ -1,11 +1,11 @@
 'use client'
 
+import { t, type TKey } from '@airplanes/i18n'
+import type { Locale } from '@airplanes/types'
 import { AnimatePresence, motion } from 'motion/react'
 import Image from 'next/image'
 import { useState } from 'react'
-import { t, type TKey } from '@airplanes/i18n'
 import { MOTION_EASE } from '../lib/motion'
-import type { Locale } from '@airplanes/types'
 import { ButtonLink } from './button'
 import { IconArrowRight } from './icons'
 

@@ -1,8 +1,8 @@
 'use client'
 
+import type { Identity } from '@airplanes/types'
 import { motion, useReducedMotion } from 'motion/react'
 import { MOTION_TRANSITION } from '../lib/motion'
-import type { Identity } from '@airplanes/types'
 import { Nav } from './nav'
 
 export function NavBar({ who }: { who: Identity }) {

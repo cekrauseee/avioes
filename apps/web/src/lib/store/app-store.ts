@@ -1,5 +1,6 @@
 'use client'
 
+import type { AirplaneEvent, GroupMember, Identity, Locale, OnboardingStatus, Palette, PendingOp, Theme } from '@airplanes/types'
 import { createStore, useStore } from 'zustand'
 import { bootstrapState, syncOps } from '../../actions'
 import {
@@ -26,7 +27,6 @@ import {
   type OfflineSnapshot,
   type SyncSnapshot
 } from '../offline-model'
-import type { AirplaneEvent, GroupMember, Identity, Locale, OnboardingStatus, Palette, PendingOp, Theme } from '@airplanes/types'
 
 // ---------------------------------------------------------------------------
 // State shape
