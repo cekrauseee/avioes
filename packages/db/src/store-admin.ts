@@ -195,11 +195,28 @@ export async function adminSoftDeleteUser(userId: string): Promise<{ ok: true } 
   return { ok: true }
 }
 
-export async function adminRestoreUser(userId: string) {
+export async function adminRestoreUser(userId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const [target] = await db.select({ email: users.email, username: users.username }).from(users).where(eq(users.id, userId)).limit(1)
+  if (!target) return { ok: false, error: 'not_found' }
+
+  const conflicts = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(
+      and(
+        isNull(users.deletedAt),
+        or(eq(users.email, target.email), target.username ? eq(users.username, target.username) : undefined)
+      )
+    )
+    .limit(1)
+
+  if (conflicts.length > 0) return { ok: false, error: 'email_or_username_taken' }
+
   await db
     .update(users)
     .set({ deletedAt: null, updatedAt: new Date() })
     .where(and(eq(users.id, userId), isNotNull(users.deletedAt)))
+  return { ok: true }
 }
 
 // --- Groups ---
@@ -304,6 +321,7 @@ export async function adminUpdateGroup(id: string, patch: { name?: string; owner
       const [targetMember] = await tx
         .select({ userId: groupMembers.userId })
         .from(groupMembers)
+        .innerJoin(users, and(eq(users.id, groupMembers.userId), isNull(users.deletedAt)))
         .where(and(eq(groupMembers.groupId, id), eq(groupMembers.userId, patch.ownerId!), isNull(groupMembers.deletedAt)))
         .limit(1)
       if (!targetMember) return

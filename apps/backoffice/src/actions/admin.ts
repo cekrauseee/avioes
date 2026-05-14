@@ -63,8 +63,7 @@ export async function softDeleteUser(id: string) {
 
 export async function restoreUser(id: string) {
   await requireBackofficeUser(`/users/${id}`)
-  await adminRestoreUser(id)
-  return { ok: true }
+  return adminRestoreUser(id)
 }
 
 export async function listGroups(opts: { search?: string; status?: string; cursor?: string }) {

@@ -1,5 +1,7 @@
 'use client'
 
+import type { Locale } from '@airplanes/types'
+import { DATE_LOCALE, t } from '@airplanes/i18n'
 import { KNOWN_FEATURE_FLAGS } from '@airplanes/types/feature-flags'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -26,7 +28,7 @@ type UserData = {
   activeGroupId: string | null
 }
 
-export function UserDetail({ user }: { user: UserData }) {
+export function UserDetail({ user, locale }: { user: UserData; locale: Locale }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [message, setMessage] = useState('')
@@ -43,7 +45,7 @@ export function UserDetail({ user }: { user: UserData }) {
     startTransition(async () => {
       setMessage('')
       await updateUser(user.id, { firstName, lastName, username, email, emailVerified, onboardingStatus })
-      setMessage('Salvo')
+      setMessage(t(locale, 'admin.user.saved'))
       router.refresh()
     })
   }
@@ -52,18 +54,18 @@ export function UserDetail({ user }: { user: UserData }) {
     startTransition(async () => {
       setMessage('')
       await setFeatureFlags(user.id, flags)
-      setMessage('Flags salvas')
+      setMessage(t(locale, 'admin.user.flagsSaved'))
       router.refresh()
     })
   }
 
   const handleDelete = () => {
-    if (!confirm('Deletar este usuário? Isso encerra todas as sessões.')) return
+    if (!confirm(`${t(locale, 'admin.user.softDelete')}? ${t(locale, 'admin.user.softDeleteConfirm')}`)) return
     startTransition(async () => {
       setMessage('')
       const result = await softDeleteUser(user.id)
       if (!result.ok) {
-        setMessage(result.error === 'user_owns_groups' ? 'Transfira a propriedade dos grupos antes.' : result.error)
+        setMessage(result.error === 'user_owns_groups' ? t(locale, 'admin.user.ownsGroups') : result.error)
         return
       }
       router.refresh()
@@ -73,7 +75,11 @@ export function UserDetail({ user }: { user: UserData }) {
   const handleRestore = () => {
     startTransition(async () => {
       setMessage('')
-      await restoreUser(user.id)
+      const result = await restoreUser(user.id)
+      if (!result.ok) {
+        setMessage(result.error === 'email_or_username_taken' ? t(locale, 'admin.user.restoreConflict') : result.error)
+        return
+      }
       router.refresh()
     })
   }
@@ -84,39 +90,41 @@ export function UserDetail({ user }: { user: UserData }) {
         href='/users'
         className='text-ink-faint hover:text-ink-soft mb-4 inline-block text-sm'
       >
-        ← voltar
+        {t(locale, 'admin.back')}
       </Link>
       <h1 className='mb-6 text-2xl font-semibold'>{user.firstName ?? user.name}</h1>
 
       {user.deletedAt && (
-        <div className='bg-clay-soft text-clay mb-4 rounded-lg p-3 text-sm'>Usuário deletado em {new Date(user.deletedAt).toLocaleDateString('pt-BR')}</div>
+        <div className='bg-clay-soft text-clay mb-4 rounded-lg p-3 text-sm'>
+          {t(locale, 'admin.user.deletedBanner')} {new Date(user.deletedAt).toLocaleDateString(DATE_LOCALE[locale])}
+        </div>
       )}
 
       <section className='border-line bg-paper mb-6 rounded-xl border p-5'>
-        <h2 className='text-ink-faint mb-4 text-sm font-medium'>Identidade</h2>
+        <h2 className='text-ink-faint mb-4 text-sm font-medium'>{t(locale, 'admin.user.identity')}</h2>
         <div className='grid grid-cols-2 gap-4'>
           <Field
-            label='Nome'
+            label={t(locale, 'admin.user.firstName')}
             value={firstName}
             onChange={setFirstName}
           />
           <Field
-            label='Sobrenome'
+            label={t(locale, 'admin.user.lastName')}
             value={lastName}
             onChange={setLastName}
           />
           <Field
-            label='Username'
+            label={t(locale, 'admin.users.username')}
             value={username}
             onChange={setUsername}
           />
           <Field
-            label='E-mail'
+            label={t(locale, 'admin.users.email')}
             value={email}
             onChange={setEmail}
           />
           <div>
-            <label className='text-ink-faint mb-1 block text-xs'>E-mail verificado</label>
+            <label className='text-ink-faint mb-1 block text-xs'>{t(locale, 'admin.user.emailVerified')}</label>
             <input
               type='checkbox'
               checked={emailVerified}
@@ -124,7 +132,7 @@ export function UserDetail({ user }: { user: UserData }) {
             />
           </div>
           <div>
-            <label className='text-ink-faint mb-1 block text-xs'>Onboarding</label>
+            <label className='text-ink-faint mb-1 block text-xs'>{t(locale, 'admin.user.onboardingStatus')}</label>
             <select
               value={onboardingStatus}
               onChange={(e) => setOnboardingStatus(e.target.value)}
@@ -140,30 +148,30 @@ export function UserDetail({ user }: { user: UserData }) {
           disabled={isPending}
           className='bg-sage mt-4 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50'
         >
-          {isPending ? 'Salvando…' : 'Salvar'}
+          {isPending ? t(locale, 'admin.user.saving') : t(locale, 'admin.user.save')}
         </button>
       </section>
 
       <section className='border-line bg-paper mb-6 rounded-xl border p-5'>
-        <h2 className='text-ink-faint mb-4 text-sm font-medium'>Preferências (somente leitura)</h2>
+        <h2 className='text-ink-faint mb-4 text-sm font-medium'>{t(locale, 'admin.user.preferences')}</h2>
         <div className='grid grid-cols-2 gap-4 text-sm'>
           <ReadOnlyField
-            label='País'
+            label={t(locale, 'admin.user.country')}
             value={user.country ?? '—'}
           />
           <ReadOnlyField
-            label='Cidade'
+            label={t(locale, 'admin.user.city')}
             value={user.city ?? '—'}
           />
           <ReadOnlyField
-            label='Grupo ativo'
+            label={t(locale, 'admin.user.activeGroup')}
             value={user.activeGroupId ?? '—'}
           />
         </div>
       </section>
 
       <section className='border-line bg-paper mb-6 rounded-xl border p-5'>
-        <h2 className='text-ink-faint mb-4 text-sm font-medium'>Feature flags</h2>
+        <h2 className='text-ink-faint mb-4 text-sm font-medium'>{t(locale, 'admin.user.featureFlags')}</h2>
         <div className='flex flex-col gap-2'>
           {KNOWN_FEATURE_FLAGS.map((flag) => (
             <label
@@ -186,14 +194,14 @@ export function UserDetail({ user }: { user: UserData }) {
           disabled={isPending}
           className='bg-sage mt-4 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50'
         >
-          Salvar flags
+          {t(locale, 'admin.user.saveFlags')}
         </button>
       </section>
 
       <section className='border-line bg-paper mb-6 rounded-xl border p-5'>
-        <h2 className='text-ink-faint mb-4 text-sm font-medium'>Grupos</h2>
+        <h2 className='text-ink-faint mb-4 text-sm font-medium'>{t(locale, 'admin.user.groups')}</h2>
         {user.groups.length === 0 ?
-          <p className='text-ink-faint text-sm'>Nenhum grupo.</p>
+          <p className='text-ink-faint text-sm'>{t(locale, 'admin.user.noGroups')}</p>
         : <ul className='space-y-2'>
             {user.groups.map((g) => (
               <li
@@ -206,7 +214,7 @@ export function UserDetail({ user }: { user: UserData }) {
                 >
                   {g.name}
                 </Link>
-                {g.ownerId === user.id && <span className='bg-sage-soft text-sage rounded px-1.5 py-0.5 text-xs'>dono</span>}
+                {g.ownerId === user.id && <span className='bg-sage-soft text-sage rounded px-1.5 py-0.5 text-xs'>{t(locale, 'admin.user.owner')}</span>}
               </li>
             ))}
           </ul>
@@ -214,21 +222,21 @@ export function UserDetail({ user }: { user: UserData }) {
       </section>
 
       <section className='border-line bg-paper rounded-xl border p-5'>
-        <h2 className='text-ink-faint mb-4 text-sm font-medium'>Status</h2>
+        <h2 className='text-ink-faint mb-4 text-sm font-medium'>{t(locale, 'admin.user.status')}</h2>
         {user.deletedAt ?
           <button
             onClick={handleRestore}
             disabled={isPending}
             className='bg-sage rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50'
           >
-            Restaurar usuário
+            {t(locale, 'admin.user.restore')}
           </button>
         : <button
             onClick={handleDelete}
             disabled={isPending}
             className='bg-clay rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50'
           >
-            Deletar usuário
+            {t(locale, 'admin.user.softDelete')}
           </button>
         }
       </section>

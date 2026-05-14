@@ -1,15 +1,17 @@
 'use client'
 
+import type { Locale } from '@airplanes/types'
+import { t, type TKey } from '@airplanes/i18n'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-const NAV_ITEMS = [
-  { href: '/', label: 'Início' },
-  { href: '/users', label: 'Usuários' },
-  { href: '/groups', label: 'Grupos' }
-] as const
+const NAV_ITEMS: { href: string; key: TKey }[] = [
+  { href: '/', key: 'admin.nav.home' },
+  { href: '/users', key: 'admin.nav.users' },
+  { href: '/groups', key: 'admin.nav.groups' }
+]
 
-export function Sidebar({ userName }: { userName: string }) {
+export function Sidebar({ userName, locale }: { userName: string; locale: Locale }) {
   const pathname = usePathname()
 
   return (
@@ -34,7 +36,7 @@ export function Sidebar({ userName }: { userName: string }) {
                 active ? 'bg-sage-soft text-ink font-medium' : 'text-ink-soft hover:bg-bg-soft'
               }`}
             >
-              {item.label}
+              {t(locale, item.key)}
             </Link>
           )
         })}

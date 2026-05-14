@@ -1,5 +1,7 @@
 'use client'
 
+import type { Locale } from '@airplanes/types'
+import { DATE_LOCALE, t } from '@airplanes/i18n'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
@@ -23,7 +25,7 @@ type GroupData = {
   eventCount: number
 }
 
-export function GroupDetail({ group }: { group: GroupData }) {
+export function GroupDetail({ group, locale }: { group: GroupData; locale: Locale }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [message, setMessage] = useState('')
@@ -38,13 +40,13 @@ export function GroupDetail({ group }: { group: GroupData }) {
       if (transferTo && transferTo !== group.ownerId) patch.ownerId = transferTo
       if (Object.keys(patch).length === 0) return
       await updateGroup(group.id, patch)
-      setMessage('Salvo')
+      setMessage(t(locale, 'admin.group.saved'))
       router.refresh()
     })
   }
 
   const handleDelete = () => {
-    if (!confirm('Deletar este grupo? Remove membros e eventos junto.')) return
+    if (!confirm(`${t(locale, 'admin.group.softDelete')}? ${t(locale, 'admin.group.softDeleteConfirm')}`)) return
     startTransition(async () => {
       setMessage('')
       await softDeleteGroup(group.id)
@@ -61,7 +63,7 @@ export function GroupDetail({ group }: { group: GroupData }) {
   }
 
   const handleRemoveMember = (userId: string) => {
-    if (!confirm('Remover este membro?')) return
+    if (!confirm(t(locale, 'admin.group.removeMemberConfirm'))) return
     startTransition(async () => {
       setMessage('')
       const result = await removeGroupMember(group.id, userId)
@@ -79,19 +81,21 @@ export function GroupDetail({ group }: { group: GroupData }) {
         href='/groups'
         className='text-ink-faint hover:text-ink-soft mb-4 inline-block text-sm'
       >
-        ← voltar
+        {t(locale, 'admin.back')}
       </Link>
       <h1 className='mb-6 text-2xl font-semibold'>{group.name}</h1>
 
       {group.deletedAt && (
-        <div className='bg-clay-soft text-clay mb-4 rounded-lg p-3 text-sm'>Grupo deletado em {new Date(group.deletedAt).toLocaleDateString('pt-BR')}</div>
+        <div className='bg-clay-soft text-clay mb-4 rounded-lg p-3 text-sm'>
+          {t(locale, 'admin.group.deletedBanner')} {new Date(group.deletedAt).toLocaleDateString(DATE_LOCALE[locale])}
+        </div>
       )}
 
       <section className='border-line bg-paper mb-6 rounded-xl border p-5'>
-        <h2 className='text-ink-faint mb-4 text-sm font-medium'>Identidade</h2>
+        <h2 className='text-ink-faint mb-4 text-sm font-medium'>{t(locale, 'admin.group.identity')}</h2>
         <div className='space-y-3'>
           <div>
-            <label className='text-ink-faint mb-1 block text-xs'>Nome</label>
+            <label className='text-ink-faint mb-1 block text-xs'>{t(locale, 'admin.groups.name')}</label>
             <input
               type='text'
               value={name}
@@ -100,13 +104,13 @@ export function GroupDetail({ group }: { group: GroupData }) {
             />
           </div>
           <div>
-            <label className='text-ink-faint mb-1 block text-xs'>Transferir propriedade</label>
+            <label className='text-ink-faint mb-1 block text-xs'>{t(locale, 'admin.group.transferOwnership')}</label>
             <select
               value={transferTo}
               onChange={(e) => setTransferTo(e.target.value)}
               className='border-line rounded border px-2 py-1.5 text-sm'
             >
-              <option value=''>Manter dono atual</option>
+              <option value=''>{t(locale, 'admin.group.keepOwner')}</option>
               {group.members
                 .filter((m) => m.userId !== group.ownerId)
                 .map((m) => (
@@ -125,12 +129,14 @@ export function GroupDetail({ group }: { group: GroupData }) {
           disabled={isPending}
           className='bg-sage mt-4 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50'
         >
-          {isPending ? 'Salvando…' : 'Salvar'}
+          {isPending ? t(locale, 'admin.group.saving') : t(locale, 'admin.group.save')}
         </button>
       </section>
 
       <section className='border-line bg-paper mb-6 rounded-xl border p-5'>
-        <h2 className='text-ink-faint mb-4 text-sm font-medium'>Membros ({group.members.length})</h2>
+        <h2 className='text-ink-faint mb-4 text-sm font-medium'>
+          {t(locale, 'admin.group.members')} ({group.members.length})
+        </h2>
         <div className='space-y-2'>
           {group.members.map((m) => (
             <div
@@ -145,7 +151,7 @@ export function GroupDetail({ group }: { group: GroupData }) {
                   {m.userName}
                 </Link>
                 <span className='text-ink-faint ml-2'>{m.userEmail}</span>
-                {m.userId === group.ownerId && <span className='bg-sage-soft text-sage ml-2 rounded px-1.5 py-0.5 text-xs'>dono</span>}
+                {m.userId === group.ownerId && <span className='bg-sage-soft text-sage ml-2 rounded px-1.5 py-0.5 text-xs'>{t(locale, 'admin.user.owner')}</span>}
               </div>
               {m.userId !== group.ownerId && (
                 <button
@@ -153,7 +159,7 @@ export function GroupDetail({ group }: { group: GroupData }) {
                   disabled={isPending}
                   className='text-clay text-xs hover:underline disabled:opacity-50'
                 >
-                  Remover
+                  {t(locale, 'admin.group.removeMember')}
                 </button>
               )}
             </div>
@@ -162,26 +168,28 @@ export function GroupDetail({ group }: { group: GroupData }) {
       </section>
 
       <section className='border-line bg-paper mb-6 rounded-xl border p-5'>
-        <h2 className='text-ink-faint mb-4 text-sm font-medium'>Eventos</h2>
-        <p className='text-ink-soft text-sm'>{group.eventCount} eventos ativos</p>
+        <h2 className='text-ink-faint mb-4 text-sm font-medium'>{t(locale, 'admin.groups.events')}</h2>
+        <p className='text-ink-soft text-sm'>
+          {group.eventCount} {t(locale, 'admin.group.activeEvents')}
+        </p>
       </section>
 
       <section className='border-line bg-paper rounded-xl border p-5'>
-        <h2 className='text-ink-faint mb-4 text-sm font-medium'>Status</h2>
+        <h2 className='text-ink-faint mb-4 text-sm font-medium'>{t(locale, 'admin.group.status')}</h2>
         {group.deletedAt ?
           <button
             onClick={handleRestore}
             disabled={isPending}
             className='bg-sage rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50'
           >
-            Restaurar grupo
+            {t(locale, 'admin.group.restore')}
           </button>
         : <button
             onClick={handleDelete}
             disabled={isPending}
             className='bg-clay rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50'
           >
-            Deletar grupo
+            {t(locale, 'admin.group.softDelete')}
           </button>
         }
       </section>

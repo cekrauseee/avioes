@@ -1,6 +1,8 @@
 'use client'
 
+import type { Locale } from '@airplanes/types'
 import type { AdminUserRow } from '@airplanes/db/store-admin'
+import { DATE_LOCALE, t } from '@airplanes/i18n'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useState, useTransition } from 'react'
@@ -8,7 +10,7 @@ import { listUsers } from '../../../actions/admin'
 
 type Data = { items: AdminUserRow[]; nextCursor: string | null }
 
-export function UsersList({ initialData, initialSearch, initialStatus }: { initialData: Data; initialSearch: string; initialStatus: string }) {
+export function UsersList({ initialData, initialSearch, initialStatus, locale }: { initialData: Data; initialSearch: string; initialStatus: string; locale: Locale }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [data, setData] = useState(initialData)
@@ -39,7 +41,7 @@ export function UsersList({ initialData, initialSearch, initialStatus }: { initi
       <div className='mb-4 flex gap-3'>
         <input
           type='text'
-          placeholder='Buscar…'
+          placeholder={t(locale, 'admin.search')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && applyFilters(search, status)}
@@ -53,9 +55,9 @@ export function UsersList({ initialData, initialSearch, initialStatus }: { initi
           }}
           className='border-line bg-paper rounded-lg border px-3 py-2 text-sm outline-none'
         >
-          <option value='all'>Todos</option>
-          <option value='active'>Ativos</option>
-          <option value='deleted'>Deletados</option>
+          <option value='all'>{t(locale, 'admin.filter.all')}</option>
+          <option value='active'>{t(locale, 'admin.filter.active')}</option>
+          <option value='deleted'>{t(locale, 'admin.filter.deleted')}</option>
         </select>
       </div>
 
@@ -63,13 +65,13 @@ export function UsersList({ initialData, initialSearch, initialStatus }: { initi
         <table className='w-full text-left text-sm'>
           <thead>
             <tr className='border-line text-ink-faint border-b text-xs'>
-              <th className='px-4 py-3 font-medium'>Nome</th>
-              <th className='px-4 py-3 font-medium'>E-mail</th>
-              <th className='px-4 py-3 font-medium'>Username</th>
-              <th className='px-4 py-3 font-medium'>País</th>
-              <th className='px-4 py-3 font-medium'>Flags</th>
-              <th className='px-4 py-3 font-medium'>Status</th>
-              <th className='px-4 py-3 font-medium'>Criado em</th>
+              <th className='px-4 py-3 font-medium'>{t(locale, 'admin.users.name')}</th>
+              <th className='px-4 py-3 font-medium'>{t(locale, 'admin.users.email')}</th>
+              <th className='px-4 py-3 font-medium'>{t(locale, 'admin.users.username')}</th>
+              <th className='px-4 py-3 font-medium'>{t(locale, 'admin.users.country')}</th>
+              <th className='px-4 py-3 font-medium'>{t(locale, 'admin.users.flags')}</th>
+              <th className='px-4 py-3 font-medium'>{t(locale, 'admin.users.status')}</th>
+              <th className='px-4 py-3 font-medium'>{t(locale, 'admin.users.createdAt')}</th>
             </tr>
           </thead>
           <tbody>
@@ -79,7 +81,7 @@ export function UsersList({ initialData, initialSearch, initialStatus }: { initi
                   colSpan={7}
                   className='text-ink-faint px-4 py-8 text-center'
                 >
-                  Nenhum usuário encontrado.
+                  {t(locale, 'admin.users.noResults')}
                 </td>
               </tr>
             )}
@@ -110,9 +112,12 @@ export function UsersList({ initialData, initialSearch, initialStatus }: { initi
                   ))}
                 </td>
                 <td className='px-4 py-3'>
-                  <StatusBadge deleted={!!user.deletedAt} />
+                  <StatusBadge
+                    deleted={!!user.deletedAt}
+                    locale={locale}
+                  />
                 </td>
-                <td className='text-ink-faint px-4 py-3'>{new Date(user.createdAt).toLocaleDateString('pt-BR')}</td>
+                <td className='text-ink-faint px-4 py-3'>{new Date(user.createdAt).toLocaleDateString(DATE_LOCALE[locale])}</td>
               </tr>
             ))}
           </tbody>
@@ -125,17 +130,17 @@ export function UsersList({ initialData, initialSearch, initialStatus }: { initi
           disabled={isPending}
           className='border-line text-ink-soft hover:bg-bg-soft mt-4 rounded-lg border px-4 py-2 text-sm disabled:opacity-50'
         >
-          {isPending ? 'Carregando…' : 'Carregar mais'}
+          {isPending ? t(locale, 'admin.loading') : t(locale, 'admin.users.loadMore')}
         </button>
       )}
     </div>
   )
 }
 
-function StatusBadge({ deleted }: { deleted: boolean }) {
+function StatusBadge({ deleted, locale }: { deleted: boolean; locale: Locale }) {
   return (
     <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${deleted ? 'bg-clay-soft text-clay' : 'bg-sage-soft text-sage'}`}>
-      {deleted ? 'Deletado' : 'Ativo'}
+      {deleted ? t(locale, 'admin.status.deleted') : t(locale, 'admin.status.active')}
     </span>
   )
 }

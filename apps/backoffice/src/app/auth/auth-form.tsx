@@ -1,10 +1,12 @@
 'use client'
 
+import type { Locale } from '@airplanes/types'
+import { t } from '@airplanes/i18n'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { authClient } from '../../lib/auth-client'
 
-export function AuthForm() {
+export function AuthForm({ locale }: { locale: Locale }) {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -17,7 +19,7 @@ export function AuthForm() {
     setError('')
     const result = await authClient.signIn.email({ email, password })
     if (result.error) {
-      setError(result.error.message ?? 'Erro ao entrar.')
+      setError(result.error.message ?? t(locale, 'admin.auth.signInError'))
       setPending(false)
       return
     }
@@ -31,7 +33,7 @@ export function AuthForm() {
       className='space-y-4'
     >
       <div>
-        <label className='text-ink-faint mb-1 block text-xs'>E-mail</label>
+        <label className='text-ink-faint mb-1 block text-xs'>{t(locale, 'admin.users.email')}</label>
         <input
           type='email'
           value={email}
@@ -42,7 +44,7 @@ export function AuthForm() {
         />
       </div>
       <div>
-        <label className='text-ink-faint mb-1 block text-xs'>Senha</label>
+        <label className='text-ink-faint mb-1 block text-xs'>{t(locale, 'admin.auth.password')}</label>
         <input
           type='password'
           value={password}
@@ -58,7 +60,7 @@ export function AuthForm() {
         disabled={pending}
         className='bg-sage w-full rounded-lg py-2.5 text-sm font-medium text-white disabled:opacity-50'
       >
-        {pending ? 'Entrando…' : 'Entrar'}
+        {pending ? t(locale, 'admin.auth.submitting') : t(locale, 'admin.auth.submit')}
       </button>
     </form>
   )
