@@ -8,7 +8,7 @@ There is no design tool in the loop: every illustration is generated from a writ
 
 Every user-facing illustration ships as a **light/dark PNG pair** rendered with `next/image` (`unoptimized`) inside `theme-light-only` / `theme-dark-only` wrappers. Names are kebab-case and end in `-light.png` / `-dark.png`. App icons and favicons are the only files without a transparent background.
 
-| File (`apps/web/public/`)                      | Size (px)   | Where it shows up                                                        |
+| File (`apps/web/public/`)             | Size (px)   | Where it shows up                                                        |
 | ------------------------------------- | ----------- | ------------------------------------------------------------------------ |
 | `onboarding-hero-{light,dark}.png`    | 1254 × 1254 | `auth-screen.tsx` welcome step                                           |
 | `invite-hero-{light,dark}.png`        | 1254 × 1254 | `auth-screen.tsx` (invite flow welcome), `invite-screen.tsx` invite page |

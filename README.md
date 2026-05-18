@@ -58,19 +58,19 @@ For a brand-new dev database, `npm run db:push` bootstraps all tables at once (l
 
 ## Scripts
 
-| Command              | What it does                                       |
-| -------------------- | -------------------------------------------------- |
-| `npm run dev`        | Dev server for all apps (Turborepo)                |
-| `npm run build`      | Production build for all apps                      |
-| `npm run lint`       | ESLint across the monorepo                         |
-| `npm run typecheck`  | TypeScript check across the monorepo               |
-| `npm run test`       | Vitest unit tests                                  |
-| `npm run db:up`      | Start local Postgres container                     |
-| `npm run db:down`    | Stop and remove container + volume                 |
-| `npm run db:generate`| Generate Drizzle migration from schema changes     |
-| `npm run db:migrate` | Apply pending migrations                           |
-| `npm run db:push`    | Sync schema to DB (local dev bootstrap only)       |
-| `npm run db:studio`  | Browse rows in Drizzle Studio                      |
+| Command               | What it does                                   |
+| --------------------- | ---------------------------------------------- |
+| `npm run dev`         | Dev server for all apps (Turborepo)            |
+| `npm run build`       | Production build for all apps                  |
+| `npm run lint`        | ESLint across the monorepo                     |
+| `npm run typecheck`   | TypeScript check across the monorepo           |
+| `npm run test`        | Vitest unit tests                              |
+| `npm run db:up`       | Start local Postgres container                 |
+| `npm run db:down`     | Stop and remove container + volume             |
+| `npm run db:generate` | Generate Drizzle migration from schema changes |
+| `npm run db:migrate`  | Apply pending migrations                       |
+| `npm run db:push`     | Sync schema to DB (local dev bootstrap only)   |
+| `npm run db:studio`   | Browse rows in Drizzle Studio                  |
 
 ## Documentation
 
