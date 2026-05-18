@@ -1,22 +1,46 @@
-# Airplanes
+# Aviões
 
-A small group-based airplane-spotting counter. Tap once for every airplane you see in the sky together — the app keeps a shared running tally per group, a diary of streaks, and a scoreboard. The UI is fully internationalized (Brazilian Portuguese default, English alongside); the codebase, project name, and infrastructure are in English. The visible PWA name stays "Aviões" because it is the brand.
+A small, offline-first PWA for counting airplanes together. Groups of friends tap once per sighting — the app keeps a shared tally, a diary of streaks, and a scoreboard. Built as a Turborepo monorepo with Next.js 16, React 19, and Postgres.
 
-## What this is
-
-- A small, installable PWA. Users sign in with better-auth (email + password, OTP, passkey, or Google) and join one or more groups; counting is scoped to the active group.
-- Airplane events, group membership, and per-user preferences (theme, palette, locale, active group) live in Postgres so they follow the user across devices. The PWA also keeps an IndexedDB snapshot and ordered pending-op queue for offline use.
-- UI is internationalized via `src/lib/i18n.ts` (`pt`, `en`); identifiers, routes, and docs are English.
-
-The aesthetic is intentionally small, organic and journal-like — see [`docs/ui-ux.md`](./docs/ui-ux.md).
+The UI is fully internationalized (Brazilian Portuguese default, English alongside). The visible PWA name stays "Aviões" because it is the brand.
 
 ## Stack
 
-- Next.js 16 (App Router, Turbopack, async `cookies()`)
-- React 19 (Server Components for shells, Client Components for the offline store)
-- Tailwind CSS v4 (`@import "tailwindcss"`, `@theme inline`)
-- Motion (framer-motion v12) for the counter spring + plane arc
-- Postgres + Drizzle ORM (`node-postgres` locally, `@neondatabase/serverless` on Vercel)
+- **Framework**: Next.js 16 (App Router, Turbopack, React Server Components)
+- **UI**: React 19, Tailwind CSS v4, Motion (framer-motion v12)
+- **Database**: Postgres + Drizzle ORM (`node-postgres` locally, `@neondatabase/serverless` in production)
+- **Auth**: better-auth (email + password, OTP, passkey, Google OAuth)
+- **Offline**: IndexedDB snapshot + pending-op queue, service worker with build-versioned cache
+- **Monorepo**: Turborepo + npm workspaces
+- **i18n**: `t(locale, key)` / `tf(locale, key, vars)` — PT defines the key set, EN mirrors it
+
+## Monorepo structure
+
+```
+apps/
+  web/              Main PWA (Next.js, port 3000)
+  backoffice/       Admin dashboard (Next.js, port 3001)
+
+packages/
+  auth/             better-auth instance, guards, cookies, email templates
+  db/               Drizzle schema, store queries, migrations
+  i18n/             Translation keys and helpers
+  types/            Shared TypeScript types and feature flags
+```
+
+All packages are imported as `@airplanes/*` (e.g. `@airplanes/db/store`, `@airplanes/auth/guards`).
+
+## Features
+
+- **Multi-tenant groups** — create, join via email invite, switch between groups
+- **Tap-to-count** — optimistic UI with offline support and background sync
+- **Streak diary** — consecutive sightings by the same person collapse into entries
+- **Scoreboard** — per-group totals, leaders, longest streaks, global ranking
+- **Offline-first** — IndexedDB persistence, pending-op queue, service worker
+- **PWA** — installable, auto-versioned cache tied to Next.js `BUILD_ID`
+- **Theming** — light/dark mode + 6 color palettes, per-user preference
+- **Auth** — email + password, email OTP, passkey (WebAuthn), Google OAuth
+- **Backoffice** — admin dashboard for user and group management
 
 ## Getting started
 
@@ -24,68 +48,40 @@ The aesthetic is intentionally small, organic and journal-like — see [`docs/ui
 npm install
 npm run db:up               # docker compose up -d → Postgres on :5432
 cp .env.example .env.local
-npm run db:push             # apply Drizzle schema
-npm run dev
+npm run db:migrate           # apply Drizzle migrations
+npm run dev                  # starts all apps via Turborepo
 ```
 
-Open <http://localhost:3000>. The first visit shows the onboarding screen.
+The web app opens at [localhost:3000](http://localhost:3000), backoffice at [localhost:3001](http://localhost:3001).
+
+For a brand-new dev database, `npm run db:push` bootstraps all tables at once (local dev only — never against production).
 
 ## Scripts
 
-| Command             | What it does                                |
-| ------------------- | ------------------------------------------- |
-| `npm run dev`       | Dev server with Turbopack                   |
-| `npm run build`     | Production build                            |
-| `npm run start`     | Run the production build locally            |
-| `npm run lint`      | ESLint (flat config, `eslint-config-next`)  |
-| `npm run test`      | Vitest unit tests                           |
-| `npm run db:up`     | Start the local Postgres container          |
-| `npm run db:down`   | Stop and remove the container + volume      |
-| `npm run db:push`   | Sync `src/lib/db/schema.ts` to the database |
-| `npm run db:studio` | Browse rows in Drizzle Studio               |
-
-The service worker only registers in production builds. Run `npm run build && npm run start` to test the PWA install flow.
-
-## Project layout
-
-```
-src/
-  app/
-    page.tsx              counter shell
-    diary/page.tsx        diary shell
-    scoreboard/page.tsx   scoreboard shell
-    manifest.ts           PWA manifest (metadata route)
-    sw.js/route.ts        versioned service worker
-  actions.ts              server actions (cookie + sync transport)
-  components/             UI components
-  lib/
-    cookies.ts            identity cookie helpers
-    offline-db.ts         IndexedDB + boot cache persistence
-    offline-model.ts      deterministic offline projections
-    offline-store.ts      React external store + sync loop
-    store.ts              DB-backed canonical state + op replay
-    streaks.ts            event → streak derivation
-    types.ts              shared types + IDENTITIES map
-    db/
-      index.ts            driver switch (pg ↔ neon-serverless)
-      schema.ts           Drizzle schema
-public/
-  icons/                  PWA PNG icons
-docker-compose.yaml       local Postgres
-drizzle.config.ts         drizzle-kit config
-docs/                     project documentation (start here)
-```
+| Command              | What it does                                       |
+| -------------------- | -------------------------------------------------- |
+| `npm run dev`        | Dev server for all apps (Turborepo)                |
+| `npm run build`      | Production build for all apps                      |
+| `npm run lint`       | ESLint across the monorepo                         |
+| `npm run typecheck`  | TypeScript check across the monorepo               |
+| `npm run test`       | Vitest unit tests                                  |
+| `npm run db:up`      | Start local Postgres container                     |
+| `npm run db:down`    | Stop and remove container + volume                 |
+| `npm run db:generate`| Generate Drizzle migration from schema changes     |
+| `npm run db:migrate` | Apply pending migrations                           |
+| `npm run db:push`    | Sync schema to DB (local dev bootstrap only)       |
+| `npm run db:studio`  | Browse rows in Drizzle Studio                      |
 
 ## Documentation
 
-The `docs/` folder is the source of truth for how this project is designed and built. Start with [`docs/project.md`](./docs/project.md), then read whichever doc matches what you're about to do:
+Detailed documentation lives in `docs/`:
 
 - [`docs/project.md`](./docs/project.md) — what the app is and what it isn't
-- [`docs/architecture.md`](./docs/architecture.md) — how the app is wired together
+- [`docs/architecture.md`](./docs/architecture.md) — data flow, auth, routing, offline sync
 - [`docs/code-style.md`](./docs/code-style.md) — conventions for writing code in this repo
-- [`docs/ui-ux.md`](./docs/ui-ux.md) — design language, palette, typography, motion, navigation
-- [`docs/images.md`](./docs/images.md) — illustration catalog, visual contract, prompt template for new art
-- [`docs/context.md`](./docs/context.md) — running implementation log (kept up to date)
+- [`docs/ui-ux.md`](./docs/ui-ux.md) — design language, palette, typography, motion
+- [`docs/images.md`](./docs/images.md) — illustration catalog and request workflow
+- [`docs/context.md`](./docs/context.md) — running implementation log
 - [`docs/backlog.md`](./docs/backlog.md) — known deferred follow-ups
 
-If you are an AI agent picking up this project, read [`AGENTS.md`](./AGENTS.md) first.
+For AI agents: start with [`AGENTS.md`](./AGENTS.md).

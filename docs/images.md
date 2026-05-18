@@ -2,13 +2,13 @@
 
 The hand-drawn paper-journal illustrations are part of the product — they replace the empty UI states, the splash, the error screens, and the welcome flow. This file maps every image we ship, defines the visual contract they all follow, and explains how to request a new one.
 
-There is no design tool in the loop: every illustration is generated from a written prompt and saved as a PNG into `public/`. Treat the prompt as part of the source artifact, not as a one-off command.
+There is no design tool in the loop: every illustration is generated from a written prompt and saved as a PNG into `apps/web/public/`. Treat the prompt as part of the source artifact, not as a one-off command.
 
 ## Catalog
 
 Every user-facing illustration ships as a **light/dark PNG pair** rendered with `next/image` (`unoptimized`) inside `theme-light-only` / `theme-dark-only` wrappers. Names are kebab-case and end in `-light.png` / `-dark.png`. App icons and favicons are the only files without a transparent background.
 
-| File (`public/`)                      | Size (px)   | Where it shows up                                                        |
+| File (`apps/web/public/`)                      | Size (px)   | Where it shows up                                                        |
 | ------------------------------------- | ----------- | ------------------------------------------------------------------------ |
 | `onboarding-hero-{light,dark}.png`    | 1254 × 1254 | `auth-screen.tsx` welcome step                                           |
 | `invite-hero-{light,dark}.png`        | 1254 × 1254 | `auth-screen.tsx` (invite flow welcome), `invite-screen.tsx` invite page |
@@ -26,7 +26,7 @@ Every user-facing illustration ships as a **light/dark PNG pair** rendered with 
 | `icons/icon-1024.png`                 | 1024 × 1024 | `app/manifest.ts` PWA icon, `metadata.icons.apple`                       |
 | `icons/icon-maskable-1024.png`        | 1024 × 1024 | `app/manifest.ts` Android maskable icon                                  |
 
-Every PNG referenced from a user-facing screen must also be listed in `OFFLINE_ASSETS` inside `src/app/sw.js/route.ts` so the empty states and error screens survive offline. Service-worker cache invalidation is automatic — the cache name is tied to Next's `BUILD_ID`.
+Every PNG referenced from a user-facing screen must also be listed in `OFFLINE_ASSETS` inside `apps/web/src/app/sw.js/route.ts` so the empty states and error screens survive offline. Service-worker cache invalidation is automatic — the cache name is tied to Next's `BUILD_ID`.
 
 ## Visual contract
 
@@ -40,7 +40,7 @@ Every illustration must obey the same rules so the set reads as one hand:
 
 ### Palette tokens
 
-Light-mode prompts use these hex values; dark-mode prompts swap them 1-for-1 with the right column. Keep these exact — they match the CSS tokens in `src/app/globals.css`.
+Light-mode prompts use these hex values; dark-mode prompts swap them 1-for-1 with the right column. Keep these exact — they match the CSS tokens in `apps/web/src/app/globals.css`.
 
 | Role                  | Light     | Dark      |
 | --------------------- | --------- | --------- |
@@ -59,12 +59,12 @@ The model **does not** generate images directly. When a feature needs new art, h
 
 The unit of delivery is:
 
-1. **File name** in `public/` (kebab-case, ends in `-light.png` and `-dark.png` for theme pairs; just `.png` for icons/favicons that already encode their context).
+1. **File name** in `apps/web/public/` (kebab-case, ends in `-light.png` and `-dark.png` for theme pairs; just `.png` for icons/favicons that already encode their context).
 2. **Light-mode prompt** that follows the visual contract above.
 3. **Dark-mode prompt** as a one-line palette swap that points back at the light prompt.
 4. **Wiring**: which component renders it, and an entry added to `OFFLINE_ASSETS` if it ships in a user-facing screen.
 
-Once Codex returns the PNG, drop it into `public/<name>.png`, render it via `next/image` (`unoptimized` plus `theme-light-only` / `theme-dark-only`), and run `npm run build` to confirm the manifest stays clean.
+Once Codex returns the PNG, drop it into `apps/web/public/<name>.png`, render it via `next/image` (`unoptimized` plus `theme-light-only` / `theme-dark-only`), and run `npm run build` to confirm the manifest stays clean.
 
 ### Prompt template
 

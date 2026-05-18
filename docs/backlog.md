@@ -60,6 +60,6 @@ Done: Retry delay backs off on sustained failure, with a small cap and no parall
 ### P3 — Replace intro carousel placeholders with real illustrations
 
 Area: imagery
-Why: The intro carousel (`src/components/intro.tsx`) still renders three `<Placeholder/>` slots (`page1.artLabel`, `page2.artLabel`, `page3.artLabel`). Every other empty/error/welcome surface ships hand-drawn art; the intro is the last hatched-dashed stand-in shipping in production.
+Why: The intro carousel (`apps/web/src/components/intro.tsx`) still renders three `<Placeholder/>` slots (`page1.artLabel`, `page2.artLabel`, `page3.artLabel`). Every other empty/error/welcome surface ships hand-drawn art; the intro is the last hatched-dashed stand-in shipping in production.
 Trigger: Next time we touch onboarding, or when the post-launch art batch is queued.
-Done: Three new PNG pairs (`intro-1-{light,dark}.png`, etc.) generated via the `docs/images.md` template, wired through `theme-light-only` / `theme-dark-only`, added to `OFFLINE_ASSETS`, and `<Placeholder/>` removed from `src/components/intro.tsx`. The component file `src/components/placeholder.tsx` can be deleted once the carousel is migrated.
+Done: Three new PNG pairs (`intro-1-{light,dark}.png`, etc.) generated via the `docs/images.md` template, wired through `theme-light-only` / `theme-dark-only`, added to `OFFLINE_ASSETS`, and `<Placeholder/>` removed from `apps/web/src/components/intro.tsx`. The component file `apps/web/src/components/placeholder.tsx` can be deleted once the carousel is migrated.

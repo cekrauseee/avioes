@@ -10,13 +10,13 @@ Three words to keep in mind: **simple**, **organic**, **calm**.
 
 - The primary target is mobile, in portrait. Desktop is supported via a sidebar navigation that appears at `lg` (1024px+).
 - The whole app is wrapped in a 420px-wide centered column. On a phone this is full-width; on desktop the content stays at 420px with a side rail navigation floating in the left margin via absolute positioning (`right-full`).
-- On desktop (`lg+`), the bottom tab bar is hidden and replaced by `DesktopNav` (`src/components/desktop-nav.tsx`) — a vertical list of nav items with accent dots, display font labels, and a spring-animated indicator bar. The sidebar breaks out of the 420px container; `overflow-hidden` on the root template and app-runtime wrapper become `lg:overflow-visible` to allow this.
+- On desktop (`lg+`), the bottom tab bar is hidden and replaced by `DesktopNav` (`apps/web/src/components/desktop-sidebar.tsx`) — a vertical list of nav items with accent dots, display font labels, and a spring-animated indicator bar. The sidebar breaks out of the 420px container; `overflow-hidden` on the root template and app-runtime wrapper become `lg:overflow-visible` to allow this.
 - Each screen is a fixed view: the body has `overflow: hidden` and `overscroll-behavior: none`. Long screens (diary, scoreboard) scroll inside `.scroll-area`, which uses `overscroll-behavior: contain`. The browser bg never shows when you over-pull.
 - Respect `env(safe-area-inset-*)` on top and bottom paddings.
 
 ## Palette
 
-Defined as CSS variables in `app/globals.css`. Light is the default; dark applies via `[data-theme="dark"]` or `prefers-color-scheme: dark` when the cookie is `system`.
+Defined as CSS variables in `apps/web/src/app/globals.css`. Light is the default; dark applies via `[data-theme="dark"]` or `prefers-color-scheme: dark` when the cookie is `system`.
 
 | Token         | Light       | Dark        | Use                                  |
 | ------------- | ----------- | ----------- | ------------------------------------ |
@@ -31,11 +31,11 @@ Defined as CSS variables in `app/globals.css`. Light is the default; dark applie
 | `--line`      | `#1F2A2418` | `#EDE6D622` | Hairlines and borders                |
 | `--paper`     | `#FFFFFF80` | `#1D222540` | Card surfaces                        |
 
-Per-identity classes (e.g. `bg-sage`, `text-clay`) come from the `IDENTITIES` map in `app/lib/types.ts`. Never build them by string concatenation — Tailwind won't pick them up.
+Per-member accent classes come from `MEMBER_COLORS` + `getMemberColor` in `@airplanes/types`. Never build them by string concatenation — Tailwind won't pick them up.
 
 ### Palettes
 
-Six palettes (`default`, `ocean`, `lavender`, `earth`, `blossom`, `sky`) redefine all CSS color tokens. Each palette has both light and dark variants, applied via `[data-palette="X"]` selectors in `globals.css`. The active palette is stored per-user in Postgres and synced offline. Metadata for the palette picker lives in `PALETTES` in `app/lib/types.ts`.
+Six palettes (`default`, `ocean`, `lavender`, `earth`, `blossom`, `sky`) redefine all CSS color tokens. Each palette has both light and dark variants, applied via `[data-palette="X"]` selectors in `apps/web/src/app/globals.css`. The active palette is stored per-user in Postgres and synced offline. Metadata for the palette picker lives in `PALETTES` in `@airplanes/types`.
 
 ## Typography
 
@@ -59,8 +59,8 @@ Illustrations carry as much of the product feel as the typography does. Treat th
 - **Use real images for empty/error/welcome moments.** Counter, diary, and scoreboard empty states; the 404, 500, splash, offline, and OAuth error screens; the auth welcome and invite flows — all have hand-drawn PNGs already wired up. New equivalents should follow the same pattern instead of falling back to glyph emoji or text-only screens.
 - **Light/dark pairs always.** Render with `next/image` (`unoptimized`) inside `theme-light-only` / `theme-dark-only` wrappers. Don't filter or invert a single PNG to fake the dark version — generate both.
 - **Theme-aware preloading.** When an image triggers on interaction (tap fly-by, post-action confirmation), preload both variants so the dark/light swap is invisible. `counter.tsx` shows the pattern.
-- **Add to `OFFLINE_ASSETS`.** Any user-facing PNG must live in the precache list in `src/app/sw.js/route.ts`, otherwise empty/error states break offline.
-- **Custom SVG icons only.** `src/components/icons.tsx` is the single icon set — stroke-based, 1.7 stroke-width, `currentColor`, organic feel. No external icon libraries. New icons follow the same `I()` base wrapper pattern. Use them in `leading`/`trailing` Button props for navigation hints (arrows, chevrons) and semantic cues (lock, key, users, etc.).
+- **Add to `OFFLINE_ASSETS`.** Any user-facing PNG must live in the precache list in `apps/web/src/app/sw.js/route.ts`, otherwise empty/error states break offline.
+- **Custom SVG icons only.** `apps/web/src/components/icons.tsx` is the single icon set — stroke-based, 1.7 stroke-width, `currentColor`, organic feel. No external icon libraries. New icons follow the same `I()` base wrapper pattern. Use them in `leading`/`trailing` Button props for navigation hints (arrows, chevrons) and semantic cues (lock, key, users, etc.).
 
 The full catalog, the visual contract every illustration follows, and the prompt template for requesting new art live in [`docs/images.md`](./images.md). When a feature needs new art, do not generate it inline — author the prompt, hand it to Codex with the file name and target location, and wire the returned PNG.
 
@@ -70,10 +70,10 @@ The app uses Motion (framer-motion v12). Animation should make the journey feel 
 
 ### Page transitions
 
-- `src/app/template.tsx` owns route enter motion: a short opacity fade with a light 24 px directional slide and 4 px blur. `src/components/swipeable-content.tsx` owns gestures only.
-- Lateral navigation between `/`, `/diary`, `/scoreboard`, `/settings` is a single horizontal swipe (touch + trackpad wheel + Left/Right arrow). The handler in `src/lib/horizontal-wheel-navigation.ts` accumulates per-gesture and locks until input settles, so one trackpad gesture advances exactly one page. Settings tabs reuse the same path so swipes feel uniform across the app.
+- `apps/web/src/app/template.tsx` owns route enter motion: a short opacity fade with a light 24 px directional slide and 4 px blur. `apps/web/src/components/swipeable-content.tsx` owns gestures only.
+- Lateral navigation between `/`, `/diary`, `/scoreboard`, `/settings` is a single horizontal swipe (touch + trackpad wheel + Left/Right arrow). The handler in `apps/web/src/lib/horizontal-wheel-navigation.ts` accumulates per-gesture and locks until input settles, so one trackpad gesture advances exactly one page. Settings tabs reuse the same path so swipes feel uniform across the app.
 - Use Motion `dragDirectionLock` on swipeable wrappers so vertical list scroll and horizontal page navigation can coexist without fighting.
-- Motion timing, easing, offsets, and springs live in `src/lib/motion.ts`. New Motion surfaces should reuse `MOTION_TRANSITION`, `MOTION_OFFSET`, `MOTION_SPRING`, and `withMotionDelay()` instead of declaring local timing objects.
+- Motion timing, easing, offsets, and springs live in `apps/web/src/lib/motion.ts`. New Motion surfaces should reuse `MOTION_TRANSITION`, `MOTION_OFFSET`, `MOTION_SPRING`, and `withMotionDelay()` instead of declaring local timing objects.
 
 ### Component motion
 
@@ -92,7 +92,7 @@ The app uses Motion (framer-motion v12). Animation should make the journey feel 
 ## Don'ts
 
 - Don't add gradients, shadows, or glassmorphism. The aesthetic is matte paper.
-- Don't introduce external icon libraries. Use `src/components/icons.tsx` for all inline icons; use the hand-drawn PNG set for anything bigger.
+- Don't introduce external icon libraries. Use `apps/web/src/components/icons.tsx` for all inline icons; use the hand-drawn PNG set for anything bigger.
 - Don't widen the content area for desktop — the 420px column is the design. The sidebar lives in the margin, not inside the content.
 - Don't add an "About" or "Help" page. The app is its own help.
 - Don't ship a new screen with a `<Placeholder/>` where a real illustration belongs. Either reuse an existing PNG, or request a new one via [`docs/images.md`](./images.md).
