@@ -1,39 +1,115 @@
 {
   "slug": "avioes",
   "name": "cekrause/avioes",
-  "description": "An offline-first PWA for groups to count airplane sightings.",
   "repositoryUrl": "https://github.com/cekrauseee/avioes",
-  "metaDescription": "Aviões is an offline-first PWA for groups to count airplane sightings, track streaks, and compare shared scoreboards.",
-  "summary": "Aviões is an offline-first PWA for groups of friends who count airplane sightings together. One tap records a sighting, updates the group tally, and keeps a shared diary and scoreboard.",
-  "highlights": [
-    "Offline-first",
-    "Multi-tenant groups",
-    "Next.js",
-    "Postgres",
-    "IndexedDB",
-    "PWA"
-  ],
-  "sections": [
-    {
-      "title": "Product",
-      "paragraphs": [
-        "Members tap once when they see an airplane. The app records each sighting for the active group, combines consecutive sightings by the same person into streaks, and keeps totals, leaders, and recent activity easy to revisit.",
-        "Groups are private and invite-only. Each person can join more than one group, switch between them, and review each shared history without mixing their data."
+  "translations": {
+    "en": {
+      "description": "An offline-first PWA for groups to count airplane sightings.",
+      "metaDescription": "Aviões is an offline-first PWA for groups to count airplane sightings, track streaks, and compare shared scoreboards.",
+      "summary": "Aviões is an offline-first PWA for groups of friends who count airplane sightings together. One tap records a sighting, updates the group tally, and keeps a shared diary and scoreboard.",
+      "highlights": [
+        "Offline-first",
+        "Multi-tenant groups",
+        "Next.js",
+        "Postgres",
+        "IndexedDB",
+        "PWA"
+      ],
+      "sections": [
+        {
+          "title": "Product",
+          "paragraphs": [
+            "Members tap once when they see an airplane. The app records each sighting for the active group, combines consecutive sightings by the same person into streaks, and keeps totals, leaders, and recent activity easy to revisit.",
+            "Groups are private and invite-only. Each person can join more than one group, switch between them, and review each shared history without mixing their data."
+          ]
+        },
+        {
+          "title": "What I built",
+          "paragraphs": [
+            "I built the installable PWA and its backoffice as a Turborepo with Next.js, React, TypeScript, Postgres, and Drizzle. The backoffice provides a separate place to manage users and groups.",
+            "The product supports email and password, one-time code, passkey, and Google sign-in. It ships in Brazilian Portuguese and English, with light and dark themes and six color palettes."
+          ]
+        },
+        {
+          "title": "Engineering choices",
+          "paragraphs": [
+            "An IndexedDB snapshot and ordered operation queue keep counting available offline. Pending changes sync through Server Actions when the connection returns, while Postgres remains the source of truth.",
+            "Every group read and write is checked against server-side membership. This keeps the one-tap interaction fast without moving authentication or tenancy decisions into the browser."
+          ]
+        }
       ]
     },
-    {
-      "title": "What I built",
-      "paragraphs": [
-        "I built the installable PWA and its backoffice as a Turborepo with Next.js, React, TypeScript, Postgres, and Drizzle. The backoffice provides a separate place to manage users and groups.",
-        "The product supports email and password, one-time code, passkey, and Google sign-in. It ships in Brazilian Portuguese and English, with light and dark themes and six color palettes."
+    "pt": {
+      "description": "Um PWA offline-first para grupos contarem avistamentos de aviões.",
+      "metaDescription": "Aviões é um PWA offline-first para grupos contarem avistamentos de aviões, acompanharem sequências e compararem placares compartilhados.",
+      "summary": "Aviões é um PWA offline-first para grupos de amigos que contam avistamentos de aviões juntos. Um toque registra o avistamento, atualiza o total do grupo e mantém um diário e um placar compartilhados.",
+      "highlights": [
+        "Offline-first",
+        "Grupos multi-tenant",
+        "Next.js",
+        "Postgres",
+        "IndexedDB",
+        "PWA"
+      ],
+      "sections": [
+        {
+          "title": "Produto",
+          "paragraphs": [
+            "Participantes tocam uma vez quando veem um avião. O aplicativo registra cada avistamento no grupo ativo, combina avistamentos consecutivos da mesma pessoa em sequências e mantém totais, líderes e atividades recentes fáceis de consultar.",
+            "Os grupos são privados e acessíveis apenas por convite. Cada pessoa pode participar de mais de um grupo, alternar entre eles e consultar cada histórico compartilhado sem misturar os dados."
+          ]
+        },
+        {
+          "title": "O que construí",
+          "paragraphs": [
+            "Construí o PWA instalável e seu backoffice como um Turborepo com Next.js, React, TypeScript, Postgres e Drizzle. O backoffice oferece um espaço separado para gerenciar usuários e grupos.",
+            "O produto permite acesso por e-mail e senha, código de uso único, passkey e Google. Ele está disponível em português do Brasil e inglês, com temas claro e escuro e seis paletas de cores."
+          ]
+        },
+        {
+          "title": "Decisões de engenharia",
+          "paragraphs": [
+            "Um snapshot no IndexedDB e uma fila ordenada de operações mantêm a contagem disponível offline. Alterações pendentes são sincronizadas por Server Actions quando a conexão retorna, enquanto o Postgres permanece como fonte da verdade.",
+            "Cada leitura e escrita de um grupo é verificada no servidor conforme a participação da pessoa. Isso mantém rápida a interação de um toque sem transferir decisões de autenticação ou isolamento de grupos para o navegador."
+          ]
+        }
       ]
     },
-    {
-      "title": "Engineering choices",
-      "paragraphs": [
-        "An IndexedDB snapshot and ordered operation queue keep counting available offline. Pending changes sync through Server Actions when the connection returns, while Postgres remains the source of truth.",
-        "Every group read and write is checked against server-side membership. This keeps the one-tap interaction fast without moving authentication or tenancy decisions into the browser."
+    "ja": {
+      "description": "グループで飛行機の目撃数を記録するオフラインファーストPWAです。",
+      "metaDescription": "Aviõesは、グループで飛行機の目撃数を記録し、連続記録を追跡し、共有ランキングを比較できるオフラインファーストPWAです。",
+      "summary": "Aviõesは、友人グループで飛行機の目撃数を一緒に数えるオフラインファーストPWAです。1回のタップで目撃を記録し、グループの合計を更新して、共有の日記とランキングに残します。",
+      "highlights": [
+        "オフラインファースト",
+        "マルチテナントグループ",
+        "Next.js",
+        "Postgres",
+        "IndexedDB",
+        "PWA"
+      ],
+      "sections": [
+        {
+          "title": "プロダクト",
+          "paragraphs": [
+            "飛行機を見つけたメンバーが1回タップすると、アプリはアクティブなグループに目撃を記録します。同じ人による連続した目撃を連続記録としてまとめ、合計、首位、最近の活動を簡単に振り返れるようにします。",
+            "グループは非公開の招待制です。各メンバーは複数のグループに参加して切り替えることができ、それぞれの共有履歴をデータが混ざることなく確認できます。"
+          ]
+        },
+        {
+          "title": "構築したもの",
+          "paragraphs": [
+            "Next.js、React、TypeScript、Postgres、Drizzleを使ったTurborepoとして、インストール可能なPWAとバックオフィスを構築しました。バックオフィスではユーザーとグループを個別に管理できます。",
+            "メールアドレスとパスワード、ワンタイムコード、パスキー、Googleログインに対応しています。ブラジルポルトガル語と英語を提供し、ライト・ダークテーマと6種類のカラーパレットを備えています。"
+          ]
+        },
+        {
+          "title": "設計上の選択",
+          "paragraphs": [
+            "IndexedDBのスナップショットと順序付き操作キューにより、オフラインでも記録できます。接続が戻ると保留中の変更をServer Action経由で同期し、Postgresを信頼できる唯一の情報源として維持します。",
+            "グループの読み書きはすべて、サーバー側でメンバー資格を確認します。認証やテナント分離の判断をブラウザに移さず、1タップの操作を高速に保ちます。"
+          ]
+        }
       ]
     }
-  ]
+  }
 }
