@@ -1,30 +1,42 @@
 ---
-description: "Um PWA offline-first para grupos contarem avistamentos de aviões."
-metaDescription: "Aviões é um PWA offline-first para grupos contarem avistamentos de aviões, acompanharem sequências e compararem placares compartilhados."
-summary: "Aviões é um PWA offline-first para grupos de amigos que contam avistamentos de aviões juntos. Um toque registra o avistamento, atualiza o total do grupo e mantém um diário e um placar compartilhados."
+description: >-
+  um app para contar os aviões que você vê com os amigos.
+metaDescription: >-
+  um app para contar aviões com amigos, com grupos privados, diário
+  compartilhado, placar e registro sem internet.
+summary: >-
+  fiz o aviões para contar aviões com amigos, num app que dá para instalar
+  no celular. ele tem grupos privados, um diário, placares e contagem sem
+  internet, que sincroniza quando a conexão volta. também fiz um aplicativo
+  separado para gerenciar usuários e grupos.
 highlights:
-  - "Offline-first"
-  - "Grupos multi-tenant"
-  - "Next.js"
-  - "Postgres"
-  - "IndexedDB"
-  - "PWA"
+  - contagem com um toque
+  - grupos privados e diário compartilhado
+  - registro sem internet e sincronização
+  - jeito de diário de bolso
 ---
 
-## Produto
+o aviões nasceu de uma brincadeira entre mim e a minha namorada. a gente usa
+até hoje. acabei fazendo um app para contar os aviões que vemos juntos.
 
-Participantes tocam uma vez quando veem um avião. O aplicativo registra cada avistamento no grupo ativo, combina avistamentos consecutivos da mesma pessoa em sequências e mantém totais, líderes e atividades recentes fáceis de consultar.
+viu um avião, tocou na tela. o app soma os pontos do grupo e guarda quem viu
+cada avião.
 
-Os grupos são privados e acessíveis apenas por convite. Cada pessoa pode participar de mais de um grupo, alternar entre eles e consultar cada histórico compartilhado sem misturar os dados.
+organizei o aplicativo em torno da contagem, de um diário e de um placar.
+quando a mesma pessoa vê vários aviões seguidos, eles formam uma sequência.
+quando outra pessoa vê um, começa uma nova.
 
-## O que construí
+os grupos são privados e funcionam por convite. dá para participar de mais de
+um, cada um com seu próprio histórico. também fiz um aplicativo separado para
+gerenciar usuários e grupos.
 
-Construí o PWA instalável e seu backoffice como um Turborepo com Next.js, React, TypeScript, Postgres e Drizzle. O backoffice oferece um espaço separado para gerenciar usuários e grupos.
+## um diário no celular
 
-O produto permite acesso por e-mail e senha, código de uso único, passkey e Google. Ele está disponível em português do Brasil e inglês, com temas claro e escuro e seis paletas de cores.
+a interface tem cores de papel, ilustrações que parecem feitas à mão e um
+aviãozinho que atravessa a tela a cada toque. o app funciona em português e
+inglês, tem temas claro e escuro e pode ser instalado no celular.
 
-## Decisões de engenharia
-
-Um snapshot no IndexedDB e uma fila ordenada de operações mantêm a contagem disponível offline. Alterações pendentes são sincronizadas por Server Actions quando a conexão retorna, enquanto o Postgres permanece como fonte da verdade.
-
-Cada leitura e escrita de um grupo é verificada no servidor conforme a participação da pessoa. Isso mantém rápida a interação de um toque sem transferir decisões de autenticação ou isolamento de grupos para o navegador.
+depois de carregar um grupo, dá para continuar contando sem internet. os
+registros ficam no aparelho e são sincronizados quando a conexão volta.
+a contagem muda na hora; o servidor confere quem pode acessar o grupo e quais
+registros já recebeu, para não contar o mesmo avião duas vezes ao reenviar.

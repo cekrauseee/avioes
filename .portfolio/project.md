@@ -19,6 +19,8 @@ highlights:
   - "a pocket-journal feel"
 ---
 
+aviões started as an inside joke between my girlfriend and me. we still use it today. i built it into a small app for counting planes together.
+
 see a plane, tap the screen. aviões keeps the count for your group and a
 record of who spotted what.
 
