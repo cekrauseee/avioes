@@ -5,12 +5,36 @@ import { findUserByEmail, readLocale } from '@airplanes/db/store'
 import { passkey } from '@better-auth/passkey'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { createAuthMiddleware } from 'better-auth/api'
+import { splitSetCookieHeader } from 'better-auth/cookies'
 import { emailOTP } from 'better-auth/plugins'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { sendOtpEmail } from './email/email'
 import { OTP_ALLOWED_ATTEMPTS, OTP_EXPIRES_IN_SECONDS, OTP_LENGTH } from './otp-constants'
 
 const otpErrorStore = new AsyncLocalStorage<{ error: string | null }>()
+
+const PERMANENT_SESSION_EXPIRY = '9999-12-31T23:59:59.999Z'
+
+// better-auth adds the session lifetime after cookie attributes are merged.
+const stripSessionCookieLifetime = createAuthMiddleware(async (ctx) => {
+  const responseHeaders = ctx.context.responseHeaders
+  const setCookie = responseHeaders?.get('set-cookie')
+  if (!responseHeaders || !setCookie) return
+
+  const sessionCookieName = ctx.context.authCookies.sessionToken.name
+  const cookies = splitSetCookieHeader(setCookie).map((cookie) => {
+    const nameValue = cookie.split(';', 1)[0]?.trim() ?? ''
+    const separator = nameValue.indexOf('=')
+    const cookieName = separator === -1 ? '' : nameValue.slice(0, separator)
+    const cookieValue = separator === -1 ? '' : nameValue.slice(separator + 1)
+    if (cookieName !== sessionCookieName || !cookieValue) return cookie
+    return cookie.replace(/;\s*(?:Max-Age|Expires)=[^;]*/gi, '')
+  })
+
+  responseHeaders.delete('set-cookie')
+  for (const cookie of cookies) responseHeaders.append('set-cookie', cookie)
+})
 
 export function withOtpErrorScope<T>(fn: () => Promise<T>): Promise<T> {
   return otpErrorStore.run({ error: null }, fn)
@@ -49,6 +73,17 @@ export const auth = betterAuth({
         defaultCookieAttributes: { sameSite: 'lax' as const, secure: true, domain: cookieDomain }
       }
     : undefined,
+  databaseHooks: {
+    session: {
+      create: {
+        before: async () => ({ data: { expiresAt: new Date(PERMANENT_SESSION_EXPIRY) } })
+      },
+      update: {
+        before: async () => ({ data: { expiresAt: new Date(PERMANENT_SESSION_EXPIRY) } })
+      }
+    }
+  },
+  hooks: { after: stripSessionCookieLifetime },
   emailAndPassword: {
     enabled: true,
     autoSignIn: true
