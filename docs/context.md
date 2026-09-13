@@ -20,6 +20,10 @@ When you add an entry, also remove any older entry that has been superseded. The
 
 ## Active
 
+### 2026-09-13 — Non-expiring auth session cookie
+
+The Better Auth session token is emitted without `Max-Age` or `Expires`, making it a browser session cookie. Session rows use a far-future expiry so the server does not invalidate them; sign-out deletion cookies retain their expiry attributes.
+
 ### 2026-05-14 — Backoffice admin app
 
 New app at `apps/backoffice` for managing users, groups, and events. Gated by `requireBackofficeUser` guard — only users with `featureFlags` containing `'backoffice'` get in. Auth via same better-auth instance with cross-subdomain cookie support (`COOKIE_DOMAIN`, `TRUSTED_ORIGINS` env vars). Admin DB helpers in `packages/db/src/store-admin.ts` (separate entry point, never imported by web app). Screens: dashboard with stats, paginated user/group lists with search/filter, user detail (edit identity + feature flags + soft-delete/restore), group detail (edit name + transfer ownership + manage members + soft-delete/restore). Feature flags type in `packages/types/src/feature-flags.ts`. Admin i18n keys under `admin.*` namespace. First admin promoted manually via Drizzle Studio (`feature_flags = '{backoffice}'`).
