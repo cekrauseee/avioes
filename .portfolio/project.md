@@ -3,42 +3,37 @@ slug: avioes
 name: cekrause/avioes
 repositoryUrl: https://github.com/cekrauseee/avioes
 description: >-
-  a small app for friends to count the airplanes they see together.
+  A plane counter for private groups, with offline recording and a shared
+  history.
 metaDescription: >-
-  an app for counting airplanes with friends, with private groups, a shared
-  diary, scoreboards, and offline recording.
+  A plane counter for private groups, with offline recording, shared history,
+  and synchronized operations.
 summary: >-
-  i built aviões as an installable web app for friends to count airplanes
-  together. it has private groups, a diary of sightings, scoreboards,
-  offline recording and sync, and a separate app for managing users and
-  groups.
+  Aviões grew out of a game my girlfriend and I play: counting the planes we
+  see together. I built the app to record our sightings and keep a history of
+  a game that is still part of our everyday lives. The experience has three
+  main views: a counter, a diary, and a scoreboard.
 highlights:
-  - "one-tap counting"
-  - "private groups and a shared diary"
-  - "offline recording and sync"
-  - "a pocket-journal feel"
+  - a counter, a diary, and a scoreboard
+  - offline recording with IndexedDB
+  - an ordered queue of pending operations
+  - an installable web app and a separate administration app
 ---
 
-aviões started as an inside joke between my girlfriend and me. we still use it today. i built it into a small app for counting planes together.
+Aviões grew out of a game my girlfriend and I play: counting the planes we see together. I built the app to record our sightings and keep a history of a game that is still part of our everyday lives.
 
-see a plane, tap the screen. aviões keeps the count for your group and a
-record of who spotted what.
+The experience has three main views: a counter, a diary, and a scoreboard. Consecutive sightings by the same person form a streak in the diary. Groups are private and invite-only, each with its own history.
 
-i built the app around three things: the counter, a diary, and a scoreboard.
-consecutive sightings by the same person form a streak. when someone else
-spots a plane, a new streak starts.
+## Local recording and synchronization
 
-groups are private and work by invitation. you can belong to more than one,
-with a separate history for each. i also built an administration app to manage
-users and groups.
+Once a group has loaded, sightings can still be recorded without an internet connection. The browser keeps a copy of the data in IndexedDB and an ordered queue of pending operations. The interface updates the count without waiting for the server to confirm the change.
 
-## a small journal on your phone
+When connectivity returns, the server processes the pending operations and applies them to Postgres, the source of truth. It recognizes operations that have already been processed so that retrying a request does not create duplicate records.
 
-the interface has warm paper colors, sketch-style illustrations, and a little
-plane that flies across the screen when you tap. it comes in portuguese and
-english, with light and dark themes, and can be installed on a phone.
+This divides responsibility between the two sides: the browser handles interaction and offline recording, while the server validates changes and maintains the shared state.
 
-once a group has loaded, you can keep counting without a connection. sightings
-stay on the device and sync when you're back online. the counter responds
-straight away; the server checks group access and keeps track of changes
-already received so a retry doesn't add the same sighting twice.
+## Group access and application structure
+
+Every read or write of group data goes through a server-side membership check. The server derives identity and permissions from the authenticated session and its own access checks.
+
+The project brings together an installable web app and a separate administration app in a monorepo. They share packages for authentication, data access, types, and localization. The administration app handles users and groups, while the main app stays focused on counting.
