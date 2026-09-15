@@ -1,30 +1,37 @@
 ---
-description: "Um PWA offline-first para grupos contarem avistamentos de aviões."
-metaDescription: "Aviões é um PWA offline-first para grupos contarem avistamentos de aviões, acompanharem sequências e compararem placares compartilhados."
-summary: "Aviões é um PWA offline-first para grupos de amigos que contam avistamentos de aviões juntos. Um toque registra o avistamento, atualiza o total do grupo e mantém um diário e um placar compartilhados."
+description: >-
+  Contagem de aviões em grupos privados, com registro offline e histórico
+  compartilhado.
+metaDescription: >-
+  Contagem de aviões em grupos privados, com registro offline, histórico
+  compartilhado e sincronização de operações.
+summary: >-
+  O Aviões nasceu de uma brincadeira entre mim e a minha namorada: contar os
+  aviões que vemos juntos. Desenvolvi o aplicativo para registrar os
+  avistamentos e acompanhar o histórico dessa brincadeira, que continua fazendo
+  parte da nossa rotina. A experiência se organiza em três partes: contador,
+  diário e placar.
 highlights:
-  - "Offline-first"
-  - "Grupos multi-tenant"
-  - "Next.js"
-  - "Postgres"
-  - "IndexedDB"
-  - "PWA"
+  - contador, diário e placar
+  - registro offline e fila ordenada de operações
+  - histórico separado para cada grupo
+  - aplicação web instalável e backoffice em um monorepo
 ---
 
-## Produto
+O Aviões nasceu de uma brincadeira entre mim e a minha namorada: contar os aviões que vemos juntos. Desenvolvi o aplicativo para registrar os avistamentos e acompanhar o histórico dessa brincadeira, que continua fazendo parte da nossa rotina.
 
-Participantes tocam uma vez quando veem um avião. O aplicativo registra cada avistamento no grupo ativo, combina avistamentos consecutivos da mesma pessoa em sequências e mantém totais, líderes e atividades recentes fáceis de consultar.
+A experiência se organiza em três partes: contador, diário e placar. Avistamentos consecutivos da mesma pessoa formam uma sequência no diário. Os grupos são privados e funcionam por convite, com um histórico separado para cada grupo.
 
-Os grupos são privados e acessíveis apenas por convite. Cada pessoa pode participar de mais de um grupo, alternar entre eles e consultar cada histórico compartilhado sem misturar os dados.
+## Registro local e sincronização
 
-## O que construí
+Depois de carregar um grupo, é possível continuar registrando avistamentos sem conexão. O navegador mantém uma cópia dos dados em IndexedDB e uma fila ordenada de operações pendentes. A interface atualiza a contagem sem aguardar a confirmação do servidor.
 
-Construí o PWA instalável e seu backoffice como um Turborepo com Next.js, React, TypeScript, Postgres e Drizzle. O backoffice oferece um espaço separado para gerenciar usuários e grupos.
+Quando a conexão retorna, as operações são sincronizadas com o Postgres, que mantém o estado de referência. O servidor identifica operações já processadas para que uma nova tentativa de envio não duplique os registros.
 
-O produto permite acesso por e-mail e senha, código de uso único, passkey e Google. Ele está disponível em português do Brasil e inglês, com temas claro e escuro e seis paletas de cores.
+Essa estrutura distribui responsabilidades: o navegador sustenta a interação e o registro offline; o servidor valida as alterações e consolida os dados compartilhados.
 
-## Decisões de engenharia
+## Acesso por grupo e organização da aplicação
 
-Um snapshot no IndexedDB e uma fila ordenada de operações mantêm a contagem disponível offline. Alterações pendentes são sincronizadas por Server Actions quando a conexão retorna, enquanto o Postgres permanece como fonte da verdade.
+Cada leitura e escrita de dados do grupo passa pela verificação de participação no servidor. A identidade e as permissões são obtidas da sessão autenticada, sem depender das informações de acesso enviadas pelo navegador.
 
-Cada leitura e escrita de um grupo é verificada no servidor conforme a participação da pessoa. Isso mantém rápida a interação de um toque sem transferir decisões de autenticação ou isolamento de grupos para o navegador.
+O projeto reúne a aplicação web instalável e um backoffice em um monorepo. Os dois compartilham pacotes de autenticação, acesso a dados, tipos e tradução. O backoffice concentra a administração de usuários e grupos, enquanto a aplicação principal mantém o foco na contagem.
