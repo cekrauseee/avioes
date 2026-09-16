@@ -1,5 +1,6 @@
 ---
 slug: avioes
+portfolioIndex: 3
 name: cekrause/avioes
 repositoryUrl: https://github.com/cekrauseee/avioes
 description: >-
